@@ -1,13 +1,10 @@
 import java.net.URI
-
-java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
-}
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-	java
+	kotlin("jvm") version "2.0.0"
+	kotlin("plugin.jpa") version "2.0.0"
+	kotlin("plugin.spring") version "2.0.0"
 	id("org.springframework.boot") version "3.3.1"
 	id("io.spring.dependency-management") version "1.1.5"
 }
@@ -16,18 +13,16 @@ allprojects {
 	group = "com.sound-bind"
 	version = "0.0.1"
 
-	tasks.withType<JavaCompile> {
-		sourceCompatibility = "21"
-		targetCompatibility = "21"
-	}
-
 	repositories {
 		mavenCentral()
 	}
 }
 
 subprojects {
-	apply(plugin = "java")
+	apply(plugin = "kotlin")
+	apply(plugin = "kotlin-spring")
+	apply(plugin = "kotlin-allopen")
+	apply(plugin = "kotlin-noarg")
 	apply(plugin = "org.springframework.boot")
 	apply(plugin = "io.spring.dependency-management")
 
@@ -48,12 +43,36 @@ subprojects {
 	}
 
 	dependencies {
+		implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 		implementation("org.springframework.boot:spring-boot-starter")
 		compileOnly("org.projectlombok:lombok")
 		developmentOnly("org.springframework.boot:spring-boot-devtools")
 		annotationProcessor("org.projectlombok:lombok")
 		testImplementation("org.springframework.boot:spring-boot-starter-test")
 		testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+	}
+
+	tasks.withType<KotlinCompile> {
+		kotlinOptions {
+			jvmTarget = "21"
+			freeCompilerArgs+="-Xjsr305=strict"
+		}
+	}
+
+	tasks.withType<Test> {
+		useJUnitPlatform()
+	}
+
+	allOpen {
+		annotation("jakarta.persistence.Entity")
+		annotation("jakarta.persistence.MappedSuperclass")
+		annotation("jakarta.persistence.Embeddable")
+	}
+
+	noArg {
+		annotation("jakarta.persistence.Entity")
+		annotation("jakarta.persistence.MappedSuperclass")
+		annotation("jakarta.persistence.Embeddable")
 	}
 }
 
