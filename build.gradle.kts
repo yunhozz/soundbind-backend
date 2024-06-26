@@ -58,3 +58,4 @@ subprojects {
 }
 
 project(":eureka-server")
+project(":config-server")

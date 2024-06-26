@@ -1,0 +1,27 @@
+server:
+  port: 8888
+
+spring:
+  cloud:
+    config:
+      server:
+        git:
+          uri: git@github.com:yunhozz/config-repository.git
+          default-label: master
+          search-paths: sound-bound/
+          ignore-local-ssh-settings: true
+          strict-host-key-checking: false
+          host-key: AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBLd0kCVKRfSTGnG6zztlnCW+Gqb9ynJUUezt+d7o2ys0nuhEWdt4gEdBNSwPh6NQCKDZ8XlR8y94Vvbw4OHTOAc=
+          host-key-algorithm: ecdsa-sha2-nistp256
+          private-key: ${SOUND-BOUND_PRIVATE_KEY}
+        encrypt:
+          enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    shutdown:
+      enabled: true
