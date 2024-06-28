@@ -1,2 +1,2 @@
-rootProject.name = "sound-bind"
-include(":eureka-server", ":config-server")
+rootProject.name = "soundbind-backend"
+include(":eureka-server", ":config-server", ":music-service")
