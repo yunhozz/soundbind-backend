@@ -4,8 +4,8 @@ import org.springframework.core.io.Resource
 import org.springframework.stereotype.Component
 
 @Component
-abstract class ImageResourceHandler: ResourceHandler {
-    override fun display(fileUrl: String): Resource {
+class ImageResourceHandlerImpl: ImageResourceHandler {
+    override fun displayImage(fileUrl: String): Resource {
         TODO("Not yet implemented")
     }
 }

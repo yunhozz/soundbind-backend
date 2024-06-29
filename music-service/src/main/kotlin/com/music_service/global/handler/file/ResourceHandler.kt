@@ -30,10 +30,20 @@ interface ResourceHandler {
             }
         } ?: throw IllegalArgumentException("File does not exist.")
     }
+}
+
+interface MusicResourceHandler: ResourceHandler {
+    @Throws(IOException::class)
+    fun uploadMusic(file: MultipartFile) = upload(file)
 
     @Throws(IOException::class)
-    fun download(fileUrl: String): Resource
+    fun downloadMusic(fileUrl: String): Resource
+}
+
+interface ImageResourceHandler: ResourceHandler {
+    @Throws(IOException::class)
+    fun uploadImage(file: MultipartFile) = upload(file)
 
     @Throws(IOException::class)
-    fun display(fileUrl: String): Resource
+    fun displayImage(fileUrl: String): Resource
 }

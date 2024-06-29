@@ -11,13 +11,9 @@ class FileHandlerImpl(
     private val musicResourceHandler: MusicResourceHandler,
     private val imageResourceHandler: ImageResourceHandler
 ): FileHandler {
-    override fun uploadMusic(file: MultipartFile) {
-        musicResourceHandler.upload(file)
-    }
+    override fun uploadMusic(file: MultipartFile) = musicResourceHandler.uploadMusic(file)
 
-    override fun uploadImage(file: MultipartFile) {
-        imageResourceHandler.upload(file)
-    }
+    override fun uploadImage(file: MultipartFile) = imageResourceHandler.uploadImage(file)
 
     override fun downloadMusic() {
 //        musicResourceHandler.download()
