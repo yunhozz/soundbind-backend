@@ -14,9 +14,6 @@ data class MusicCreateDTO(
     val userNickname: String,
     @field:NotEmpty
     val genres: Set<String>,
-    @field:NotBlank
-    val musicUrl: String,
-    val imageUrl: String?,
     @field:NotNull
     val musicFile: MultipartFile,
     val imageFile: MultipartFile?

@@ -8,23 +8,28 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.UUID
 
-interface ResourceHandler {
+sealed interface ResourceHandler {
     companion object {
+        private const val ROOT_DIRECTORY = "/music-service/src/main/resources/file/"
         private val ABSOLUTE_PATH = File("").absolutePath
         private val CURRENT_DATE = SimpleDateFormat("yy-MM-dd").format(Date())
-        private const val ROOT_DIRECTORY = "/music_service/src/main/resources/file"
-        val FILE_DIRECTORY = ABSOLUTE_PATH + ROOT_DIRECTORY
+        private val FILE_DIRECTORY = ABSOLUTE_PATH + ROOT_DIRECTORY + CURRENT_DATE
     }
+
+    var originalFileName: String
+    var savedName: String
+    var fileUrl: String
 
     @Throws(IOException::class)
     fun upload(file: MultipartFile?) {
         file?.let {
-            val originalFilename = file.originalFilename!!
-            val extension = originalFilename.substring(originalFilename.lastIndexOf("."))
+            originalFileName = file.originalFilename!!
+            val extension = originalFileName.substring(originalFileName.lastIndexOf("."))
             val uuid = UUID.randomUUID().toString()
-            val savedName = uuid + extension
+            savedName = uuid + extension
+            fileUrl = "$CURRENT_DATE/$savedName"
 
-            File("$FILE_DIRECTORY/$CURRENT_DATE/$savedName").also {
+            File("$FILE_DIRECTORY/$savedName").also {
                 if (!it.exists()) it.mkdirs()
                 file.transferTo(it)
             }
@@ -34,7 +39,10 @@ interface ResourceHandler {
 
 interface MusicResourceHandler: ResourceHandler {
     @Throws(IOException::class)
-    fun uploadMusic(file: MultipartFile) = upload(file)
+    fun uploadMusic(file: MultipartFile): Triple<String, String, String> {
+        upload(file)
+        return Triple(originalFileName, savedName, fileUrl)
+    }
 
     @Throws(IOException::class)
     fun downloadMusic(fileUrl: String): Resource
@@ -42,7 +50,10 @@ interface MusicResourceHandler: ResourceHandler {
 
 interface ImageResourceHandler: ResourceHandler {
     @Throws(IOException::class)
-    fun uploadImage(file: MultipartFile) = upload(file)
+    fun uploadImage(file: MultipartFile): Triple<String, String, String> {
+        upload(file)
+        return Triple(originalFileName, savedName, fileUrl)
+    }
 
     @Throws(IOException::class)
     fun displayImage(fileUrl: String): Resource

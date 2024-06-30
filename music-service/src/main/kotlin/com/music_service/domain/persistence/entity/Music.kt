@@ -10,8 +10,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
-import org.springframework.data.annotation.CreatedDate
-import org.springframework.data.annotation.LastModifiedDate
+import jakarta.persistence.OneToMany
 import java.time.LocalDateTime
 
 @Entity
@@ -19,20 +18,13 @@ class Music(
     val userId: Long,
     userNickname: String,
     title: String,
-    genres: Set<Genre> = hashSetOf(),
-    val musicUrl: String,
-    imageUrl: String? = null,
+    genres: Set<Genre>,
     val deletedAt: LocalDateTime? = null,
-) {
+): BaseEntity() {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = null
-
-    @CreatedDate
-    val createdAt: LocalDateTime? = null
-
-    @LastModifiedDate
-    var updatedAt: LocalDateTime? = null
 
     var userNickname: String = userNickname
         protected set
@@ -46,7 +38,8 @@ class Music(
     var genres: Set<Genre> = genres
         protected set
 
-    var imageUrl: String? = imageUrl
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "music", orphanRemoval = true)
+    var files: MutableList<FileEntity> = mutableListOf()
         protected set
 
     fun updateGenres(genres: Set<Genre>) {
@@ -55,10 +48,6 @@ class Music(
 
     fun updateTitle(title: String) {
         this.title = title
-    }
-
-    fun updateImageUrl(url: String) {
-        this.imageUrl = url
     }
 
     enum class Genre(

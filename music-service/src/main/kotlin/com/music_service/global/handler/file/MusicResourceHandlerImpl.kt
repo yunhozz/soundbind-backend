@@ -8,4 +8,10 @@ class MusicResourceHandlerImpl: MusicResourceHandler {
     override fun downloadMusic(fileUrl: String): Resource {
         TODO("Not yet implemented")
     }
+
+    override lateinit var originalFileName: String
+
+    override lateinit var savedName: String
+
+    override lateinit var fileUrl: String
 }
