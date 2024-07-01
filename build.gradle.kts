@@ -5,6 +5,7 @@ plugins {
 	kotlin("jvm") version "2.0.0"
 	kotlin("plugin.jpa") version "2.0.0"
 	kotlin("plugin.spring") version "2.0.0"
+	kotlin("kapt") version "1.8.10"
 	id("org.springframework.boot") version "3.3.1"
 	id("io.spring.dependency-management") version "1.1.5"
 }
@@ -23,6 +24,7 @@ subprojects {
 	apply(plugin = "kotlin-spring")
 	apply(plugin = "kotlin-allopen")
 	apply(plugin = "kotlin-noarg")
+	apply(plugin = "kotlin-kapt")
 	apply(plugin = "org.springframework.boot")
 	apply(plugin = "io.spring.dependency-management")
 
