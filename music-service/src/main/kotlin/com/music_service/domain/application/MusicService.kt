@@ -5,7 +5,7 @@ import com.music_service.domain.persistence.entity.Music
 import com.music_service.domain.persistence.repository.FileRepository
 import com.music_service.domain.persistence.repository.MusicRepository
 import com.music_service.global.dto.request.MusicCreateDTO
-import com.music_service.global.dto.response.MusicDetailsDTO
+import com.music_service.global.dto.response.MusicDetailsQueryDTO
 import com.music_service.global.handler.file.FileHandler
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -46,20 +46,9 @@ class MusicService(
     }
 
     @Transactional(readOnly = true)
-    fun findMusicDetails(id: Long): MusicDetailsDTO {
-        val music = musicRepository.findById(id)
-            .orElseThrow { IllegalArgumentException("Music does not exist") }
-        val genres: List<String> = music.genres.map { it.genreName }
-
-        return MusicDetailsDTO(
-            music.id,
-            music.userId,
-            music.userNickname,
-            music.title,
-            genres,
-            music.musicUrl,
-            music.imageUrl
-        )
+    fun findMusicDetails(id: Long): MusicDetailsQueryDTO {
+        return musicRepository.findMusicDetailsById(id)
+            ?: throw IllegalArgumentException("Music does not exist")
     }
 
     // TODO
