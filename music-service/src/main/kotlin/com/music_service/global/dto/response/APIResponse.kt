@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonInclude
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class APIResponse private constructor(
-    private val message: String,
-    private val data: Any?
+    val message: String,
+    val data: Any?
 ) {
     companion object {
         fun of(message: String): APIResponse = APIResponse(message, null)

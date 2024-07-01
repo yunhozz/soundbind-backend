@@ -3,10 +3,10 @@ package com.music_service.global.dto.response
 import org.springframework.validation.BindingResult
 
 data class ErrorResponse(
-    private val status: Int,
-    private val code: String,
-    private val message: String,
-    private val fieldErrors: List<FieldErrorResponse>
+    val status: Int,
+    val code: String,
+    val message: String,
+    val fieldErrors: List<FieldErrorResponse>
 ) {
     private constructor(errorCode: ErrorCode): this(status = errorCode.status, code = errorCode.code, message = errorCode.message, fieldErrors = emptyList())
     private constructor(errorCode: ErrorCode, message: String): this(status = errorCode.status, code = errorCode.code, message, fieldErrors = emptyList())
@@ -19,9 +19,9 @@ data class ErrorResponse(
     }
 
     data class FieldErrorResponse(
-        private val field: String,
-        private val value: String,
-        private val reason: String?
+        val field: String,
+        val value: String,
+        val reason: String?
     ) {
         companion object {
             fun of(field: String, value: String, reason: String): List<FieldErrorResponse> = listOf(FieldErrorResponse(field, value, reason))
