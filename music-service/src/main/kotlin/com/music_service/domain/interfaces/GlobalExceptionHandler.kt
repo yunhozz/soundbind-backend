@@ -1,6 +1,5 @@
 package com.music_service.domain.interfaces
 
-import com.music_service.global.dto.response.ErrorResponse
 import com.music_service.domain.interfaces.dto.ErrorResponse
 import com.music_service.domain.interfaces.dto.ErrorResponse.ErrorCode
 import org.slf4j.LoggerFactory
@@ -16,23 +15,42 @@ class GlobalExceptionHandler {
     private val log = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
 
     @ExceptionHandler(RuntimeException::class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    fun handleRuntimeException(e: RuntimeException): ErrorResponse {
+    fun handleRuntimeException(e: RuntimeException): ResponseEntity<ErrorResponse> {
         log.error(e.stackTraceToString())
-        return ErrorResponse.of(ErrorResponse.ErrorCode.INTERNAL_SERVER_ERROR, e.localizedMessage)
+        return ResponseEntity
+            .status(500)
+            .body(ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR, e.localizedMessage))
+    }
+
+    @ExceptionHandler(MusicServiceException::class)
+    fun handleMusicServiceException(e: MusicServiceException): ResponseEntity<ErrorResponse> {
+        log.error(e.message)
+        return ResponseEntity
+            .status(e.errorCode.status)
+            .body(ErrorResponse.of(e.errorCode, e.message))
     }
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun handleMethodArgumentNotValidException(e: MethodArgumentNotValidException): ErrorResponse {
+    fun handleMethodArgumentNotValidException(e: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
         log.error(e.localizedMessage)
-        return ErrorResponse.of(ErrorResponse.ErrorCode.INVALID_REQUEST, e.bindingResult)
+        return ResponseEntity
+            .status(e.statusCode)
+            .body(ErrorResponse.of(ErrorCode.BAD_REQUEST, e.bindingResult))
     }
 
     @ExceptionHandler(HttpClientErrorException::class)
-    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
-    fun handleHttpClientErrorException(e: HttpClientErrorException): ErrorResponse {
+    fun handleHttpClientErrorException(e: HttpClientErrorException): ResponseEntity<ErrorResponse> {
         log.error(e.localizedMessage)
-        return ErrorResponse.of(ErrorResponse.ErrorCode.METHOD_NOT_ALLOWED, e.responseBodyAsString)
+        return ResponseEntity
+            .status(e.statusCode)
+            .body(ErrorResponse.of(ErrorCode.METHOD_NOT_ALLOWED, e.responseBodyAsString))
     }
+}
+
+sealed class MusicServiceException(
+    val errorCode: ErrorCode,
+    override val message: String
+): RuntimeException(message) {
+
+    class MusicNotFoundException(override val message: String): MusicServiceException(ErrorCode.NOT_FOUND, message)
 }
