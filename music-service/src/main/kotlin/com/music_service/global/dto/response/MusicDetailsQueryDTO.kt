@@ -8,7 +8,6 @@ data class MusicDetailsQueryDTO @QueryProjection constructor(
     val userNickname: String,
     val title: String
 ) {
-//    lateinit var genres: List<String>
     lateinit var files: List<MusicFileQueryDTO>
 
     data class MusicFileQueryDTO @QueryProjection constructor(
@@ -16,7 +15,5 @@ data class MusicDetailsQueryDTO @QueryProjection constructor(
         val originalFileName: String,
         val savedName: String,
         val fileUrl: String
-    ) {
-//        lateinit var fileTypeName: String
-    }
+    )
 }

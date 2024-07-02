@@ -27,14 +27,7 @@ class MusicQueryRepositoryImpl(
             .where(music.id.eq(id))
             .fetchOne()
 
-//        val genres = queryFactory
-//            .select(music.genres.any().stringValue())
-//            .from(music)
-//            .where(music.id.eq(id))
-//            .fetch()
-
         return musicDetails?.let {
-//            musicDetails.genres = genres
             val musicFiles = queryFactory
                 .select(
                     QMusicDetailsQueryDTO_MusicFileQueryDTO(
@@ -49,16 +42,6 @@ class MusicQueryRepositoryImpl(
                 .where(music.id.eq(musicDetails.id))
                 .fetch()
 
-//            val fileEntityIds = musicFiles.map { it.id }
-//            val fileTypes = queryFactory
-//                .select(fileEntity.fileType.stringValue())
-//                .from(fileEntity)
-//                .where(fileEntity.id.`in`(fileEntityIds))
-//                .fetch()
-
-//            musicFiles.forEachIndexed { index, musicFileQueryDTO ->
-//                musicFileQueryDTO.fileTypeName = fileTypes[index]
-//            }
             musicDetails.files = musicFiles
             return musicDetails
         }
