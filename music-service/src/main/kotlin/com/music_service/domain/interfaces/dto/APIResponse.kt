@@ -1,4 +1,4 @@
-package com.music_service.global.dto.response
+package com.music_service.domain.interfaces.dto
 
 import com.fasterxml.jackson.annotation.JsonInclude
 

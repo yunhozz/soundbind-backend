@@ -1,4 +1,4 @@
-package com.music_service.global.dto.response
+package com.music_service.domain.interfaces.dto
 
 import org.springframework.validation.BindingResult
 
@@ -30,8 +30,9 @@ data class ErrorResponse(
                 FieldErrorResponse(
                     field = it.field,
                     value = (it.rejectedValue ?: "").toString(),
-                    reason = it.defaultMessage)
-                }.toList()
+                    reason = it.defaultMessage
+                )
+            }.toList()
         }
     }
 
@@ -40,12 +41,11 @@ data class ErrorResponse(
         val code: String,
         val message: String
     ) {
-        INVALID_REQUEST(400, "M-001", "Invalid request"),
-        INVALID_VALUE_TYPES(400, "M-002", "Invalid value types"),
-        RESOURCE_NOT_FOUND(404, "M-004", "Resource not found"),
-        METHOD_NOT_ALLOWED(405, "M-005", "Invalid Method"),
-        PAYLOAD_TOO_LARGE(413, "M-013", "File size exceeds maximum limit"),
-        UNSUPPORTED_MEDIA_TYPE(415, "M-015", "Media type not supported"),
-        INTERNAL_SERVER_ERROR(500, "M-500", "Server Error");
+        BAD_REQUEST(400, "M-000", "Bad Request"),
+        UNAUTHORIZED(401, "M-001", "Unauthorized"),
+        NOT_FOUND(404, "M-004", "Not found"),
+        METHOD_NOT_ALLOWED(404, "M-014", "Method Not Allowed"),
+        UNSUPPORTED_MEDIA_TYPE(409, "M-009", "Unsupported Media Type"),
+        INTERNAL_SERVER_ERROR(500, "M-500", "Internal Server Error"),
     }
 }

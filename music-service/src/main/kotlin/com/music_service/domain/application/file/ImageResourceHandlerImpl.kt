@@ -1,11 +1,11 @@
-package com.music_service.global.handler.file
+package com.music_service.domain.application.file
 
 import org.springframework.core.io.Resource
 import org.springframework.stereotype.Component
 
 @Component
-class MusicResourceHandlerImpl: MusicResourceHandler {
-    override fun downloadMusic(fileUrl: String): Resource {
+class ImageResourceHandlerImpl: ImageResourceHandler {
+    override fun displayImage(fileUrl: String): Resource {
         TODO("Not yet implemented")
     }
 

@@ -1,4 +1,4 @@
-package com.music_service.global.handler.file
+package com.music_service.domain.application.file
 
 import org.springframework.web.multipart.MultipartFile
 

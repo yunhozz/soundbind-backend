@@ -1,8 +1,5 @@
-package com.music_service.domain.application
+package com.music_service.domain.application.file
 
-import com.music_service.global.handler.file.FileHandler
-import com.music_service.global.handler.file.ImageResourceHandler
-import com.music_service.global.handler.file.MusicResourceHandler
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
 

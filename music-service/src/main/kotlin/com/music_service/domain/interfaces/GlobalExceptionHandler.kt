@@ -1,11 +1,12 @@
-package com.music_service.global.handler.exception
+package com.music_service.domain.interfaces
 
 import com.music_service.global.dto.response.ErrorResponse
+import com.music_service.domain.interfaces.dto.ErrorResponse
+import com.music_service.domain.interfaces.dto.ErrorResponse.ErrorCode
 import org.slf4j.LoggerFactory
-import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
-import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.client.HttpClientErrorException
 
