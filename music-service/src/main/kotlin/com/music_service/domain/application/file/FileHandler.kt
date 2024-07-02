@@ -7,4 +7,6 @@ interface FileHandler {
     fun uploadImage(file: MultipartFile): Triple<String, String, String>
     fun downloadMusic()
     fun displayImage()
+    fun deleteMusic(fileUrl: String)
+    fun deleteImage(fileUrl: String)
 }

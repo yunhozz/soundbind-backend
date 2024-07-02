@@ -22,4 +22,8 @@ class FileHandlerImpl(
     override fun displayImage() {
 //        imageResourceHandler.display()
     }
+
+    override fun deleteMusic(fileUrl: String) = musicResourceHandler.deleteMusic(fileUrl)
+
+    override fun deleteImage(fileUrl: String) = imageResourceHandler.deleteImage(fileUrl)
 }

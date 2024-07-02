@@ -33,7 +33,16 @@ sealed interface ResourceHandler {
                 if (!it.exists()) it.mkdirs()
                 file.transferTo(it)
             }
-        } ?: throw IllegalArgumentException("File does not exist.")
+        } ?: throw IOException("File does not exist.")
+    }
+
+    @Throws(IOException::class)
+    fun delete(fileUrl: String) = File("$ABSOLUTE_PATH$ROOT_DIRECTORY$fileUrl").let {
+        if (it.exists())
+            if (!it.delete())
+                throw IOException("Failed to delete file: $fileUrl")
+        else
+            throw IllegalArgumentException("File does not exist: $fileUrl")
     }
 }
 
@@ -46,6 +55,9 @@ interface MusicResourceHandler: ResourceHandler {
 
     @Throws(IOException::class)
     fun downloadMusic(fileUrl: String): Resource
+
+    @Throws(IOException::class)
+    fun deleteMusic(fileUrl: String) = delete(fileUrl)
 }
 
 interface ImageResourceHandler: ResourceHandler {
@@ -57,4 +69,7 @@ interface ImageResourceHandler: ResourceHandler {
 
     @Throws(IOException::class)
     fun displayImage(fileUrl: String): Resource
+
+    @Throws(IOException::class)
+    fun deleteImage(fileUrl: String) = delete(fileUrl)
 }

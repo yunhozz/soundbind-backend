@@ -11,15 +11,16 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.OneToMany
+import org.hibernate.annotations.SQLRestriction
 import java.time.LocalDateTime
 
 @Entity
+@SQLRestriction("deleted_at is null")
 class Music(
     val userId: Long,
     userNickname: String,
     title: String,
-    genres: Set<Genre>,
-    val deletedAt: LocalDateTime? = null,
+    genres: Set<Genre>
 ): BaseEntity() {
 
     @Id
@@ -37,6 +38,8 @@ class Music(
     @Enumerated(EnumType.STRING)
     var genres: Set<Genre> = genres
         protected set
+
+    lateinit var deletedAt: LocalDateTime
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "music", orphanRemoval = true)
     var files: MutableList<FileEntity> = mutableListOf()
