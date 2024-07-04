@@ -38,9 +38,10 @@ sealed interface ResourceHandler {
 
     @Throws(IOException::class)
     fun delete(fileUrl: String) = File("$ABSOLUTE_PATH$ROOT_DIRECTORY$fileUrl").let {
-        if (it.exists())
+        if (it.exists()) {
             if (!it.delete())
                 throw IOException("Failed to delete file: $fileUrl")
+        }
         else
             throw IllegalArgumentException("File does not exist: $fileUrl")
     }
