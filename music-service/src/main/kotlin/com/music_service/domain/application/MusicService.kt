@@ -56,7 +56,7 @@ class MusicService(
     }
 
     @Transactional
-    fun updateMusic(id: Long, dto: MusicUpdateDTO): Music {
+    fun updateMusic(id: Long, dto: MusicUpdateDTO): Long? {
         val music = findMusicById(id)
         music.id?.let {
             val files = fileRepository.findFilesWhereMusicId(it)
@@ -73,7 +73,7 @@ class MusicService(
             dto.genres.map { Music.Genre.of(it) }
                 .toMutableSet()
         )
-        return music
+        return music.id
     }
 
     // TODO

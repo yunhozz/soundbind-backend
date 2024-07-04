@@ -26,7 +26,7 @@ class MusicController(
     @ResponseStatus(HttpStatus.CREATED)
     fun uploadMusic(@Valid @ModelAttribute dto: MusicCreateDTO): APIResponse {
         val musicId = musicService.uploadMusic(dto)
-        return APIResponse.of("Music Uploaded", musicId)
+        return APIResponse.of("Music Created", musicId)
     }
 
     @GetMapping("/{id}")
@@ -42,8 +42,8 @@ class MusicController(
         @PathVariable("id") id: String,
         @Valid @ModelAttribute dto: MusicUpdateDTO
     ): APIResponse {
-        val updatedMusic = musicService.updateMusic(id.toLong(), dto)
-        return APIResponse.of("Music Updated", updatedMusic)
+        val musicId = musicService.updateMusic(id.toLong(), dto)
+        return APIResponse.of("Music Updated", musicId)
     }
 
     @DeleteMapping("/{id}")
