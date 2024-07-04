@@ -62,8 +62,7 @@ class MusicService(
             val files = fileRepository.findFilesWhereMusicId(it)
             files.forEach { file ->
                 if (file.fileType == IMAGE) {
-                    fileHandler.deleteImage(file.fileUrl)
-                    fileHandler.uploadImage(dto.imageFile)
+                    fileHandler.updateImage(file.fileUrl, dto.imageFile)
                     fileRepository.save(file)
                 }
             }

@@ -15,12 +15,9 @@ class FileHandlerImpl(
     override fun uploadImage(file: MultipartFile): Triple<String, String, String>
         = imageResourceHandler.uploadImage(file)
 
-    override fun downloadMusic() {
-//        musicResourceHandler.download()
-    }
-
-    override fun displayImage() {
-//        imageResourceHandler.display()
+    override fun updateImage(fileUrl: String, file: MultipartFile) {
+        deleteImage(fileUrl)
+        uploadImage(file)
     }
 
     override fun deleteMusic(fileUrl: String) = musicResourceHandler.deleteMusic(fileUrl)
