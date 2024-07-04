@@ -3,12 +3,14 @@ package com.music_service.domain.interfaces
 import com.music_service.domain.application.MusicService
 import com.music_service.domain.interfaces.dto.APIResponse
 import com.music_service.global.dto.request.MusicCreateDTO
+import com.music_service.global.dto.request.MusicUpdateDTO
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.ModelAttribute
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -32,6 +34,16 @@ class MusicController(
     fun getMusic(@PathVariable("id") id: String): APIResponse {
         val musicDetails = musicService.findMusicDetails(id.toLong())
         return APIResponse.of("Music Found", musicDetails)
+    }
+
+    @PatchMapping("/{id}")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun updateMusicInformation(
+        @PathVariable("id") id: String,
+        @Valid @ModelAttribute dto: MusicUpdateDTO
+    ): APIResponse {
+        val updatedMusic = musicService.updateMusic(id.toLong(), dto)
+        return APIResponse.of("Music Updated", updatedMusic)
     }
 
     @DeleteMapping("/{id}")

@@ -9,11 +9,11 @@ import com.music_service.domain.persistence.entity.Music
 import com.music_service.domain.persistence.repository.FileRepository
 import com.music_service.domain.persistence.repository.MusicRepository
 import com.music_service.global.dto.request.MusicCreateDTO
+import com.music_service.global.dto.request.MusicUpdateDTO
 import com.music_service.global.dto.response.MusicDetailsQueryDTO
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.io.IOException
-import java.time.LocalDateTime
 
 @Service
 class MusicService(
@@ -30,8 +30,8 @@ class MusicService(
 
         val music = Music(
             dto.userId,
-            dto.title,
             dto.userNickname,
+            dto.title,
             genres
         )
 
@@ -55,9 +55,26 @@ class MusicService(
             ?: throw MusicNotFoundException("Music not found with id: $id")
     }
 
-    // TODO
     @Transactional
-    fun updateMusic(id: Long) {}
+    fun updateMusic(id: Long, dto: MusicUpdateDTO): Music {
+        val music = findMusicById(id)
+        music.id?.let {
+            val files = fileRepository.findFilesWhereMusicId(it)
+            files.forEach { file ->
+                if (file.fileType == IMAGE) {
+                    fileHandler.deleteImage(file.fileUrl)
+                    fileHandler.uploadImage(dto.imageFile)
+                    fileRepository.save(file)
+                }
+            }
+        }
+        music.updateInfo(
+            dto.title,
+            dto.genres.map { Music.Genre.of(it) }
+                .toMutableSet()
+        )
+        return music
+    }
 
     // TODO
     @Transactional(readOnly = true)
@@ -65,8 +82,7 @@ class MusicService(
 
     @Transactional
     fun deleteMusic(id: Long) {
-        val music = musicRepository.findById(id)
-            .orElseThrow { MusicNotFoundException("Music not found with id: $id") }
+        val music = findMusicById(id)
         music.id?.let {
             val files = fileRepository.findFilesWhereMusicId(it)
             files.forEach { file ->
@@ -76,8 +92,13 @@ class MusicService(
                 }
             }
             fileRepository.deleteAllInBatch(files)
-            music.deletedAt = LocalDateTime.now()
+            music.softDelete()
         }
+    }
+
+    private fun findMusicById(id: Long): Music {
+        return musicRepository.findById(id)
+            .orElseThrow { MusicNotFoundException("Music not found with id: $id") }
     }
 
     private fun createFileEntity(

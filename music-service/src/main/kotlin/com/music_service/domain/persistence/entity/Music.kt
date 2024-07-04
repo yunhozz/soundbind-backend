@@ -10,7 +10,6 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
-import jakarta.persistence.OneToMany
 import org.hibernate.annotations.SQLRestriction
 import java.time.LocalDateTime
 
@@ -39,18 +38,16 @@ class Music(
     var genres: Set<Genre> = genres
         protected set
 
-    lateinit var deletedAt: LocalDateTime
-
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "music", orphanRemoval = true)
-    var files: MutableList<FileEntity> = mutableListOf()
+    var deletedAt: LocalDateTime? = null
         protected set
 
-    fun updateGenres(genres: Set<Genre>) {
+    fun updateInfo(title: String, genres: Set<Genre>) {
+        this.title = title
         this.genres = genres
     }
 
-    fun updateTitle(title: String) {
-        this.title = title
+    fun softDelete() {
+        deletedAt = LocalDateTime.now()
     }
 
     enum class Genre(
