@@ -11,6 +11,9 @@ import com.music_service.domain.persistence.repository.MusicRepository
 import com.music_service.global.dto.request.MusicCreateDTO
 import com.music_service.global.dto.request.MusicUpdateDTO
 import com.music_service.global.dto.response.MusicDetailsQueryDTO
+import com.music_service.global.dto.response.MusicSimpleQueryDTO
+import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Slice
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.io.IOException
@@ -50,10 +53,12 @@ class MusicService(
     }
 
     @Transactional(readOnly = true)
-    fun findMusicDetails(id: Long): MusicDetailsQueryDTO {
-        return musicRepository.findMusicDetailsById(id)
-            ?: throw MusicNotFoundException("Music not found with id: $id")
-    }
+    fun findMusicDetails(id: Long): MusicDetailsQueryDTO = musicRepository.findMusicDetailsById(id)
+        ?: throw MusicNotFoundException("Music not found with id: $id")
+
+    @Transactional(readOnly = true)
+    fun findMusicsByKeyword(keyword: String, pageable: Pageable): Slice<MusicSimpleQueryDTO>
+        = musicRepository.findMusicSimpleListByKeyword(keyword, pageable)
 
     @Transactional
     fun updateMusic(id: Long, dto: MusicUpdateDTO): Long? {
@@ -74,10 +79,6 @@ class MusicService(
         )
         return music.id
     }
-
-    // TODO
-    @Transactional(readOnly = true)
-    fun findMusics(): List<Music> = musicRepository.findAll()
 
     @Transactional
     fun deleteMusic(id: Long) {

@@ -1,10 +1,16 @@
 package com.music_service.domain.persistence.repository
 
+import com.music_service.domain.persistence.entity.FileEntity.FileType.IMAGE
 import com.music_service.domain.persistence.entity.QFileEntity.fileEntity
 import com.music_service.domain.persistence.entity.QMusic.music
 import com.music_service.global.dto.response.MusicDetailsQueryDTO
+import com.music_service.global.dto.response.MusicSimpleQueryDTO
 import com.music_service.global.dto.response.QMusicDetailsQueryDTO_MusicFileQueryDTO
+import com.music_service.global.dto.response.QMusicSimpleQueryDTO
 import com.querydsl.jpa.impl.JPAQueryFactory
+import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Slice
+import org.springframework.data.domain.SliceImpl
 import org.springframework.stereotype.Repository
 
 @Repository
@@ -45,5 +51,37 @@ class MusicQueryRepositoryImpl(
             musicDetailsQueryDTO.files = musicFiles
             return musicDetailsQueryDTO
         }
+    }
+
+    override fun findMusicSimpleListByKeyword(keyword: String, pageable: Pageable): Slice<MusicSimpleQueryDTO> {
+        val pageSize = pageable.pageSize
+        val musics = queryFactory
+            .select(
+                QMusicSimpleQueryDTO(
+                    music.id,
+                    music.userNickname,
+                    music.title,
+                    fileEntity.fileUrl
+                )
+            )
+            .from(fileEntity)
+            .join(fileEntity.music, music)
+            .where(
+                music.userNickname.contains(keyword)
+                    .or(music.title.contains(keyword))
+            )
+            .where(fileEntity.fileType.eq(IMAGE))
+            .orderBy(music.id.desc())
+            .limit(pageSize.toLong() + 1)
+            .limit(100)
+            .fetch()
+
+        var hasNext = false
+        if (musics.size > pageSize) {
+            musics.removeAt(pageSize)
+            hasNext = true
+        }
+
+        return SliceImpl(musics, pageable, hasNext)
     }
 }

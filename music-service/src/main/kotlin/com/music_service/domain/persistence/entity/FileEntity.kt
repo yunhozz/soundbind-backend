@@ -24,6 +24,10 @@ class FileEntity(
 
     @ManyToOne(fetch = FetchType.LAZY)
     var music: Music? = null
+        set(music) {
+            field = music
+            music?.files?.add(this)
+        }
 
     enum class FileType {
         MUSIC, IMAGE
