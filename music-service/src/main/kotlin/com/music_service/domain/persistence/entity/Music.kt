@@ -16,12 +16,22 @@ import java.time.LocalDateTime
 
 @Entity
 @SQLRestriction("deleted_at is null")
-class Music(
+class Music private constructor(
     val userId: Long,
     userNickname: String,
     title: String,
     genres: Set<Genre>
 ): BaseEntity() {
+
+    companion object {
+        fun create(
+            userId: Long,
+            userNickname: String,
+            title: String,
+            genres: Set<Genre>
+        ): Music
+            = Music(userId, userNickname, title, genres)
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -50,7 +60,7 @@ class Music(
     }
 
     fun softDelete() {
-        deletedAt = LocalDateTime.now()
+        deletedAt ?: run { deletedAt = LocalDateTime.now() }
     }
 
     enum class Genre(

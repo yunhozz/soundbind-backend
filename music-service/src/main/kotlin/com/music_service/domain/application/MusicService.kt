@@ -31,7 +31,7 @@ class MusicService(
             Music.Genre.of(it)
         }.toHashSet()
 
-        val music = Music(
+        val music = Music.create(
             dto.userId,
             dto.userNickname,
             dto.title,
@@ -106,10 +106,11 @@ class MusicService(
         fileInfo: Triple<String, String, String>,
         music: Music,
     ): FileEntity
-        = FileEntity(
+        = FileEntity.create(
             fileType,
             originalFileName = fileInfo.first,
             savedName = fileInfo.second,
-            fileUrl = fileInfo.third
-        ).apply { this.music = music }
+            fileUrl = fileInfo.third,
+            music
+        )
 }
