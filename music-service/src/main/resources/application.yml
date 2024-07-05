@@ -1,0 +1,11 @@
+server:
+  port: 8070
+
+spring:
+  application:
+    name: music-service
+  profiles:
+    active: dev
+    include: file
+  config:
+    import: configserver:http://localhost:8888
