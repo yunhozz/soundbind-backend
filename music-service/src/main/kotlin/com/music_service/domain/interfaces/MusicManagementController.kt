@@ -5,8 +5,12 @@ import com.music_service.domain.interfaces.dto.APIResponse
 import com.music_service.global.dto.request.MusicCreateDTO
 import com.music_service.global.dto.request.MusicUpdateDTO
 import jakarta.validation.Valid
+import org.springframework.core.io.Resource
+import org.springframework.http.ContentDisposition
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.ModelAttribute
@@ -16,6 +20,8 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.util.UriUtils
+import java.nio.charset.StandardCharsets
 
 @RestController
 @RequestMapping("/api/music")
@@ -34,6 +40,21 @@ class MusicManagementController(
     fun getMusic(@PathVariable("id") id: String): APIResponse {
         val musicDetails = musicService.findMusicDetails(id.toLong())
         return APIResponse.of("Music Found", musicDetails)
+    }
+
+    @GetMapping("/{id}/download")
+    @ResponseStatus(HttpStatus.OK)
+    fun downloadMusic(@PathVariable("id") id: String): ResponseEntity<Resource> {
+        val music = musicService.downloadMusic(id.toLong())
+        val disposition = ContentDisposition.builder("attachment")
+            .filename(UriUtils.encode(music.fileName, StandardCharsets.UTF_8))
+            .build()
+
+        val headers = HttpHeaders()
+        headers.contentDisposition = disposition
+        headers.contentType = MediaType.valueOf(music.contentType)
+
+        return ResponseEntity(music.musicFile, headers, HttpStatus.OK)
     }
 
     @PatchMapping("/{id}")

@@ -37,7 +37,13 @@ sealed interface ResourceHandler {
         } ?: throw IOException("File does not exist.")
     }
 
-    @Throws(IOException::class)
+    fun download(fileUrl: String): Pair<Resource, String> {
+        val path = Paths.get(ABSOLUTE_PATH + ROOT_DIRECTORY + fileUrl)
+        val inputStream = Files.newInputStream(path)
+        val contentType = Files.probeContentType(path)
+        return Pair(InputStreamResource(inputStream), contentType)
+    }
+
     fun delete(fileUrl: String) = File("$ABSOLUTE_PATH$ROOT_DIRECTORY$fileUrl").let {
         if (it.exists()) {
             if (!it.delete())

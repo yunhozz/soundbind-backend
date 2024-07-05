@@ -1,6 +1,7 @@
 package com.music_service.domain.application
 
 import com.music_service.domain.application.file.FileHandler
+import com.music_service.domain.interfaces.MusicServiceException.MusicFileNotExistException
 import com.music_service.domain.interfaces.MusicServiceException.MusicNotFoundException
 import com.music_service.domain.persistence.entity.FileEntity
 import com.music_service.domain.persistence.entity.FileEntity.FileType.IMAGE
@@ -11,7 +12,9 @@ import com.music_service.domain.persistence.repository.MusicRepository
 import com.music_service.global.dto.request.MusicCreateDTO
 import com.music_service.global.dto.request.MusicUpdateDTO
 import com.music_service.global.dto.response.MusicDetailsQueryDTO
+import com.music_service.global.dto.response.MusicFileResponseDTO
 import com.music_service.global.dto.response.MusicSimpleQueryDTO
+import org.springframework.core.io.Resource
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Slice
 import org.springframework.stereotype.Service
@@ -78,6 +81,28 @@ class MusicService(
                 .toMutableSet()
         )
         return music.id
+    }
+
+    @Transactional
+    fun downloadMusic(id: Long): MusicFileResponseDTO {
+        val music = findMusicById(id)
+        return music.id?.let {
+            val files = fileRepository.findFilesWhereMusicId(it)
+            var musicInfo: Pair<Resource, String>?
+            files.forEach { file ->
+                if (file.fileType == MUSIC) {
+                    musicInfo = fileHandler.downloadMusic(file.fileUrl)
+                    return musicInfo?.let { info ->
+                        MusicFileResponseDTO(
+                            musicFile = info.first,
+                            contentType = info.second,
+                            fileName = file.originalFileName
+                        )
+                    } ?: throw MusicFileNotExistException("Music file download failed for id: $id")
+                }
+            }
+            throw MusicFileNotExistException("Music file not found for id: $id")
+        } ?: throw MusicNotFoundException("Music not found with id: $id")
     }
 
     @Transactional
