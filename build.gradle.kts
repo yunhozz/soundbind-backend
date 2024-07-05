@@ -80,4 +80,5 @@ subprojects {
 
 project(":eureka-server")
 project(":config-server")
+project(":api-gateway")
 project(":music-service")
