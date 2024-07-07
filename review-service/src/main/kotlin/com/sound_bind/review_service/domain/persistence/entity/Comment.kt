@@ -12,20 +12,20 @@ import java.time.LocalDateTime
 @Entity
 @SQLRestriction("deleted_at is null")
 class Comment private constructor(
-    val userId: Long,
     @ManyToOne(fetch = FetchType.LAZY)
     val review: Review,
+    val userId: Long,
     userNickname: String,
     val message: String
 ): BaseEntity() {
 
     companion object {
         fun create(
-            userId: Long,
             review: Review,
+            userId: Long,
             userNickname: String,
             message: String
-        ) = Comment(userId, review, userNickname, message)
+        ) = Comment(review, userId, userNickname, message)
     }
 
     @Id
@@ -35,7 +35,7 @@ class Comment private constructor(
     var userNickname = userNickname
         protected set
 
-    var deletedAt: LocalDateTime? = null
+    private var deletedAt: LocalDateTime? = null
 
     fun softDelete() = deletedAt ?: LocalDateTime.now()
 }

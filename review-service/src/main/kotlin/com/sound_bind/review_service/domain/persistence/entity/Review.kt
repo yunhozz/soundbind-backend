@@ -10,8 +10,8 @@ import java.time.LocalDateTime
 @Entity
 @SQLRestriction("deleted_at is null")
 class Review private constructor(
-    val userId: Long,
     val musicId: Long,
+    val userId: Long,
     userNickname: String,
     userImageUrl: String,
     message: String,
@@ -21,13 +21,13 @@ class Review private constructor(
 
     companion object {
         fun create(
-            userId: Long,
             musicId: Long,
+            userId: Long,
             userNickname: String,
             userImageUrl: String,
             message: String,
             score: Double
-        ) = Review(userId, musicId, userNickname, userImageUrl, message, score)
+        ) = Review(musicId, userId, userNickname, userImageUrl, message, score)
     }
 
     @Id
@@ -49,7 +49,7 @@ class Review private constructor(
     var likes = likes
         protected set
 
-    var deletedAt: LocalDateTime? = null
+    private var deletedAt: LocalDateTime? = null
 
     fun softDelete() = deletedAt ?: LocalDateTime.now()
 }
