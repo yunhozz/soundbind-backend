@@ -3,9 +3,12 @@ package com.sound_bind.review_service.domain.interfaces
 import com.review_service.domain.interfaces.dto.APIResponse
 import com.sound_bind.review_service.domain.application.ReviewService
 import com.sound_bind.review_service.global.dto.request.ReviewCreateDTO
+import com.sound_bind.review_service.global.dto.request.ReviewUpdateDTO
 import jakarta.validation.Valid
 import khttp.get
 import org.springframework.http.HttpStatus
+import org.springframework.web.bind.annotation.PatchMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -32,5 +35,15 @@ class ReviewController(
             return APIResponse.of(message)
         }
         return APIResponse.of("Review created", reviewId)
+    }
+
+    @PatchMapping("/{id}")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun updateReview(
+        @PathVariable("id") id: String,
+        @Valid @RequestBody dto: ReviewUpdateDTO
+    ): APIResponse {
+        val reviewId = reviewService.updateReviewMessageAndScore(id.toLong(), dto)
+        return APIResponse.of("Review updated", reviewId)
     }
 }

@@ -33,4 +33,5 @@ sealed class ReviewServiceException(
 
     class ReviewNotFoundException(override val message: String): ReviewServiceException(ErrorCode.NOT_FOUND, message)
     class ReviewAlreadyExistException(override val message: String): ReviewServiceException(ErrorCode.BAD_REQUEST, message)
+    class ReviewNotUpdatableException(override val message: String): ReviewServiceException(ErrorCode.BAD_REQUEST, message)
 }

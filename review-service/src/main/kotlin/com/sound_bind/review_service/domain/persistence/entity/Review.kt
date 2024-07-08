@@ -51,5 +51,10 @@ class Review private constructor(
 
     private var deletedAt: LocalDateTime? = null
 
+    fun updateMessageAndScore(message: String, score: Double) {
+        this.message = message
+        this.score = score
+    }
+
     fun softDelete() = deletedAt ?: LocalDateTime.now()
 }
