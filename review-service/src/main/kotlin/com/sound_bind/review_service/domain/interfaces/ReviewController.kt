@@ -7,6 +7,7 @@ import com.sound_bind.review_service.global.dto.request.ReviewUpdateDTO
 import jakarta.validation.Valid
 import khttp.get
 import org.springframework.http.HttpStatus
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -43,7 +44,14 @@ class ReviewController(
         @PathVariable("id") id: String,
         @Valid @RequestBody dto: ReviewUpdateDTO
     ): APIResponse {
-        val reviewId = reviewService.updateReviewMessageAndScore(id.toLong(), dto)
+        val reviewId = reviewService.updateReviewMessageAndScore(id.toLong(), 123L, dto)
         return APIResponse.of("Review updated", reviewId)
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun deleteReview(@PathVariable("id") id: String): APIResponse {
+        reviewService.deleteReview(id.toLong(), 123L)
+        return APIResponse.of("Review deleted")
     }
 }

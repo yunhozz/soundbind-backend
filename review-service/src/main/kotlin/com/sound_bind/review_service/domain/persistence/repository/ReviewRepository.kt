@@ -6,7 +6,9 @@ import org.springframework.data.jpa.repository.Query
 
 interface ReviewRepository: JpaRepository<Review, Long> {
 
-    fun existsReviewByMusicIdAndUserId(reviewId: Long, userId: Long): Boolean
+    fun existsReviewByMusicIdAndUserId(musicId: Long, userId: Long): Boolean
+
+    fun findReviewByIdAndUserId(reviewId: Long, userId: Long): Review?
 
     @Query(
         "select case " +
