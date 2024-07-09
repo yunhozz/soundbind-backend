@@ -3,9 +3,12 @@ package com.sound_bind.review_service.domain.interfaces
 import com.review_service.domain.interfaces.dto.APIResponse
 import com.sound_bind.review_service.domain.application.ReviewService
 import com.sound_bind.review_service.global.dto.request.ReviewCreateDTO
+import com.sound_bind.review_service.global.dto.request.ReviewCursorRequestDTO
 import com.sound_bind.review_service.global.dto.request.ReviewUpdateDTO
 import jakarta.validation.Valid
 import khttp.get
+import org.springframework.data.domain.Pageable
+import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -36,6 +39,18 @@ class ReviewController(
             return APIResponse.of(message)
         }
         return APIResponse.of("Review created", reviewId)
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    fun findReviewsOnMusic(
+        @RequestParam musicId: String,
+        @RequestParam(required = false, defaultValue = "likes") sort: String,
+        @RequestBody dto: ReviewCursorRequestDTO,
+        @PageableDefault(size = 20) pageable: Pageable
+    ): APIResponse {
+        val result = reviewService.findReviewListByMusicId(musicId.toLong(), sort, dto, pageable)
+        return APIResponse.of("Reviews found", result)
     }
 
     @PatchMapping("/{id}")

@@ -4,7 +4,7 @@ import com.sound_bind.review_service.domain.persistence.entity.Review
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 
-interface ReviewRepository: JpaRepository<Review, Long> {
+interface ReviewRepository: JpaRepository<Review, Long>, ReviewQueryRepository {
 
     fun existsReviewByMusicIdAndUserId(musicId: Long, userId: Long): Boolean
 
@@ -12,7 +12,7 @@ interface ReviewRepository: JpaRepository<Review, Long> {
 
     @Query(
         "select case " +
-        "when ((r.createdAt < CURRENT_DATE - 30) or (r.updatedAt < CURRENT_DATE - 30)) then true " +
+        "when ((r.createdAt < CURRENT_DATE - 30) and (r.updatedAt < CURRENT_DATE - 30)) then true " +
         "else false end " +
         "from Review r " +
         "where r.id = :reviewId"

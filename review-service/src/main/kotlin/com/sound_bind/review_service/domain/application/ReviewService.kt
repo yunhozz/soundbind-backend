@@ -6,9 +6,14 @@ import com.sound_bind.review_service.domain.interfaces.handler.ReviewServiceExce
 import com.sound_bind.review_service.domain.interfaces.handler.ReviewServiceException.ReviewUpdateNotAuthorizedException
 import com.sound_bind.review_service.domain.persistence.entity.Review
 import com.sound_bind.review_service.domain.persistence.repository.CommentRepository
+import com.sound_bind.review_service.domain.persistence.repository.ReviewQueryRepository.ReviewSort
 import com.sound_bind.review_service.domain.persistence.repository.ReviewRepository
 import com.sound_bind.review_service.global.dto.request.ReviewCreateDTO
+import com.sound_bind.review_service.global.dto.request.ReviewCursorRequestDTO
 import com.sound_bind.review_service.global.dto.request.ReviewUpdateDTO
+import com.sound_bind.review_service.global.dto.response.ReviewQueryDTO
+import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Slice
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -47,6 +52,14 @@ class ReviewService(
         }
         throw ReviewNotUpdatableException("It can be modified 30 days after the initial creation.")
     }
+
+    @Transactional(readOnly = true)
+    fun findReviewListByMusicId(
+        musicId: Long,
+        sort: String,
+        dto: ReviewCursorRequestDTO,
+        pageable: Pageable
+    ): Slice<ReviewQueryDTO> = reviewRepository.findReviewsOnMusic(musicId, ReviewSort.of(sort), dto, pageable)
 
     @Transactional
     fun deleteReview(reviewId: Long, userId: Long) {
