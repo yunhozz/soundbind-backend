@@ -57,4 +57,5 @@ class Review private constructor(
     }
 
     fun softDelete() = deletedAt ?: LocalDateTime.now()
+    fun softDelete(): LocalDateTime = deletedAt ?: LocalDateTime.now()
 }
