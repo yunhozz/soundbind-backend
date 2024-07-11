@@ -1,0 +1,79 @@
+version: '3'
+
+networks:
+  soundbind-network:
+
+services:
+  mysql:
+    image: soundbind/mysql:latest
+    container_name: soundbind-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=yh172839
+    volumes:
+      - ./data/mysql/:/var/lib/mysql
+    networks:
+      - soundbind-network
+
+  config-server:
+    image: soundbind/config-server:latest
+    container_name: soundbind-config-server
+    ports:
+      - "8888:8888"
+    networks:
+      - soundbind-network
+
+  eureka-server:
+    image: soundbind/eureka-server:latest
+    container_name: soundbind-eureka-server
+    environment:
+      - SPRING_CLOUD_CONFIG_URI=http://soundbind-config-server:8888
+    ports:
+      - "8761:8761"
+    depends_on:
+      - config-server
+    networks:
+      - soundbind-network
+
+  api-gateway:
+    image: soundbind/api-gateway:latest
+    container_name: soundbind-api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - SPRING_CLOUD_CONFIG_URI=http://soundbind-config-server:8888
+    depends_on:
+      - eureka-server
+      - config-server
+    networks:
+      - soundbind-network
+
+  kafka-server:
+    image: soundbind/kafka-server:latest
+    container_name: soundbind-kafka-server
+    ports:
+      - "9000:9000"
+    environment:
+      - SPRING_CLOUD_CONFIG_URI=http://soundbind-config-server:8888
+    depends_on:
+      - eureka-server
+      - config-server
+    networks:
+      - soundbind-network
+
+  music-service:
+    image: soundbind/music-service:latest
+    container_name: soundbind-music-service
+    ports:
+      - "8070:8070"
+    environment:
+      - SPRING_CLOUD_CONFIG_URI=http://soundbind-config-server:8888
+    depends_on:
+      - config-server
+      - eureka-server
+      - api-gateway
+      - kafka-server
+      - mysql
+    networks:
+      - soundbind-network
