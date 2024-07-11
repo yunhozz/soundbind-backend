@@ -16,6 +16,7 @@ class Review private constructor(
     userImageUrl: String,
     message: String,
     score: Double,
+    comments: Int = 0,
     likes: Int = 0
 ): BaseEntity() {
 
@@ -46,6 +47,9 @@ class Review private constructor(
     var score = score
         protected set
 
+    var comments = comments
+        protected set
+
     var likes = likes
         protected set
 
@@ -56,6 +60,19 @@ class Review private constructor(
         this.score = score
     }
 
-    fun softDelete() = deletedAt ?: LocalDateTime.now()
+    fun addLikes(like: Int) = likes + like
+
+    fun subtractLikes(like: Int): Int {
+        val result = likes - like
+        return result.takeIf { it >= 0 } ?: throw IllegalArgumentException("Likes must not be negative")
+    }
+
+    fun addComments(count: Int) = comments + count
+
+    fun subtractComments(count: Int): Int {
+        val result = comments - count
+        return result.takeIf { it >= 0 } ?: throw IllegalArgumentException("Comments must not be negative")
+    }
+
     fun softDelete(): LocalDateTime = deletedAt ?: LocalDateTime.now()
 }
