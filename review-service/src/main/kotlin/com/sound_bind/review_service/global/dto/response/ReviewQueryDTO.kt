@@ -10,8 +10,10 @@ data class ReviewQueryDTO @QueryProjection constructor(
     val userImageUrl: String,
     val message: String,
     val score: Double,
+    val numberOfComments: Int,
     val likes: Int,
-    val countOfComments: Int,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime
-)
+) {
+    var isLiked: Boolean? = null
+}

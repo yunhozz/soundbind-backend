@@ -41,7 +41,7 @@ class ReviewController(
         return APIResponse.of("Review created", reviewId)
     }
 
-    @PostMapping
+    @PostMapping("/found")
     @ResponseStatus(HttpStatus.CREATED)
     fun findReviewsOnMusic(
         @RequestParam musicId: String,
@@ -49,7 +49,7 @@ class ReviewController(
         @RequestBody dto: ReviewCursorRequestDTO,
         @PageableDefault(size = 20) pageable: Pageable
     ): APIResponse {
-        val result = reviewService.findReviewListByMusicId(musicId.toLong(), sort, dto, pageable)
+        val result = reviewService.findReviewListByMusicId(musicId.toLong(), 123L, sort, dto, pageable)
         return APIResponse.of("Reviews found", result)
     }
 

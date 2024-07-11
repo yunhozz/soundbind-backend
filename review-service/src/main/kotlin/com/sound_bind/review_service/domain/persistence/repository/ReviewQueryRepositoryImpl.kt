@@ -3,11 +3,13 @@ package com.sound_bind.review_service.domain.persistence.repository
 import com.querydsl.core.types.OrderSpecifier
 import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.jpa.impl.JPAQueryFactory
-import com.sound_bind.review_service.domain.persistence.entity.QComment.comment
 import com.sound_bind.review_service.domain.persistence.entity.QReview.review
+import com.sound_bind.review_service.domain.persistence.entity.QReviewLikes.reviewLikes
 import com.sound_bind.review_service.domain.persistence.repository.ReviewQueryRepository.ReviewSort
 import com.sound_bind.review_service.global.dto.request.ReviewCursorRequestDTO
+import com.sound_bind.review_service.global.dto.response.QReviewLikesQueryDTO
 import com.sound_bind.review_service.global.dto.response.QReviewQueryDTO
+import com.sound_bind.review_service.global.dto.response.ReviewLikesQueryDTO
 import com.sound_bind.review_service.global.dto.response.ReviewQueryDTO
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Slice
@@ -20,6 +22,7 @@ class ReviewQueryRepositoryImpl(private val queryFactory: JPAQueryFactory): Revi
 
     override fun findReviewsOnMusic(
         musicId: Long,
+        userId: Long,
         sort: ReviewSort,
         dto: ReviewCursorRequestDTO,
         pageable: Pageable
@@ -34,14 +37,13 @@ class ReviewQueryRepositoryImpl(private val queryFactory: JPAQueryFactory): Revi
                     review.userImageUrl,
                     review.message,
                     review.score,
+                    review.comments,
                     review.likes,
-                    comment.count().castToNum(Int::class.java),
                     review.createdAt,
                     review.updatedAt
                 )
             )
-            .from(comment)
-            .join(comment.review, review)
+            .from(review)
             .where(
                 review.musicId.eq(musicId),
                 reviewCursorLt(dto.idCursor, dto.likesCursor, dto.createdAtCursor, sort)
@@ -49,6 +51,31 @@ class ReviewQueryRepositoryImpl(private val queryFactory: JPAQueryFactory): Revi
             .orderBy(sortReview(sort), review.id.desc())
             .limit(pageSize.toLong() + 1)
             .fetch()
+
+        val reviewIds = reviews.map { it.id }
+        val reviewLikesList = queryFactory
+            .select(
+                QReviewLikesQueryDTO(
+                    reviewLikes.id,
+                    reviewLikes.userId,
+                    review.id,
+                    reviewLikes.flag
+                )
+            )
+            .from(reviewLikes)
+            .join(reviewLikes.review, review)
+            .where(
+                reviewLikes.userId.eq(userId),
+                review.id.`in`(reviewIds)
+            )
+            .fetch()
+
+        val reviewLikesListMap: Map<Long, List<ReviewLikesQueryDTO>> = reviewLikesList.groupBy { it.reviewId }
+        reviews.forEach { review ->
+            reviewLikesListMap[review.id]?.first()?.let { reviewLikesQueryDTO ->
+                review.isLiked = reviewLikesQueryDTO.flag
+            } ?: run { review.isLiked = false }
+        }
 
         var hasNext = false
         if (reviews.size > pageSize) {

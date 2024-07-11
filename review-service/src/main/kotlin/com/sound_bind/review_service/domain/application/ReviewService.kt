@@ -58,10 +58,11 @@ class ReviewService(
     @Transactional(readOnly = true)
     fun findReviewListByMusicId(
         musicId: Long,
+        userId: Long,
         sort: String,
         dto: ReviewCursorRequestDTO,
         pageable: Pageable
-    ): Slice<ReviewQueryDTO> = reviewRepository.findReviewsOnMusic(musicId, ReviewSort.of(sort), dto, pageable)
+    ): Slice<ReviewQueryDTO> = reviewRepository.findReviewsOnMusic(musicId, userId, ReviewSort.of(sort), dto, pageable)
 
     @Transactional
     fun deleteReview(reviewId: Long, userId: Long) {
