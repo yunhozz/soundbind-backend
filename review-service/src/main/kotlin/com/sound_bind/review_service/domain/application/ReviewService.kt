@@ -16,6 +16,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Slice
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 @Service
 class ReviewService(
@@ -45,7 +46,8 @@ class ReviewService(
         val review = reviewRepository.findReviewByIdAndUserId(reviewId, userId)
             ?: throw ReviewUpdateNotAuthorizedException("Not Authorized for Update")
         review.id?.let {
-            if (reviewRepository.isReviewEligibleForUpdate(it)) {
+            val before30Days = LocalDateTime.now().minusDays(30)
+            if (reviewRepository.isReviewEligibleForUpdate(it, before30Days)) {
                 review.updateMessageAndScore(dto.message, dto.score)
                 return review.id
             }

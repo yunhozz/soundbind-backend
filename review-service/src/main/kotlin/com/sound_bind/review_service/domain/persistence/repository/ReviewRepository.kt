@@ -3,6 +3,7 @@ package com.sound_bind.review_service.domain.persistence.repository
 import com.sound_bind.review_service.domain.persistence.entity.Review
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
+import java.time.LocalDateTime
 
 interface ReviewRepository: JpaRepository<Review, Long>, ReviewQueryRepository {
 
@@ -12,10 +13,10 @@ interface ReviewRepository: JpaRepository<Review, Long>, ReviewQueryRepository {
 
     @Query(
         "select case " +
-        "when ((r.createdAt < CURRENT_DATE - 30) and (r.updatedAt < CURRENT_DATE - 30)) then true " +
+        "when (r.createdAt < :cutoffDate and r.updatedAt < :cutoffDate) then true " +
         "else false end " +
         "from Review r " +
         "where r.id = :reviewId"
     )
-    fun isReviewEligibleForUpdate(reviewId: Long): Boolean
+    fun isReviewEligibleForUpdate(reviewId: Long, cutoffDate: LocalDateTime): Boolean
 }
