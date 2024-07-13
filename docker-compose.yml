@@ -21,16 +21,23 @@ services:
     container_name: soundbind-config-server
     ports:
       - "8888:8888"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://soundbind-config-server:8888/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     networks:
       - soundbind-network
 
   eureka-server:
     image: soundbind/eureka-server:latest
     container_name: soundbind-eureka-server
-    environment:
-      - SPRING_CLOUD_CONFIG_URI=http://soundbind-config-server:8888
     ports:
       - "8761:8761"
+    environment:
+      - spring.cloud.config.uri=http://soundbind-config-server:8888
+      - spring.cloud.config.uri=eureka-server
+      - spring.cloud.config.profile=prod
     depends_on:
       - config-server
     networks:
@@ -42,7 +49,9 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - SPRING_CLOUD_CONFIG_URI=http://soundbind-config-server:8888
+      - spring.cloud.config.uri=http://soundbind-config-server:8888
+      - spring.cloud.config.uri=api-gateway
+      - spring.cloud.config.profile=prod
     depends_on:
       - eureka-server
       - config-server
@@ -55,7 +64,9 @@ services:
     ports:
       - "9000:9000"
     environment:
-      - SPRING_CLOUD_CONFIG_URI=http://soundbind-config-server:8888
+      - spring.cloud.config.uri=http://soundbind-config-server:8888
+      - spring.cloud.config.uri=kafka-server
+      - spring.cloud.config.profile=prod
     depends_on:
       - eureka-server
       - config-server
@@ -68,7 +79,9 @@ services:
     ports:
       - "8070:8070"
     environment:
-      - SPRING_CLOUD_CONFIG_URI=http://soundbind-config-server:8888
+      - spring.cloud.config.uri=http://soundbind-config-server:8888
+      - spring.cloud.config.uri=music-service
+      - spring.cloud.config.profile=prod
     depends_on:
       - config-server
       - eureka-server
