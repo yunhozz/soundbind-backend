@@ -2,9 +2,9 @@ server:
   port: 9000
 
 spring:
-  application:
-    name: kafka-server
-  profiles:
-    active: dev
+  cloud:
+    config:
+      name: kafka-server
+      profile: dev
   config:
     import: configserver:http://localhost:8888

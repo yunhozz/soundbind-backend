@@ -2,9 +2,9 @@ server:
   port: 8000
 
 spring:
-  application:
-    name: api-gateway
-  profiles:
-    active: dev
+  cloud:
+    config:
+      name: api-gateway
+      profile: dev
   config:
     import: configserver:http://localhost:8888
