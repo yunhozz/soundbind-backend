@@ -36,7 +36,7 @@ services:
       - "8761:8761"
     environment:
       - spring.cloud.config.uri=http://soundbind-config-server:8888
-      - spring.cloud.config.uri=eureka-server
+      - spring.cloud.config.name=eureka-server
       - spring.cloud.config.profile=prod
     depends_on:
       - config-server
@@ -50,7 +50,7 @@ services:
       - "8000:8000"
     environment:
       - spring.cloud.config.uri=http://soundbind-config-server:8888
-      - spring.cloud.config.uri=api-gateway
+      - spring.cloud.config.name=api-gateway
       - spring.cloud.config.profile=prod
     depends_on:
       - eureka-server
@@ -65,7 +65,7 @@ services:
       - "9000:9000"
     environment:
       - spring.cloud.config.uri=http://soundbind-config-server:8888
-      - spring.cloud.config.uri=kafka-server
+      - spring.cloud.config.name=kafka-server
       - spring.cloud.config.profile=prod
     depends_on:
       - eureka-server
@@ -80,7 +80,7 @@ services:
       - "8070:8070"
     environment:
       - spring.cloud.config.uri=http://soundbind-config-server:8888
-      - spring.cloud.config.uri=music-service
+      - spring.cloud.config.name=music-service
       - spring.cloud.config.profile=prod
     depends_on:
       - config-server
