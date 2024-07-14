@@ -1,18 +1,14 @@
-version: '3'
+version: '3.8'
 
 networks:
   soundbind-network:
 
 services:
-  mysql:
-    image: soundbind/mysql:latest
-    container_name: soundbind-mysql
+  eureka-server:
+    image: soundbind/eureka-server:latest
+    container_name: soundbind-eureka-server
     ports:
-      - "3306:3306"
-    environment:
-      - MYSQL_ROOT_PASSWORD=yh172839
-    volumes:
-      - ./data/mysql/:/var/lib/mysql
+      - "8761:8761"
     networks:
       - soundbind-network
 
@@ -21,25 +17,16 @@ services:
     container_name: soundbind-config-server
     ports:
       - "8888:8888"
+    environment:
+      - eureka.client.serviceUrl.defaultZone=http://eureka-server:8761/eureka/
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://soundbind-config-server:8888/actuator/health" ]
+      test: [ "CMD", "curl", "-f", "http://config-server:8888/actuator/health" ]
       interval: 30s
       timeout: 10s
-      retries: 5
-    networks:
-      - soundbind-network
-
-  eureka-server:
-    image: soundbind/eureka-server:latest
-    container_name: soundbind-eureka-server
-    ports:
-      - "8761:8761"
-    environment:
-      - spring.cloud.config.uri=http://soundbind-config-server:8888
-      - spring.cloud.config.name=eureka-server
-      - spring.cloud.config.profile=prod
+      retries: 3
+    restart: always
     depends_on:
-      - config-server
+      - eureka-server
     networks:
       - soundbind-network
 
@@ -49,12 +36,13 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - spring.cloud.config.uri=http://soundbind-config-server:8888
+      - eureka.client.serviceUrl.defaultZone=http://eureka-server:8761/eureka/
       - spring.cloud.config.name=api-gateway
       - spring.cloud.config.profile=prod
+      - spring.config.import=configserver:http://config-server:8888
     depends_on:
-      - eureka-server
       - config-server
+    restart: on-failure
     networks:
       - soundbind-network
 
@@ -64,12 +52,14 @@ services:
     ports:
       - "9000:9000"
     environment:
-      - spring.cloud.config.uri=http://soundbind-config-server:8888
+      - eureka.client.serviceUrl.defaultZone=http://eureka-server:8761/eureka/
       - spring.cloud.config.name=kafka-server
       - spring.cloud.config.profile=prod
+      - spring.config.import=configserver:http://config-server:8888
     depends_on:
-      - eureka-server
       - config-server
+      - api-gateway
+    restart: on-failure
     networks:
       - soundbind-network
 
@@ -79,14 +69,32 @@ services:
     ports:
       - "8070:8070"
     environment:
-      - spring.cloud.config.uri=http://soundbind-config-server:8888
+      - eureka.client.serviceUrl.defaultZone=http://eureka-server:8761/eureka/
       - spring.cloud.config.name=music-service
-      - spring.cloud.config.profile=prod
+      - spring.cloud.config.profile=prod,file
+      - spring.config.import=configserver:http://config-server:8888
     depends_on:
       - config-server
-      - eureka-server
       - api-gateway
       - kafka-server
       - mysql
+    restart: on-failure
+    networks:
+      - soundbind-network
+
+  mysql:
+    image: soundbind/mysql:latest
+    container_name: soundbind-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=yh172839
+      - TZ=Asia/Seoul
+    env_file:
+      - .env
+    volumes:
+      - ./db/mysql/data:/var/lib/mysql
+      - ./db/mysql/init:/docker-entrypoint-initdb.d/init.sql
+    restart: always
     networks:
       - soundbind-network

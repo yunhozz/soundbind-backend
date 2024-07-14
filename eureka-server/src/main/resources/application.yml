@@ -2,14 +2,8 @@ eureka:
   client:
     register-with-eureka: false
     fetch-registry: false
+    service-url:
+      default-zone: http://localhost:8761/eureka
 
 server:
   port: 8761
-
-spring:
-  cloud:
-    config:
-      name: eureka-server
-      profile: dev
-  config:
-    import: configserver:http://localhost:8888
