@@ -1,4 +1,11 @@
-FROM openjdk:21-slim
+FROM openjdk:21-slim AS builder
+WORKDIR /app
 COPY . .
-ENTRYPOINT ["java", "-jar", "-Dspring.profiles.active=dev", "/build/libs/eureka-server-0.0.1.jar"]
-RUN apt-get -y -qq update
+WORKDIR /app/eureka-server
+RUN chmod +x ./gradlew
+RUN ./gradlew clean bootJar --info --stacktrace
+
+FROM openjdk:21-slim
+WORKDIR /app
+COPY --from=builder /app/eureka-server/build/libs/eureka-server-0.0.1.jar eureka-server.jar
+ENTRYPOINT ["java", "-jar", "eureka-server.jar"]
