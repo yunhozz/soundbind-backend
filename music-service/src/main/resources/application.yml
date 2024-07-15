@@ -1,10 +1,15 @@
 server:
-  port: 8070
+  port: ${SERVER_PORT}
 
 spring:
   cloud:
     config:
-      name: music-service
-      profile: dev, file
+      name: ${CONFIG_NAME}
+      profile: ${CONFIG_PROFILE}
   config:
-    import: configserver:http://localhost:8888
+    import: configserver:${CONFIG_SERVER}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVICE_URL}

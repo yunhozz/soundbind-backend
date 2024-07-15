@@ -36,11 +36,13 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - eureka.client.serviceUrl.defaultZone=http://eureka-server:8761/eureka/
-      - spring.cloud.config.name=api-gateway
-      - spring.cloud.config.profile=prod
-      - spring.config.import=configserver:http://config-server:8888
+      - SERVER_PORT=8000
+      - CONFIG_NAME=api-gateway
+      - CONFIG_PROFILE=prod
+      - CONFIG_SERVER=http://config-server:8888
+      - EUREKA_SERVICE_URL=http://eureka-server:8761/eureka/
     depends_on:
+      - eureka-server
       - config-server
     restart: on-failure
     networks:
@@ -52,11 +54,13 @@ services:
     ports:
       - "9000:9000"
     environment:
-      - eureka.client.serviceUrl.defaultZone=http://eureka-server:8761/eureka/
-      - spring.cloud.config.name=kafka-server
-      - spring.cloud.config.profile=prod
-      - spring.config.import=configserver:http://config-server:8888
+      - SERVER_PORT=9000
+      - CONFIG_NAME=kafka-server
+      - CONFIG_PROFILE=prod
+      - CONFIG_SERVER=http://config-server:8888
+      - EUREKA_SERVICE_URL=http://eureka-server:8761/eureka/
     depends_on:
+      - eureka-server
       - config-server
       - api-gateway
     restart: on-failure
@@ -69,11 +73,13 @@ services:
     ports:
       - "8070:8070"
     environment:
-      - eureka.client.serviceUrl.defaultZone=http://eureka-server:8761/eureka/
-      - spring.cloud.config.name=music-service
-      - spring.cloud.config.profile=prod,file
-      - spring.config.import=configserver:http://config-server:8888
+      - SERVER_PORT=8070
+      - CONFIG_NAME=music-service
+      - CONFIG_PROFILE=prod
+      - CONFIG_SERVER=http://config-server:8888
+      - EUREKA_SERVICE_URL=http://eureka-server:8761/eureka/
     depends_on:
+      - eureka-server
       - config-server
       - api-gateway
       - kafka-server
