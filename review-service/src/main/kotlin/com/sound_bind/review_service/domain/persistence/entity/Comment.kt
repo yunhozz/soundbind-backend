@@ -37,7 +37,10 @@ class Comment private constructor(
 
     private var deletedAt: LocalDateTime? = null
 
-    fun softDelete(): LocalDateTime = deletedAt ?: LocalDateTime.now()
+    fun softDelete() {
+        deletedAt = deletedAt ?: LocalDateTime.now()
+        review.subtractComments(1)
+    }
 }
 
 /**
