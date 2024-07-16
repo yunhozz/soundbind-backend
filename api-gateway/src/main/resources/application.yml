@@ -8,8 +8,3 @@ spring:
       profile: ${CONFIG_PROFILE}
   config:
     import: configserver:${CONFIG_SERVER}
-
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_SERVICE_URL}
