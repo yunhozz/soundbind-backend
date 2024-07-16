@@ -1,11 +1,14 @@
 package com.sound_bind.review_service.domain.application
 
+import com.sound_bind.review_service.domain.interfaces.handler.ReviewServiceException.NegativeValueException
 import com.sound_bind.review_service.domain.interfaces.handler.ReviewServiceException.ReviewAlreadyExistException
 import com.sound_bind.review_service.domain.interfaces.handler.ReviewServiceException.ReviewNotFoundException
 import com.sound_bind.review_service.domain.interfaces.handler.ReviewServiceException.ReviewNotUpdatableException
 import com.sound_bind.review_service.domain.interfaces.handler.ReviewServiceException.ReviewUpdateNotAuthorizedException
 import com.sound_bind.review_service.domain.persistence.entity.Review
+import com.sound_bind.review_service.domain.persistence.entity.ReviewLikes
 import com.sound_bind.review_service.domain.persistence.repository.CommentRepository
+import com.sound_bind.review_service.domain.persistence.repository.ReviewLikesRepository
 import com.sound_bind.review_service.domain.persistence.repository.ReviewQueryRepository.ReviewSort
 import com.sound_bind.review_service.domain.persistence.repository.ReviewRepository
 import com.sound_bind.review_service.global.dto.request.ReviewCreateDTO
@@ -21,7 +24,8 @@ import java.time.LocalDateTime
 @Service
 class ReviewService(
     private val reviewRepository: ReviewRepository,
-    private val commentRepository: CommentRepository
+    private val commentRepository: CommentRepository,
+    private val reviewLikesRepository: ReviewLikesRepository
 ) {
 
     @Transactional
@@ -63,6 +67,22 @@ class ReviewService(
         dto: ReviewCursorRequestDTO,
         pageable: Pageable
     ): Slice<ReviewQueryDTO> = reviewRepository.findReviewsOnMusic(musicId, userId, ReviewSort.of(sort), dto, pageable)
+
+    @Transactional
+    fun changeLikesFlag(reviewId: Long, userId: Long) =
+        reviewLikesRepository.findWithReviewByReviewId(reviewId)?.apply {
+            try {
+                changeFlag() // change review's likes number
+            } catch (e: IllegalArgumentException) {
+                throw NegativeValueException(e.localizedMessage)
+            }
+        } ?: run {
+            findReviewById(reviewId).also { review ->
+                val reviewLikes = ReviewLikes(userId, review)
+                reviewLikesRepository.save(reviewLikes)
+                review.addLikes(1)
+            }
+        }
 
     @Transactional
     fun deleteReview(reviewId: Long, userId: Long) {

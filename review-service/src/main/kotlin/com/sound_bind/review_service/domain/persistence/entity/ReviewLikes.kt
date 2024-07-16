@@ -22,5 +22,8 @@ class ReviewLikes(
     var flag = flag
         protected set
 
-    fun changeFlag() = !flag
+    fun changeFlag() {
+        flag = flag.not()
+        review.apply { if (flag) addLikes(1) else subtractLikes(1) }
+    }
 }

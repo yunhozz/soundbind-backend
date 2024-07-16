@@ -35,4 +35,5 @@ sealed class ReviewServiceException(
     class ReviewAlreadyExistException(override val message: String): ReviewServiceException(ErrorCode.BAD_REQUEST, message)
     class ReviewNotUpdatableException(override val message: String): ReviewServiceException(ErrorCode.BAD_REQUEST, message)
     class ReviewUpdateNotAuthorizedException(override val message: String): ReviewServiceException(ErrorCode.UNAUTHORIZED, message)
+    class NegativeValueException(override val message: String): ReviewServiceException(ErrorCode.BAD_REQUEST, message)
 }

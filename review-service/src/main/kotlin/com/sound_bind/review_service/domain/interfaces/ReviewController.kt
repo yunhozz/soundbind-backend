@@ -63,6 +63,13 @@ class ReviewController(
         return APIResponse.of("Review updated", reviewId)
     }
 
+    @PatchMapping("/{id}/likes")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun updateLikesOnReview(@PathVariable("id") id: String): APIResponse {
+        reviewService.changeLikesFlag(id.toLong(), 123L)
+        return APIResponse.of("Likes of Review Changed")
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteReview(@PathVariable("id") id: String): APIResponse {
