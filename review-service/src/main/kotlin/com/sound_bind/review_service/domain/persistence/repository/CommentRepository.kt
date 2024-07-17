@@ -5,7 +5,7 @@ import com.sound_bind.review_service.domain.persistence.entity.Review
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 
-interface CommentRepository: JpaRepository<Comment, Long> {
+interface CommentRepository: JpaRepository<Comment, Long>, CommentQueryRepository {
 
     fun findCommentsByReview(review: Review): List<Comment>
 

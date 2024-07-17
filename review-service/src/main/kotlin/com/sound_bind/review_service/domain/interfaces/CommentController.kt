@@ -6,6 +6,7 @@ import com.sound_bind.review_service.global.dto.request.CommentCreateDTO
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -28,6 +29,13 @@ class CommentController(
     ): APIResponse {
         val commentId = commentService.createComment(reviewId.toLong(), 789L, dto)
         return APIResponse.of("Comment Created", commentId)
+    }
+
+    @GetMapping
+    @ResponseStatus(HttpStatus.OK)
+    fun getCommentListByReview(@RequestParam reviewId: String): APIResponse {
+        val comments = commentService.findCommentListByReviewId(reviewId.toLong())
+        return APIResponse.of("Comments in Review Found", comments)
     }
 
     @DeleteMapping("/{id}")

@@ -6,6 +6,7 @@ import com.sound_bind.review_service.domain.persistence.entity.Comment
 import com.sound_bind.review_service.domain.persistence.repository.CommentRepository
 import com.sound_bind.review_service.domain.persistence.repository.ReviewRepository
 import com.sound_bind.review_service.global.dto.request.CommentCreateDTO
+import com.sound_bind.review_service.global.dto.response.CommentQueryDTO
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -29,6 +30,10 @@ class CommentService(
         commentRepository.save(comment)
         return comment.id
     }
+
+    @Transactional(readOnly = true)
+    fun findCommentListByReviewId(reviewId: Long): List<CommentQueryDTO> =
+        commentRepository.findCommentsByReviewId(reviewId)
 
     @Transactional
     fun deleteComment(commentId: Long, userId: Long) {
