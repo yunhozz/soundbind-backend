@@ -43,7 +43,7 @@ services:
     environment:
       - SERVER_PORT=8000
       - CONFIG_NAME=api-gateway
-      - CONFIG_PROFILE=prod
+      - CONFIG_PROFILE=dev
       - CONFIG_SERVER=http://config-server:8888
       - EUREKA_SERVICE_URL=http://eureka-server:8761/eureka/
     depends_on:
@@ -63,7 +63,7 @@ services:
     environment:
       - SERVER_PORT=9000
       - CONFIG_NAME=kafka-server
-      - CONFIG_PROFILE=prod
+      - CONFIG_PROFILE=dev
       - CONFIG_SERVER=http://config-server:8888
       - EUREKA_SERVICE_URL=http://eureka-server:8761/eureka/
     depends_on:
@@ -85,7 +85,7 @@ services:
     environment:
       - SERVER_PORT=8070
       - CONFIG_NAME=music-service
-      - CONFIG_PROFILE=prod
+      - CONFIG_PROFILE=dev
       - CONFIG_SERVER=http://config-server:8888
       - EUREKA_SERVICE_URL=http://eureka-server:8761/eureka/
     depends_on:
@@ -109,7 +109,7 @@ services:
     environment:
       - SERVER_PORT=8060
       - CONFIG_NAME=review-service
-      - CONFIG_PROFILE=prod
+      - CONFIG_PROFILE=dev
       - CONFIG_SERVER=http://config-server:8888
       - EUREKA_SERVICE_URL=http://eureka-server:8761/eureka/
     depends_on:

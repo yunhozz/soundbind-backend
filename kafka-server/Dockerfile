@@ -3,7 +3,7 @@ WORKDIR /app
 COPY . .
 WORKDIR /app/kafka-server
 RUN chmod +x ./gradlew
-RUN ./gradlew clean bootJar --info --stacktrace
+RUN ./gradlew clean bootJar
 
 FROM openjdk:21-slim
 WORKDIR /app
