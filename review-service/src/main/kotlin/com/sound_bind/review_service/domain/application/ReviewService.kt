@@ -90,8 +90,11 @@ class ReviewService(
             ?: throw ReviewUpdateNotAuthorizedException("Not Authorized for Delete")
         review.id?.let {
             val comments = commentRepository.findCommentsByReview(review)
+            val reviewLikesList = reviewLikesRepository.findByReview(review)
+
             comments.forEach { comment -> comment.softDelete() }
             review.softDelete()
+            reviewLikesRepository.deleteAllInBatch(reviewLikesList)
         }
     }
 
