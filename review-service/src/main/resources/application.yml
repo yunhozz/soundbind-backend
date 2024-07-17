@@ -1,10 +1,15 @@
 server:
-  port: 8060
+  port: ${SERVER_PORT}
 
 spring:
   application:
-    name: review-service
+    name: ${CONFIG_NAME}
   profiles:
-    active: dev
+    active: ${CONFIG_PROFILE}
   config:
-    import: configserver:http://localhost:8888
+    import: configserver:${CONFIG_SERVER}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVICE_URL}
