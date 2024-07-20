@@ -12,13 +12,13 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 
 @Entity
-class User(
-    loginType: LoginType = LoginType.LOCAL,
-    roles: MutableSet<Role> = mutableSetOf(Role.GUEST)
+class User private constructor(
+    loginType: LoginType,
+    roles: MutableSet<Role>
 ): BaseEntity() {
 
     companion object {
-        fun createGuest() = User()
+        fun createGuest() = User(LoginType.LOCAL, mutableSetOf(Role.GUEST))
         fun createWithTypes(loginType: LoginType, roles: MutableSet<Role>) = User(loginType, roles)
     }
 

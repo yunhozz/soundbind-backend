@@ -8,11 +8,15 @@ import jakarta.persistence.Id
 import jakarta.persistence.OneToOne
 
 @Entity
-class UserPassword(
+class UserPassword private constructor(
     @OneToOne(fetch = FetchType.LAZY)
     val user: User,
     password: String
 ): BaseEntity() {
+
+    companion object {
+        fun create(user: User, password: String) = UserPassword(user, password)
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

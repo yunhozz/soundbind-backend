@@ -8,7 +8,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.OneToOne
 
 @Entity
-class UserProfile(
+class UserProfile private constructor(
     @OneToOne(fetch = FetchType.LAZY)
     val user: User,
     val email: String,
