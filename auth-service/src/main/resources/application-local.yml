@@ -43,7 +43,7 @@ spring:
   config:
     activate:
       on-profile: jwt-local
-  jwt:
-    tokenType: "Bearer"
-    accessTokenValidTime: 3600000 #1시간
-    refreshTokenValidTime: 1209600000 #2주
+jwt:
+  tokenType: "Bearer"
+  accessTokenValidTime: 3600000 #1시간
+  refreshTokenValidTime: 1209600000 #2주

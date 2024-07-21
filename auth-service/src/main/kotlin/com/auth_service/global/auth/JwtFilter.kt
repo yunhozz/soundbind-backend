@@ -17,7 +17,7 @@ class JwtFilter(private val jwtProvider: JwtProvider): OncePerRequestFilter() {
         private val JWT_TOKEN_REFRESH_URI = "/api/auth/token/reissue"
     }
 
-    @Value("\${spring.jwt.tokenType}")
+    @Value("\${jwt.tokenType}")
     private lateinit var tokenType: String
 
     override fun doFilterInternal(
@@ -30,7 +30,7 @@ class JwtFilter(private val jwtProvider: JwtProvider): OncePerRequestFilter() {
         log.info("[Request URI] $requestURI")
 
         (requestURI != JWT_TOKEN_REFRESH_URI).run {
-            resolveToken(token)?.also {
+            resolveToken(token)?.let {
                 if (jwtProvider.verifyToken(it)) {
                     val authentication = jwtProvider.getAuthentication(it)
                     SecurityContextHolder.getContext().authentication = authentication
@@ -40,11 +40,8 @@ class JwtFilter(private val jwtProvider: JwtProvider): OncePerRequestFilter() {
         filterChain.doFilter(request, response)
     }
 
-    private fun resolveToken(token: String): String? {
-        return Strings.hasText(token).run {
-            if (this) resolveTokenParts(token) else null
-        }
-    }
+    private fun resolveToken(token: String?): String? =
+        token.takeIf { !it.isNullOrBlank() }?.let { resolveTokenParts(it) }
 
     private fun resolveTokenParts(token: String): String? {
         val parts = token.split(" ")

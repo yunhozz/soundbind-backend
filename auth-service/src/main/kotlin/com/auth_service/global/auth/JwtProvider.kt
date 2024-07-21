@@ -26,13 +26,13 @@ class JwtProvider: InitializingBean {
         private val log = LoggerFactory.getLogger(JwtProvider::class.java)
     }
 
-    @Value("\${spring.jwt.tokenType}")
+    @Value("\${jwt.tokenType}")
     private lateinit var tokenType: String
 
-    @Value("\${spring.jwt.accessTokenValidTime}")
+    @Value("\${jwt.accessTokenValidTime}")
     private lateinit var accessTokenValidTime: String
 
-    @Value("\${spring.jwt.refreshTokenValidTime}")
+    @Value("\${jwt.refreshTokenValidTime}")
     private lateinit var refreshTokenValidTime: String
 
     private lateinit var secretKey: SecretKey
@@ -46,7 +46,7 @@ class JwtProvider: InitializingBean {
             .subject(username)
             .build()
 
-        claims["role"] = SimpleGrantedAuthority(role.name).toString()
+        claims["role"] = role.name
         val accessToken = createToken(claims, TokenType.ACCESS, accessTokenValidTime.toLong())
         val refreshToken = createToken(claims, TokenType.REFRESH, refreshTokenValidTime.toLong())
 
