@@ -11,6 +11,10 @@ import io.jsonwebtoken.UnsupportedJwtException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.InitializingBean
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.Authentication
+import org.springframework.security.core.authority.AuthorityUtils
+import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.stereotype.Component
 import java.util.Date
 import javax.crypto.SecretKey
@@ -37,21 +41,34 @@ class JwtProvider: InitializingBean {
         secretKey = Jwts.SIG.HS256.key().build() // generate random secret key
     }
 
-    fun generateToken(userId: Long, roles: Set<User.Role>): TokenResponseDTO {
+    fun generateToken(username: String, role: User.Role): TokenResponseDTO {
         val claims = Jwts.claims()
-            .subject(userId.toString())
+            .subject(username)
             .build()
-        val auth = roles.map { it.name }
-            .joinToString { ", " }
 
-        claims["auth"] = auth
+        claims["role"] = SimpleGrantedAuthority(role.name).toString()
         val accessToken = createToken(claims, TokenType.ACCESS, accessTokenValidTime.toLong())
         val refreshToken = createToken(claims, TokenType.REFRESH, refreshTokenValidTime.toLong())
 
         return TokenResponseDTO(accessToken, refreshToken)
     }
 
-    fun getClaimsFromToken(token: String): Claims = parseToken(token).payload
+    fun generateToken(authentication: Authentication): TokenResponseDTO {
+        val authorities = authentication.authorities
+        val authority = authorities.first().authority
+        return generateToken(authentication.name, User.Role.of(authority))
+    }
+
+    fun getAuthentication(token: String): Authentication {
+        val claims = parseToken(token).payload
+        val username = claims.subject
+        val role = claims["role"].toString()
+        return UsernamePasswordAuthenticationToken(
+            username,
+            "",
+            AuthorityUtils.createAuthorityList(role)
+        )
+    }
 
     fun verifyToken(token: String): Boolean {
         try {
