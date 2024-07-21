@@ -14,7 +14,7 @@ class UserProfile private constructor(
     val email: String,
     name: String,
     nickname: String,
-    profileUrl: String
+    profileUrl: String?
 ): BaseEntity() {
 
     companion object {
@@ -23,7 +23,7 @@ class UserProfile private constructor(
             email: String,
             name: String,
             nickname: String,
-            profileUrl: String
+            profileUrl: String?
         ) = UserProfile(user, email, name, nickname, profileUrl)
     }
 
