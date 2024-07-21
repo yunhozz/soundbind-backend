@@ -10,8 +10,8 @@ data class SignUpRequestDTO(
     val email: String,
     @field:NotBlank(message = "패스워드를 입력해주세요")
     @field:Pattern(
-        regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d]{7,}$",
-        message = "패스워드는 최소 7자리 이상이어야 하며, 대소문자를 포함해야 합니다."
+        regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d!@#\$%^&*(),.?\":{}|<>]{7,}$",
+        message = "패스워드는 최소 7자리 이상이어야 하며, 대소문자와 숫자를 포함해야 합니다."
     )
     val password: String,
     @field:NotBlank(message = "성함을 입력해주세요")
