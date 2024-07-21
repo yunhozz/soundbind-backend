@@ -31,7 +31,7 @@ class JwtFilter(private val jwtProvider: JwtProvider): OncePerRequestFilter() {
 
         (requestURI != JWT_TOKEN_REFRESH_URI).run {
             resolveToken(token)?.also {
-                if (jwtProvider.verifyToken(token)) {
+                if (jwtProvider.verifyToken(it)) {
                     val authentication = jwtProvider.getAuthentication(it)
                     SecurityContextHolder.getContext().authentication = authentication
                 }
