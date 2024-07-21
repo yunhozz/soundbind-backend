@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.authority.AuthorityUtils
-import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.stereotype.Component
 import java.util.Date
 import javax.crypto.SecretKey
@@ -42,14 +41,8 @@ class JwtProvider: InitializingBean {
     }
 
     fun generateToken(username: String, role: User.Role): TokenResponseDTO {
-        val claims = Jwts.claims()
-            .subject(username)
-            .build()
-
-        claims["role"] = role.name
-        val accessToken = createToken(claims, TokenType.ACCESS, accessTokenValidTime.toLong())
-        val refreshToken = createToken(claims, TokenType.REFRESH, refreshTokenValidTime.toLong())
-
+        val accessToken = createToken(username, role, TokenType.ACCESS, accessTokenValidTime.toLong())
+        val refreshToken = createToken(username, role, TokenType.REFRESH, refreshTokenValidTime.toLong())
         return TokenResponseDTO(accessToken, refreshToken)
     }
 
@@ -86,9 +79,17 @@ class JwtProvider: InitializingBean {
         return false
     }
 
-    private fun createToken(claims: Claims, type: TokenType, validTime: Long): String {
-        claims["type"] = type.name
+    private fun createToken(username: String, role: User.Role, type: TokenType, validTime: Long): String {
+        val claims = Jwts.claims()
+            .subject(username)
+            .add("role", role.name)
+            .add("type", type.name)
+            .build()
+
         return Jwts.builder()
+            .header()
+            .type("JWT")
+            .and()
             .claims(claims)
             .issuedAt(Date())
             .expiration(Date(Date().time + validTime))
