@@ -47,3 +47,13 @@ jwt:
   tokenType: "Bearer"
   accessTokenValidTime: 3600000 #1시간
   refreshTokenValidTime: 1209600000 #2주
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: redis-local
+redis:
+  host: 127.0.0.1
+  port: 6379

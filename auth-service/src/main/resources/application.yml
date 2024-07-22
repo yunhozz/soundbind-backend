@@ -1,4 +1,4 @@
 spring:
   profiles:
     active: local
-    include: db-local, jwt-local
+    include: db-local, jwt-local, redis-local
