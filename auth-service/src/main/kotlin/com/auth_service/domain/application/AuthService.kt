@@ -1,14 +1,14 @@
 package com.auth_service.domain.application
 
-import com.auth_service.domain.interfaces.handler.AuthException.PasswordInvalidException
-import com.auth_service.domain.interfaces.handler.AuthException.PasswordNotFoundException
-import com.auth_service.domain.interfaces.handler.AuthException.TokenNotFoundException
-import com.auth_service.domain.interfaces.handler.AuthException.UserNotFoundException
 import com.auth_service.domain.persistence.repository.UserPasswordRepository
 import com.auth_service.domain.persistence.repository.UserProfileRepository
 import com.auth_service.global.auth.JwtProvider
 import com.auth_service.global.dto.request.SignInRequestDTO
 import com.auth_service.global.dto.response.TokenResponseDTO
+import com.auth_service.global.exception.AuthException.PasswordInvalidException
+import com.auth_service.global.exception.AuthException.PasswordNotFoundException
+import com.auth_service.global.exception.AuthException.TokenNotFoundException
+import com.auth_service.global.exception.AuthException.UserNotFoundException
 import com.auth_service.global.util.RedisUtils
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service

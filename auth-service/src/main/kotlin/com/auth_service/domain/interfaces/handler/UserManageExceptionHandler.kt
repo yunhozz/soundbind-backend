@@ -1,7 +1,7 @@
 package com.auth_service.domain.interfaces.handler
 
 import com.auth_service.domain.interfaces.dto.ErrorResponse
-import com.auth_service.domain.interfaces.dto.ErrorResponse.ErrorCode
+import com.auth_service.global.exception.UserManageException
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
@@ -24,13 +24,4 @@ class UserManageExceptionHandler {
             .status(e.errorCode.status)
             .body(ErrorResponse.of(e.errorCode, e.message))
     }
-}
-
-sealed class UserManageException(
-    val errorCode: ErrorCode,
-    override val message: String
-): RuntimeException(message) {
-
-    class UserNotFoundException(override val message: String): UserManageException(ErrorCode.NOT_FOUND, message)
-    class EmailDuplicateException(override val message: String): UserManageException(ErrorCode.BAD_REQUEST, message)
 }

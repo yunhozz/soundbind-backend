@@ -1,7 +1,7 @@
 package com.auth_service.domain.interfaces.handler
 
 import com.auth_service.domain.interfaces.dto.ErrorResponse
-import com.auth_service.domain.interfaces.dto.ErrorResponse.ErrorCode
+import com.auth_service.global.exception.AuthException
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
@@ -24,15 +24,4 @@ class AuthenticationExceptionHandler {
             .status(e.errorCode.status)
             .body(ErrorResponse.of(e.errorCode, e.message))
     }
-}
-
-sealed class AuthException(
-    val errorCode: ErrorCode,
-    override val message: String
-): RuntimeException(message) {
-
-    class UserNotFoundException(message: String): AuthException(ErrorCode.NOT_FOUND, message)
-    class PasswordNotFoundException(message: String): AuthException(ErrorCode.NOT_FOUND, message)
-    class PasswordInvalidException(message: String): AuthException(ErrorCode.BAD_REQUEST, message)
-    class TokenNotFoundException(message: String): AuthException(ErrorCode.NOT_FOUND, message)
 }
