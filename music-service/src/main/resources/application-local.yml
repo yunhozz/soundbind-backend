@@ -1,9 +1,9 @@
 server:
-  port: 8090
+  port: 8070
 
 spring:
   application:
-    name: auth-service
+    name: music-service
   cloud:
     config:
       enabled: false
@@ -31,18 +31,11 @@ eureka:
 spring:
   config:
     activate:
-      on-profile: jwt-local
-jwt:
-  tokenType: "Bearer"
-  accessTokenValidTime: 60000 #1분
-  refreshTokenValidTime: 3600000 #1시간
-
----
-
-spring:
-  config:
-    activate:
-      on-profile: redis-local
-redis:
-  host: 127.0.0.1
-  port: 6379
+      on-profile: file-local
+  servlet:
+    multipart:
+      maxFileSize: 50MB
+      maxRequestSize: 50MB
+  devtools:
+    restart:
+      enabled: false

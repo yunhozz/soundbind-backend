@@ -1,15 +1,3 @@
-server:
-  port: ${SERVER_PORT}
-
 spring:
-  application:
-    name: ${CONFIG_NAME}
   profiles:
-    active: ${CONFIG_PROFILE}
-  config:
-    import: configserver:${CONFIG_SERVER}
-
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_SERVICE_URL}
+    active: ${PROFILES_ACTIVE:local}

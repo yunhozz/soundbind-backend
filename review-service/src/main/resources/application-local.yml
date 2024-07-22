@@ -1,9 +1,9 @@
 server:
-  port: 8090
+  port: 8060
 
 spring:
   application:
-    name: auth-service
+    name: review-service
   cloud:
     config:
       enabled: false
@@ -25,24 +25,3 @@ eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
-
----
-
-spring:
-  config:
-    activate:
-      on-profile: jwt-local
-jwt:
-  tokenType: "Bearer"
-  accessTokenValidTime: 60000 #1분
-  refreshTokenValidTime: 3600000 #1시간
-
----
-
-spring:
-  config:
-    activate:
-      on-profile: redis-local
-redis:
-  host: 127.0.0.1
-  port: 6379

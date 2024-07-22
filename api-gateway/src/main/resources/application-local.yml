@@ -1,0 +1,35 @@
+server:
+  port: 8000
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    config:
+      enabled: false
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      default-filters:
+        - name: GlobalFilter
+          args:
+            preLogger: true
+            postLogger: true
+      routes:
+        - id: kafka-server
+          uri: lb://KAFKA-SERVER
+          predicates:
+            - Path=/api/kafka/**
+        - id: auth-service
+          uri: lb://AUTH-SERVICE
+          predicates:
+            - Path=/api/auth/**, /api/users/**
+        - id: music-service
+          uri: lb://MUSIC-SERVICE
+          predicates:
+            - Path=/api/music/**
+        - id: review-service
+          uri: lb://REVIEW-SERVICE
+          predicates:
+            - Path=/api/reviews/**, /api/comments/**
