@@ -2,6 +2,7 @@ package com.auth_service.domain.application
 
 import com.auth_service.domain.interfaces.handler.AuthException.PasswordInvalidException
 import com.auth_service.domain.interfaces.handler.AuthException.PasswordNotFoundException
+import com.auth_service.domain.interfaces.handler.AuthException.TokenNotFoundException
 import com.auth_service.domain.interfaces.handler.AuthException.UserNotFoundException
 import com.auth_service.domain.persistence.repository.UserPasswordRepository
 import com.auth_service.domain.persistence.repository.UserProfileRepository
@@ -34,14 +35,26 @@ class AuthService(
         if (encoder.matches(dto.password, userPassword.password)) {
             val found = userPassword.user
             val tokenResponseDTO = jwtProvider.generateToken(found.id.toString(), found.role)
-            RedisUtils.saveValue(
-                user.id.toString(),
-                tokenResponseDTO.refreshToken,
-                Duration.ofMillis(tokenResponseDTO.refreshTokenValidTime)
-            )
+            saveRefreshTokenOnRedis(user.id.toString(), tokenResponseDTO)
             return tokenResponseDTO
         } else {
             throw PasswordInvalidException("Invalid password")
         }
     }
+
+    fun tokenReissue(username: String): TokenResponseDTO {
+        RedisUtils.getValue(username)?.let { refreshToken ->
+            val authentication = jwtProvider.getAuthentication(refreshToken)
+            val tokenResponseDTO = jwtProvider.generateToken(authentication)
+            saveRefreshTokenOnRedis(authentication.name, tokenResponseDTO)
+            return tokenResponseDTO
+        } ?: throw TokenNotFoundException("Token not found")
+    }
+
+    private fun saveRefreshTokenOnRedis(username: String, tokenResponseDTO: TokenResponseDTO) =
+        RedisUtils.saveValue(
+            username,
+            tokenResponseDTO.refreshToken,
+            Duration.ofMillis(tokenResponseDTO.refreshTokenValidTime)
+        )
 }
