@@ -8,9 +8,11 @@ import com.auth_service.domain.persistence.repository.UserProfileRepository
 import com.auth_service.global.auth.JwtProvider
 import com.auth_service.global.dto.request.SignInRequestDTO
 import com.auth_service.global.dto.response.TokenResponseDTO
+import com.auth_service.global.util.RedisUtils
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Duration
 
 @Service
 class AuthService(
@@ -31,7 +33,13 @@ class AuthService(
 
         if (encoder.matches(dto.password, userPassword.password)) {
             val found = userPassword.user
-            return jwtProvider.generateToken(found.id.toString(), found.role)
+            val tokenResponseDTO = jwtProvider.generateToken(found.id.toString(), found.role)
+            RedisUtils.saveValue(
+                user.id.toString(),
+                tokenResponseDTO.refreshToken,
+                Duration.ofMillis(tokenResponseDTO.refreshTokenValidTime)
+            )
+            return tokenResponseDTO
         } else {
             throw PasswordInvalidException("Invalid password")
         }

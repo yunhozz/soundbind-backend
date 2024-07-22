@@ -43,7 +43,13 @@ class JwtProvider: InitializingBean {
     fun generateToken(username: String, role: User.Role): TokenResponseDTO {
         val accessToken = createToken(username, role, TokenType.ACCESS, accessTokenValidTime.toLong())
         val refreshToken = createToken(username, role, TokenType.REFRESH, refreshTokenValidTime.toLong())
-        return TokenResponseDTO(accessToken, refreshToken)
+        return TokenResponseDTO(
+            tokenType,
+            accessToken,
+            refreshToken,
+            accessTokenValidTime.toLong(),
+            refreshTokenValidTime.toLong()
+        )
     }
 
     fun generateToken(authentication: Authentication): TokenResponseDTO {
