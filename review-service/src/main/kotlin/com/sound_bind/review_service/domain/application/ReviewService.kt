@@ -1,5 +1,6 @@
 package com.sound_bind.review_service.domain.application
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.sound_bind.review_service.domain.interfaces.handler.ReviewServiceException.NegativeValueException
 import com.sound_bind.review_service.domain.interfaces.handler.ReviewServiceException.ReviewAlreadyExistException
 import com.sound_bind.review_service.domain.interfaces.handler.ReviewServiceException.ReviewNotFoundException
@@ -17,6 +18,8 @@ import com.sound_bind.review_service.global.dto.request.ReviewUpdateDTO
 import com.sound_bind.review_service.global.dto.response.ReviewQueryDTO
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Slice
+import org.springframework.kafka.annotation.KafkaListener
+import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -96,6 +99,14 @@ class ReviewService(
             review.softDelete()
             reviewLikesRepository.deleteAllInBatch(reviewLikesList)
         }
+    }
+
+    @Transactional
+    @KafkaListener(topics = ["user-deletion-topic"], groupId = "review-service-group")
+    fun deleteReviewByUserWithdraw(@Payload message: String) {
+        val obj = jacksonObjectMapper().readValue(message, Map::class.java)
+        val userId = obj["userId"].toString()
+        reviewRepository.deleteReviewsByUserId(LocalDateTime.now(), userId.toLong())
     }
 
     private fun findReviewById(id: Long): Review =
