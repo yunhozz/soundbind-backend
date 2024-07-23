@@ -1,6 +1,5 @@
 package com.auth_service.domain.application
 
-import com.auth_service.domain.interfaces.handler.UserManageException.EmailDuplicateException
 import com.auth_service.domain.persistence.entity.User
 import com.auth_service.domain.persistence.entity.UserPassword
 import com.auth_service.domain.persistence.entity.UserProfile
@@ -8,6 +7,8 @@ import com.auth_service.domain.persistence.repository.UserPasswordRepository
 import com.auth_service.domain.persistence.repository.UserProfileRepository
 import com.auth_service.domain.persistence.repository.UserRepository
 import com.auth_service.global.dto.request.SignUpRequestDTO
+import com.auth_service.global.exception.UserManageException.EmailDuplicateException
+import com.auth_service.global.exception.UserManageException.UserNotFoundException
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -40,5 +41,15 @@ class UserManageService(
         userProfileRepository.save(profile)
 
         return guest.id!!
+    }
+
+    @Transactional
+    fun deleteLocalUser(userId: Long) {
+        val user = userRepository.findById(userId)
+            .orElseThrow { throw UserNotFoundException("User not found : $userId") }
+
+        userPasswordRepository.deleteByUser(user)
+        userProfileRepository.deleteByUser(user)
+        userRepository.delete(user)
     }
 }

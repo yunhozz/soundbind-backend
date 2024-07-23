@@ -1,7 +1,7 @@
 package com.auth_service.domain.interfaces.handler
 
 import com.auth_service.domain.interfaces.dto.ErrorResponse
-import com.auth_service.domain.interfaces.dto.ErrorResponse.ErrorCode
+import com.auth_service.global.exception.ErrorCode
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
