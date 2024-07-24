@@ -35,7 +35,7 @@ class UserManageController(private val userManageService: UserManageService) {
             "message" to mapOf("userId" to id)
         )
         post(
-            url = "http://localhost:8000/api/kafka",
+            url = "http://localhost:9000/api/kafka",
             headers = mapOf("Content-Type" to "application/json"),
             data = jacksonObjectMapper().writeValueAsString(record)
         )

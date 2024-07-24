@@ -9,6 +9,7 @@ import com.auth_service.domain.persistence.repository.UserRepository
 import com.auth_service.global.dto.request.SignUpRequestDTO
 import com.auth_service.global.exception.UserManageException.EmailDuplicateException
 import com.auth_service.global.exception.UserManageException.UserNotFoundException
+import com.auth_service.global.util.RedisUtils
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -47,6 +48,8 @@ class UserManageService(
     fun deleteLocalUser(userId: Long) {
         val user = userRepository.findById(userId)
             .orElseThrow { throw UserNotFoundException("User not found : $userId") }
+
+        RedisUtils.deleteValue(user.id.toString())
 
         userPasswordRepository.deleteByUser(user)
         userProfileRepository.deleteByUser(user)
