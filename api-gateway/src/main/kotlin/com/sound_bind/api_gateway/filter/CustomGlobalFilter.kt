@@ -4,6 +4,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.cloud.gateway.filter.GatewayFilterChain
 import org.springframework.cloud.gateway.filter.GlobalFilter
 import org.springframework.core.Ordered
+import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
@@ -16,6 +17,13 @@ class CustomGlobalFilter: GlobalFilter, Ordered {
     override fun filter(exchange: ServerWebExchange, chain: GatewayFilterChain): Mono<Void> {
         val request = exchange.request
         val response = exchange.response
+        val path = request.uri.path
+
+        // Can't access the corresponding url
+        if (path.contains("/subject")) {
+            response.statusCode = HttpStatus.FORBIDDEN
+            return response.setComplete()
+        }
 
         log.info("[Global Filter Start] Request ID -> ${request.id}")
 

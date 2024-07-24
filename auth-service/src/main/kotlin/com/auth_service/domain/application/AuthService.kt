@@ -51,6 +51,11 @@ class AuthService(
         } ?: throw TokenNotFoundException("Token not found")
     }
 
+    fun getSubjectByToken(token: String): String {
+        val authentication = jwtProvider.getAuthentication(token)
+        return authentication.name
+    }
+
     private fun saveRefreshTokenOnRedis(username: String, tokenResponseDTO: TokenResponseDTO) =
         RedisUtils.saveValue(
             username,
