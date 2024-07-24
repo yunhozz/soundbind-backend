@@ -11,25 +11,31 @@ spring:
       discovery:
         locator:
           enabled: true
-      default-filters:
-        - name: GlobalFilter
-          args:
-            preLogger: true
-            postLogger: true
       routes:
         - id: kafka-server
           uri: lb://KAFKA-SERVER
           predicates:
             - Path=/api/kafka/**
-        - id: auth-service
+        - id: auth-service-default
           uri: lb://AUTH-SERVICE
           predicates:
-            - Path=/api/auth/**, /api/users/**
+            - Path=/api/auth/**, /api/users
+        - id: auth-service-user
+          uri: lb://AUTH-SERVICE
+          filters:
+            - AuthorizationHeaderFilter
+          predicates:
+            - Path=/api/users/**
+            - Method=DELETE
         - id: music-service
           uri: lb://MUSIC-SERVICE
+          filters:
+            - AuthorizationHeaderFilter
           predicates:
             - Path=/api/music/**
         - id: review-service
           uri: lb://REVIEW-SERVICE
+          filters:
+            - AuthorizationHeaderFilter
           predicates:
             - Path=/api/reviews/**, /api/comments/**
