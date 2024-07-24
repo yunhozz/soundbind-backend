@@ -1,6 +1,5 @@
 package com.auth_service.global.auth
 
-import io.jsonwebtoken.lang.Strings
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -8,13 +7,15 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpHeaders
 import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 
+@Component
 class JwtFilter(private val jwtProvider: JwtProvider): OncePerRequestFilter() {
 
     companion object {
         private val log = LoggerFactory.getLogger(JwtFilter::class.java)
-        private val JWT_TOKEN_REFRESH_URI = "/api/auth/token/reissue"
+        private const val JWT_TOKEN_REFRESH_URI = "/api/auth/token/reissue"
     }
 
     @Value("\${jwt.tokenType}")

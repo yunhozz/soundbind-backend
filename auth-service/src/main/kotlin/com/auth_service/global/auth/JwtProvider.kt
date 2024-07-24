@@ -8,6 +8,7 @@ import io.jsonwebtoken.Jws
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.MalformedJwtException
 import io.jsonwebtoken.UnsupportedJwtException
+import io.jsonwebtoken.security.SignatureException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.InitializingBean
 import org.springframework.beans.factory.annotation.Value
@@ -76,13 +77,13 @@ class JwtProvider: InitializingBean {
         } catch (e: Exception) {
             when (e) {
                 is ExpiredJwtException -> log.error("Expired JWT token exception", e)
-                is SecurityException, is MalformedJwtException -> log.error("Malformed JWT token exception", e)
+                is SecurityException, is MalformedJwtException, is SignatureException -> log.error("Malformed JWT token exception", e)
                 is UnsupportedJwtException -> log.error("Unsupported JWT token exception", e)
                 is IllegalArgumentException -> log.error("Invalid JWT token exception", e)
-                else -> throw e
+                else -> log.error("Unexpected JWT token exception", e)
             }
+            throw e
         }
-        return false
     }
 
     private fun createToken(username: String, role: User.Role, type: TokenType, validTime: Long): String {
