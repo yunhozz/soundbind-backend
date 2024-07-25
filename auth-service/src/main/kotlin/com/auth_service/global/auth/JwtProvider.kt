@@ -70,21 +70,20 @@ class JwtProvider: InitializingBean {
         )
     }
 
-    fun verifyToken(token: String): Boolean {
+    fun verifyToken(token: String): Boolean =
         try {
             parseToken(token)
-            return true
+            true
         } catch (e: Exception) {
             when (e) {
-                is ExpiredJwtException -> log.error("Expired JWT token exception", e)
+                is ExpiredJwtException -> log.warn("JWT token is expired")
                 is SecurityException, is MalformedJwtException, is SignatureException -> log.error("Malformed JWT token exception", e)
                 is UnsupportedJwtException -> log.error("Unsupported JWT token exception", e)
                 is IllegalArgumentException -> log.error("Invalid JWT token exception", e)
-                else -> log.error("Unexpected JWT token exception", e)
+                else -> throw e
             }
-            throw e
+            false
         }
-    }
 
     private fun createToken(username: String, role: User.Role, type: TokenType, validTime: Long): String {
         val claims = Jwts.claims()

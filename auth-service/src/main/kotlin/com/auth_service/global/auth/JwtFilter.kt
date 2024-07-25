@@ -1,5 +1,6 @@
 package com.auth_service.global.auth
 
+import io.jsonwebtoken.lang.Strings
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -13,10 +14,7 @@ import org.springframework.web.filter.OncePerRequestFilter
 @Component
 class JwtFilter(private val jwtProvider: JwtProvider): OncePerRequestFilter() {
 
-    companion object {
-        private val log = LoggerFactory.getLogger(JwtFilter::class.java)
-        private const val JWT_TOKEN_REFRESH_URI = "/api/auth/token/reissue"
-    }
+    private val log = LoggerFactory.getLogger(JwtFilter::class.java)
 
     @Value("\${jwt.tokenType}")
     private lateinit var tokenType: String
@@ -30,19 +28,18 @@ class JwtFilter(private val jwtProvider: JwtProvider): OncePerRequestFilter() {
         val token = request.getHeader(HttpHeaders.AUTHORIZATION)
         log.info("[Request URI] $requestURI")
 
-        (requestURI != JWT_TOKEN_REFRESH_URI).run {
-            resolveToken(token)?.let {
-                if (jwtProvider.verifyToken(it)) {
-                    val authentication = jwtProvider.getAuthentication(it)
-                    SecurityContextHolder.getContext().authentication = authentication
-                }
+        resolveToken(token)?.let {
+            if (jwtProvider.verifyToken(it)) {
+                val authentication = jwtProvider.getAuthentication(token)
+                SecurityContextHolder.getContext().authentication = authentication
             }
         }
+
         filterChain.doFilter(request, response)
     }
 
     private fun resolveToken(token: String?): String? =
-        token.takeIf { !it.isNullOrBlank() }?.let { resolveTokenParts(it) }
+        token.takeIf { Strings.hasText(it) }?.let { resolveTokenParts(it) }
 
     private fun resolveTokenParts(token: String): String? {
         val parts = token.split(" ")

@@ -35,30 +35,32 @@ class AuthService(
         if (encoder.matches(dto.password, userPassword.password)) {
             val found = userPassword.user
             val tokenResponseDTO = jwtProvider.generateToken(found.id.toString(), found.role)
-            saveRefreshTokenOnRedis(user.id.toString(), tokenResponseDTO)
+            saveRefreshTokenOnRedis(tokenResponseDTO)
             return tokenResponseDTO
         } else {
             throw PasswordInvalidException("Invalid password")
         }
     }
 
-    fun tokenReissue(username: String): TokenResponseDTO {
-        RedisUtils.getValue(username)?.let { refreshToken ->
+    fun tokenRefresh(token: String): TokenResponseDTO =
+        RedisUtils.getValue(token)?.let { refreshToken ->
             val authentication = jwtProvider.getAuthentication(refreshToken)
             val tokenResponseDTO = jwtProvider.generateToken(authentication)
-            saveRefreshTokenOnRedis(authentication.name, tokenResponseDTO)
+
+            saveRefreshTokenOnRedis(tokenResponseDTO)
+            RedisUtils.deleteValue(token)
             return tokenResponseDTO
+
         } ?: throw TokenNotFoundException("Token not found")
-    }
 
     fun getSubjectByToken(token: String): String {
         val authentication = jwtProvider.getAuthentication(token)
         return authentication.name
     }
 
-    private fun saveRefreshTokenOnRedis(username: String, tokenResponseDTO: TokenResponseDTO) =
+    private fun saveRefreshTokenOnRedis(tokenResponseDTO: TokenResponseDTO) =
         RedisUtils.saveValue(
-            username,
+            tokenResponseDTO.accessToken,
             tokenResponseDTO.refreshToken,
             Duration.ofMillis(tokenResponseDTO.refreshTokenValidTime)
         )
