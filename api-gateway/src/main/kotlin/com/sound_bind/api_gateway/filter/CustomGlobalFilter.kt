@@ -20,7 +20,7 @@ class CustomGlobalFilter: GlobalFilter, Ordered {
         val path = request.uri.path
 
         // Can't access the corresponding url
-        if (path.contains("/subject")) {
+        if (RestrictedPath.isRestricted(path)) {
             response.statusCode = HttpStatus.FORBIDDEN
             return response.setComplete()
         }
@@ -34,4 +34,14 @@ class CustomGlobalFilter: GlobalFilter, Ordered {
     }
 
     override fun getOrder() = -1
+
+    private enum class RestrictedPath(val path: String) {
+        TOKEN_REFRESH("/auth/token/refresh"),
+        GET_SUBJECT("/auth/subject")
+        ;
+
+        companion object {
+            fun isRestricted(path: String): Boolean = entries.any { path.contains(it.path) }
+        }
+    }
 }
