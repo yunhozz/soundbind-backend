@@ -45,11 +45,11 @@ class UserManageService(
     }
 
     @Transactional
-    fun deleteLocalUser(userId: Long) {
+    fun deleteLocalUser(userId: Long, token: String) {
         val user = userRepository.findById(userId)
             .orElseThrow { throw UserNotFoundException("User not found : $userId") }
 
-        RedisUtils.deleteValue(user.id.toString())
+        RedisUtils.deleteValue(token)
 
         userPasswordRepository.deleteByUser(user)
         userProfileRepository.deleteByUser(user)
