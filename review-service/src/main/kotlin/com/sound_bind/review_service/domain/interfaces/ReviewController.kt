@@ -32,12 +32,12 @@ class ReviewController(
         @RequestParam musicId: String,
         @Valid @RequestBody dto: ReviewCreateDTO
     ): APIResponse {
-        val reviewId = reviewService.createReview(musicId.toLong(), 123L, dto)
-        val response = get("http://localhost:8000/api/music/$musicId") // Check music exist
+        val response = get("http://localhost:8070/api/music/$musicId") // Check music exist
         if (response.statusCode != HttpStatus.OK.value()) {
             val message = response.jsonObject.getString("message")
             return APIResponse.of(message)
         }
+        val reviewId = reviewService.createReview(musicId.toLong(), 123L, dto)
         return APIResponse.of("Review created", reviewId)
     }
 
