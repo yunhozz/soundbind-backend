@@ -1,7 +1,8 @@
 package com.auth_service.global.config
 
+import com.auth_service.global.auth.JwtAccessDeniedHandler
+import com.auth_service.global.auth.JwtAuthenticationEntryPoint
 import com.auth_service.global.auth.JwtFilter
-import com.auth_service.global.auth.JwtProvider
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -14,7 +15,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 class SecurityConfig(
-    private val jwtFilter: JwtFilter
+    private val jwtFilter: JwtFilter,
+    private val jwtAccessDeniedHandler: JwtAccessDeniedHandler,
+    private val jwtAuthenticationEntryPoint: JwtAuthenticationEntryPoint
 ) {
 
     @Bean
@@ -28,6 +31,10 @@ class SecurityConfig(
             .httpBasic { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter::class.java)
+            .exceptionHandling {
+                it.accessDeniedHandler(jwtAccessDeniedHandler)
+                it.authenticationEntryPoint(jwtAuthenticationEntryPoint)
+            }
             .build()
 
     @Bean
