@@ -11,7 +11,9 @@ import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
-import java.util.concurrent.atomic.AtomicInteger
+import java.io.ByteArrayInputStream
+import java.io.ObjectInputStream
+import java.util.Base64
 
 @Component
 class AuthorizationHeaderFilter
@@ -22,12 +24,20 @@ class AuthorizationHeaderFilter
     override fun apply(config: Config?): GatewayFilter {
         return GatewayFilter { exchange, chain ->
             val request = exchange.request
-            val accessToken = request.headers.getFirst(HttpHeaders.AUTHORIZATION)
+            val cookie = request.cookies.getFirst("atk")
+            val cookieValue = cookie?.value
                 ?: throw RuntimeException("Token is Missing!!")
 
             log.info("[Request URI] ${request.uri}")
 
-            addSubjectOnRequest(accessToken.split(" ")[1], exchange, chain)
+            val bytes = Base64.getUrlDecoder().decode(cookieValue)
+            val token = ByteArrayInputStream(bytes).use { bais ->
+                ObjectInputStream(bais).use { ois ->
+                    ois.readObject().toString()
+                }
+            }
+
+            addSubjectOnRequest(token, exchange, chain)
         }
     }
 
@@ -36,7 +46,6 @@ class AuthorizationHeaderFilter
         exchange: ServerWebExchange,
         chain: GatewayFilterChain
     ): Mono<Void> {
-        val retryCount = AtomicInteger(0)
         return WebClient.create()
             .get()
             .uri("http://localhost:8090/api/auth/subject")
@@ -58,27 +67,39 @@ class AuthorizationHeaderFilter
             }
             .onErrorResume {
                 log.error("[Error Message] ${it.localizedMessage}", it)
-                val attempts = retryCount.incrementAndGet()
-
-                attempts.takeIf { att -> att <= 3 }
-                    ?.run { tokenRefreshRequest(exchange, chain, token) }
-                    ?: Mono.error(it)
+                tokenRefreshRequest(exchange, chain, token)
             }
     }
 
-    private fun tokenRefreshRequest(exchange: ServerWebExchange, chain: GatewayFilterChain, token: String): Mono<Void> =
-        WebClient.create()
+    private fun tokenRefreshRequest(exchange: ServerWebExchange, chain: GatewayFilterChain, token: String): Mono<Void> {
+        val request = exchange.request
+        val cookie = request.cookies.getFirst("atk")
+            ?: return Mono.error(IllegalArgumentException("Token is Missing!!"))
+
+        return WebClient.create()
             .get()
             .uri("http://localhost:8090/api/auth/token/refresh")
             .accept(MediaType.APPLICATION_JSON)
-            .header("X-Token-Expired", token)
-            .retrieve()
-            .bodyToMono(String::class.java)
-            .flatMap { response ->
-                val obj = jacksonObjectMapper().readValue(response, Map::class.java)
-                val accessToken = obj["accessToken"] as String
-                addSubjectOnRequest(accessToken, exchange, chain)
+            .cookie("atk", cookie.value)
+            .exchangeToMono { response ->
+                val headers = response.headers().asHttpHeaders()
+                val cookies = headers[HttpHeaders.SET_COOKIE]
+
+                response.bodyToMono(String::class.java)
+                    .flatMap {
+                        log.info("Token Refresh Success!!")
+                        val obj = jacksonObjectMapper().readValue(it, Map::class.java)
+                        val accessToken = obj["accessToken"] as String
+
+                        cookies?.forEach { cookie ->
+                            val httpHeaders = exchange.response.headers
+                            httpHeaders.add(HttpHeaders.SET_COOKIE, cookie)
+                        }
+
+                        addSubjectOnRequest(accessToken, exchange, chain)
+                    }
             }
+    }
 
     class Config
 }
