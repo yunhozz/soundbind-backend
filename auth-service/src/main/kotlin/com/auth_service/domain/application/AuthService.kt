@@ -37,6 +37,7 @@ class AuthService(
             val tokenResponseDTO = jwtProvider.generateToken(found.id.toString(), found.role)
             saveRefreshTokenOnRedis(tokenResponseDTO)
             return tokenResponseDTO
+
         } else {
             throw PasswordInvalidException("Invalid password")
         }
@@ -51,7 +52,7 @@ class AuthService(
             RedisUtils.deleteValue(token)
             return tokenResponseDTO
 
-        } ?: throw TokenNotFoundException("Token not found")
+        } ?: throw TokenNotFoundException("Token not found. Need login.")
 
     fun getSubjectByToken(token: String): String {
         val authentication = jwtProvider.getAuthentication(token)

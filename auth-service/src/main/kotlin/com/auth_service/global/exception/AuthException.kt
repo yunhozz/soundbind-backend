@@ -9,4 +9,6 @@ sealed class AuthException(
     class PasswordNotFoundException(message: String): AuthException(ErrorCode.NOT_FOUND, message)
     class PasswordInvalidException(message: String): AuthException(ErrorCode.BAD_REQUEST, message)
     class TokenNotFoundException(message: String): AuthException(ErrorCode.NOT_FOUND, message)
+    class TokenExpiredException(message: String): AuthException(ErrorCode.UNAUTHORIZED, message)
+    class TokenVerifyFailException(message: String): AuthException(ErrorCode.UNAUTHORIZED, message)
 }

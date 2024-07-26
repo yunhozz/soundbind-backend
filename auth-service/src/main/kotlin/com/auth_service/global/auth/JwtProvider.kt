@@ -2,13 +2,12 @@ package com.auth_service.global.auth
 
 import com.auth_service.domain.persistence.entity.User
 import com.auth_service.global.dto.response.TokenResponseDTO
+import com.auth_service.global.exception.AuthException.TokenExpiredException
+import com.auth_service.global.exception.AuthException.TokenVerifyFailException
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.Jws
 import io.jsonwebtoken.Jwts
-import io.jsonwebtoken.MalformedJwtException
-import io.jsonwebtoken.UnsupportedJwtException
-import io.jsonwebtoken.security.SignatureException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.InitializingBean
 import org.springframework.beans.factory.annotation.Value
@@ -22,9 +21,7 @@ import javax.crypto.SecretKey
 @Component
 class JwtProvider: InitializingBean {
 
-    companion object {
-        private val log = LoggerFactory.getLogger(JwtProvider::class.java)
-    }
+    private val log = LoggerFactory.getLogger(JwtProvider::class.java)
 
     @Value("\${jwt.tokenType}")
     private lateinit var tokenType: String
@@ -76,13 +73,9 @@ class JwtProvider: InitializingBean {
             true
         } catch (e: Exception) {
             when (e) {
-                is ExpiredJwtException -> log.warn("JWT token is expired")
-                is SecurityException, is MalformedJwtException, is SignatureException -> log.error("Malformed JWT token exception", e)
-                is UnsupportedJwtException -> log.error("Unsupported JWT token exception", e)
-                is IllegalArgumentException -> log.error("Invalid JWT token exception", e)
-                else -> throw e
+                is ExpiredJwtException -> throw TokenExpiredException(e.localizedMessage)
+                else -> throw TokenVerifyFailException(e.localizedMessage)
             }
-            false
         }
 
     private fun createToken(username: String, role: User.Role, type: TokenType, validTime: Long): String {
