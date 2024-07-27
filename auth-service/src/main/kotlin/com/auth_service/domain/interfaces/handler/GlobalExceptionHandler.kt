@@ -2,9 +2,11 @@ package com.auth_service.domain.interfaces.handler
 
 import com.auth_service.domain.interfaces.dto.ErrorResponse
 import com.auth_service.global.exception.ErrorCode
+import io.jsonwebtoken.JwtException
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -19,11 +21,17 @@ class GlobalExceptionHandler {
         private val log = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
     }
 
-    @ExceptionHandler(Exception::class)
-    fun handleException(e: Exception): ResponseEntity<ErrorResponse> {
-        log.error(e.stackTraceToString())
+    @ExceptionHandler(RuntimeException::class)
+    fun handleRuntimeException(e: RuntimeException): ResponseEntity<ErrorResponse> {
+        log.error("[Runtime Error] ${e.localizedMessage}", e)
+        if (e is JwtException) {
+            return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorResponse.of(ErrorCode.UNAUTHORIZED, e.localizedMessage))
+        }
+
         return ResponseEntity
-            .status(500)
+            .status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR, e.localizedMessage))
     }
 
