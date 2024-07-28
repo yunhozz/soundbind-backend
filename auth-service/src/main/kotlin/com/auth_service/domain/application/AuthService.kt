@@ -10,6 +10,7 @@ import com.auth_service.global.exception.AuthException.PasswordNotFoundException
 import com.auth_service.global.exception.AuthException.TokenNotFoundException
 import com.auth_service.global.exception.AuthException.UserNotFoundException
 import com.auth_service.global.util.RedisUtils
+import org.springframework.security.core.Authentication
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -20,7 +21,7 @@ class AuthService(
     private val userPasswordRepository: UserPasswordRepository,
     private val userProfileRepository: UserProfileRepository,
     private val jwtProvider: JwtProvider,
-    private val encoder: BCryptPasswordEncoder
+    private val passwordEncoder: BCryptPasswordEncoder
 ) {
 
     @Transactional(readOnly = true)
@@ -32,7 +33,7 @@ class AuthService(
         val userPassword = userPasswordRepository.findWithUserByUserId(user.id!!)
             ?: throw PasswordNotFoundException("Password not found")
 
-        if (encoder.matches(dto.password, userPassword.password)) {
+        if (passwordEncoder.matches(dto.password, userPassword.password)) {
             val found = userPassword.user
             val tokenResponseDTO = jwtProvider.generateToken(found.id.toString(), found.role)
             saveRefreshTokenOnRedis(tokenResponseDTO)
@@ -43,14 +44,25 @@ class AuthService(
         }
     }
 
+    @Transactional(readOnly = true)
+    fun signOut(token: String): Authentication =
+        RedisUtils.getValue(token)?.let { refreshToken ->
+            val authentication = jwtProvider.getAuthentication(token)
+            RedisUtils.deleteValue(token)
+            RedisUtils.saveValue(refreshToken, "LOGOUT", Duration.ofMinutes(10))
+
+            authentication
+
+        } ?: throw TokenNotFoundException("Token not found")
+
     fun tokenRefresh(token: String): TokenResponseDTO =
         RedisUtils.getValue(token)?.let { refreshToken ->
             val authentication = jwtProvider.getAuthentication(refreshToken)
             val tokenResponseDTO = jwtProvider.generateToken(authentication)
 
-            saveRefreshTokenOnRedis(tokenResponseDTO)
             RedisUtils.deleteValue(token)
-            return tokenResponseDTO
+            saveRefreshTokenOnRedis(tokenResponseDTO)
+            tokenResponseDTO
 
         } ?: throw TokenNotFoundException("Token not found. Need login.")
 

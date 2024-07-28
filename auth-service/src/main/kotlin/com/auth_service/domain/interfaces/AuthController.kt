@@ -10,7 +10,9 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler
 import org.springframework.web.bind.annotation.CookieValue
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -33,6 +35,19 @@ class AuthController(private val authService: AuthService) {
             null
         )
         return APIResponse.of("Login successful", result)
+    }
+
+    @DeleteMapping("/logout")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun signOut(
+        @HeaderToken token: String,
+        request: HttpServletRequest,
+        response: HttpServletResponse
+    ): APIResponse {
+        println("token = ${token}")
+        val authentication = authService.signOut(token)
+        SecurityContextLogoutHandler().logout(request, response, authentication)
+        return APIResponse.of("Logout successful")
     }
 
     @GetMapping("/token/refresh")
