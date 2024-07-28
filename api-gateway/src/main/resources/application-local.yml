@@ -21,7 +21,7 @@ spring:
           filters:
             - AuthorizationHeaderFilter
           predicates:
-            - Path=/api/users
+            - Path=/api/users, /api/auth/logout
             - Method=DELETE
         - id: auth-service-default
           uri: lb://AUTH-SERVICE
