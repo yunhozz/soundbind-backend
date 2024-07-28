@@ -12,7 +12,6 @@ import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
 import khttp.post
 import org.springframework.http.HttpStatus
-import org.springframework.web.bind.annotation.CookieValue
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody

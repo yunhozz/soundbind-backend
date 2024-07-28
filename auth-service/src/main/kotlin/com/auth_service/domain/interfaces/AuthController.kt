@@ -44,7 +44,6 @@ class AuthController(private val authService: AuthService) {
         request: HttpServletRequest,
         response: HttpServletResponse
     ): APIResponse {
-        println("token = ${token}")
         val authentication = authService.signOut(token)
         SecurityContextLogoutHandler().logout(request, response, authentication)
         return APIResponse.of("Logout successful")
