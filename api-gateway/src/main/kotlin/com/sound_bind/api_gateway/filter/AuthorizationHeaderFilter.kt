@@ -19,15 +19,23 @@ import java.util.Base64
 class AuthorizationHeaderFilter
     : AbstractGatewayFilterFactory<AuthorizationHeaderFilter.Config>(Config::class.java) {
 
+    companion object {
+        private const val USER_SUBJECT_INQUIRY_API = "http://localhost:8090/api/auth/subject"
+        private const val TOKEN_REFRESH_API = "http://localhost:8090/api/auth/refresh"
+    }
+
     private val log = LoggerFactory.getLogger(AuthorizationHeaderFilter::class.java)
 
     override fun apply(config: Config?): GatewayFilter {
         return GatewayFilter { exchange, chain ->
             val request = exchange.request
+            val response = exchange.response
+
             val cookie = request.cookies.getFirst("atk")
             val cookieValue = cookie?.value
                 ?: throw RuntimeException("Token is Missing!!")
 
+            log.info("[Authorization Header Filter Start] Request ID -> ${request.id}")
             log.info("[Request URI] ${request.uri}")
 
             val bytes = Base64.getUrlDecoder().decode(cookieValue)
@@ -38,6 +46,9 @@ class AuthorizationHeaderFilter
             }
 
             addSubjectOnRequest(token, exchange, chain)
+                .then(Mono.fromRunnable {
+                    log.info("[Authorization Header Filter End] Response Code -> ${response.statusCode}")
+                })
         }
     }
 
@@ -48,7 +59,7 @@ class AuthorizationHeaderFilter
     ): Mono<Void> {
         return WebClient.create()
             .get()
-            .uri("http://localhost:8090/api/auth/subject")
+            .uri(USER_SUBJECT_INQUIRY_API)
             .accept(MediaType.APPLICATION_JSON)
             .header(HttpHeaders.AUTHORIZATION, token)
             .retrieve()
@@ -64,9 +75,10 @@ class AuthorizationHeaderFilter
                     .build()
 
                 chain.filter(exchangeMutate)
+                    .then(Mono.empty<Void>())
             }
             .onErrorResume {
-                log.error("[Error Message] ${it.localizedMessage}", it)
+                log.warn("Token Expired!!")
                 tokenRefreshRequest(exchange, chain, token)
             }
     }
@@ -78,7 +90,7 @@ class AuthorizationHeaderFilter
 
         return WebClient.create()
             .get()
-            .uri("http://localhost:8090/api/auth/token/refresh")
+            .uri(TOKEN_REFRESH_API)
             .accept(MediaType.APPLICATION_JSON)
             .cookie("atk", cookie.value)
             .exchangeToMono { response ->
@@ -87,16 +99,13 @@ class AuthorizationHeaderFilter
 
                 response.bodyToMono(String::class.java)
                     .flatMap {
-                        log.info("Token Refresh Success!!")
                         val obj = jacksonObjectMapper().readValue(it, Map::class.java)
                         val accessToken = obj["accessToken"] as String
-
-                        cookies?.forEach { cookie ->
-                            val httpHeaders = exchange.response.headers
-                            httpHeaders.add(HttpHeaders.SET_COOKIE, cookie)
-                        }
-
                         addSubjectOnRequest(accessToken, exchange, chain)
+                    }
+                    .onErrorResume {
+                        log.error("[Error Message] ${it.localizedMessage}", it)
+                        Mono.error(RuntimeException(it.localizedMessage))
                     }
             }
     }
