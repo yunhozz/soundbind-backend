@@ -1,8 +1,8 @@
 package com.auth_service.global.config
 
-import com.auth_service.global.auth.JwtAccessDeniedHandler
-import com.auth_service.global.auth.JwtAuthenticationEntryPoint
-import com.auth_service.global.auth.JwtFilter
+import com.auth_service.global.auth.jwt.JwtAccessDeniedHandler
+import com.auth_service.global.auth.jwt.JwtAuthenticationEntryPoint
+import com.auth_service.global.auth.jwt.JwtFilter
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.web.builders.HttpSecurity

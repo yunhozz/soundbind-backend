@@ -1,4 +1,4 @@
-package com.auth_service.global.auth
+package com.auth_service.global.auth.jwt
 
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse

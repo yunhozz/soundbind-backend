@@ -1,4 +1,4 @@
-package com.auth_service.global.auth
+package com.auth_service.global.auth.jwt
 
 import io.jsonwebtoken.lang.Strings
 import jakarta.servlet.FilterChain

@@ -1,4 +1,4 @@
-package com.auth_service.global.auth
+package com.auth_service.global.auth.jwt
 
 import com.auth_service.domain.persistence.entity.User
 import com.auth_service.global.dto.response.TokenResponseDTO
