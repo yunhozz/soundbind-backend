@@ -1,13 +1,10 @@
 package com.auth_service.global.auth.oauth
 
-import com.auth_service.domain.persistence.entity.User.LoginType
-
 data class OAuth2Provider private constructor(
     val email: String,
     val name: String,
     val imageUrl: String,
     val userNameAttributeName: String,
-    val loginType: LoginType,
     val attributes: Map<String, Any>
 ) {
 
@@ -29,7 +26,6 @@ data class OAuth2Provider private constructor(
                 attributes["name"] as String,
                 attributes["picture"] as String,
                 userNameAttributeName,
-                LoginType.SOCIAL,
                 attributes
             )
 
@@ -41,7 +37,6 @@ data class OAuth2Provider private constructor(
                 profile["nickname"] as String,
                 profile["profile_img_url"] as String,
                 userNameAttributeName,
-                LoginType.SOCIAL,
                 attributes
             )
         }
@@ -53,7 +48,6 @@ data class OAuth2Provider private constructor(
                 response["name"] as String,
                 response["profile_image"] as String,
                 userNameAttributeName,
-                LoginType.SOCIAL,
                 attributes
             )
         }

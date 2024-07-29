@@ -1,6 +1,8 @@
 package com.auth_service.domain.application
 
 import com.auth_service.domain.persistence.entity.User
+import com.auth_service.domain.persistence.entity.User.LoginType
+import com.auth_service.domain.persistence.entity.User.Role
 import com.auth_service.domain.persistence.entity.UserProfile
 import com.auth_service.domain.persistence.repository.UserProfileRepository
 import com.auth_service.domain.persistence.repository.UserRepository
@@ -39,10 +41,10 @@ class OAuth2UserCustomService(
         )
 
         val user: User = userProfileRepository.findWithUserByEmail(provider.email)?.let { up ->
-            up.updateBySocialLogin(provider.name, provider.loginType)
+            up.updateBySocialLogin(provider.name, LoginType.SOCIAL)
             up.user
         } ?: run {
-            val socialUser = User.createWithTypes(provider.loginType, User.Role.USER)
+            val socialUser = User.createWithTypes(LoginType.SOCIAL, Role.USER)
             val socialUserProfile = UserProfile.create(
                 socialUser,
                 provider.email,
