@@ -39,4 +39,9 @@ class UserProfile private constructor(
 
     var profileUrl = profileUrl
         protected set
+
+    fun updateBySocialLogin(name: String, loginType: User.LoginType) {
+        this.name = name
+        user.updateLoginType(loginType)
+    }
 }

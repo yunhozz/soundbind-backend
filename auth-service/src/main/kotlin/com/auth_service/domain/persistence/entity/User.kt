@@ -30,13 +30,16 @@ class User private constructor(
     var role = role
         protected set
 
+    internal fun updateLoginType(loginType: LoginType) {
+        this.loginType = loginType
+    }
+
     enum class LoginType {
-        GOOGLE, KAKAO, NAVER, LOCAL
+        LOCAL, SOCIAL
     }
 
     enum class Role {
-        ADMIN, USER, GUEST
-        ;
+        ADMIN, USER, GUEST;
 
         companion object {
             fun of(name: String): Role = entries.find {

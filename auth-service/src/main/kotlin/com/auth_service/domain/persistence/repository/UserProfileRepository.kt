@@ -10,6 +10,8 @@ interface UserProfileRepository: JpaRepository<UserProfile, Long> {
 
     fun existsByEmail(email: String): Boolean
 
+    fun existsByNickname(nickname: String): Boolean
+
     fun findByUser(user: User): UserProfile?
 
     @Query("select up from UserProfile up join fetch up.user u where up.email = :email")
