@@ -6,6 +6,7 @@ import com.auth_service.global.annotation.HeaderToken
 import com.auth_service.global.dto.request.SignInRequestDTO
 import com.auth_service.global.dto.response.TokenResponseDTO
 import com.auth_service.global.util.CookieUtils
+import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
@@ -51,12 +52,8 @@ class AuthController(private val authService: AuthService) {
 
     @GetMapping("/token/refresh")
     @ResponseStatus(HttpStatus.OK)
-    fun refreshToken(
-        @CookieValue("atk") token: String,
-        request: HttpServletRequest,
-        response: HttpServletResponse
-    ): TokenResponseDTO {
-        val result = authService.tokenRefresh(CookieUtils.deserialize(token, String::class.java))
+    fun refreshToken(@CookieValue("atk") tokenCookie: Cookie, response: HttpServletResponse): TokenResponseDTO {
+        val result = authService.tokenRefresh(CookieUtils.deserialize(tokenCookie, String::class.java))
         CookieUtils.addCookie(
             response,
             "atk",

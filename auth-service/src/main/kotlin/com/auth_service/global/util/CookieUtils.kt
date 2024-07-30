@@ -44,8 +44,8 @@ class CookieUtils {
             return Base64.getUrlEncoder().encodeToString(bytes)
         }
 
-        fun <T> deserialize(value: String, clazz: Class<T>): T {
-            val bytes = Base64.getUrlDecoder().decode(value)
+        fun <T> deserialize(cookie: Cookie, clazz: Class<T>): T {
+            val bytes = Base64.getUrlDecoder().decode(cookie.value)
             ByteArrayInputStream(bytes).use { bais ->
                 ObjectInputStream(bais).use { ois ->
                     return clazz.cast(ois.readObject())
