@@ -52,12 +52,8 @@ class AuthorizationHeaderFilter
         }
     }
 
-    private fun addSubjectOnRequest(
-        token: String,
-        exchange: ServerWebExchange,
-        chain: GatewayFilterChain
-    ): Mono<Void> {
-        return WebClient.create()
+    private fun addSubjectOnRequest(token: String, exchange: ServerWebExchange, chain: GatewayFilterChain): Mono<Void> =
+        WebClient.create()
             .get()
             .uri(USER_SUBJECT_INQUIRY_URI)
             .accept(MediaType.APPLICATION_JSON)
@@ -79,14 +75,13 @@ class AuthorizationHeaderFilter
             }
             .onErrorResume {
                 log.warn("Token Expired!!")
-                tokenRefreshRequest(exchange, chain, token)
+                tokenRefreshRequest(exchange, chain)
             }
-    }
 
-    private fun tokenRefreshRequest(exchange: ServerWebExchange, chain: GatewayFilterChain, token: String): Mono<Void> {
+    private fun tokenRefreshRequest(exchange: ServerWebExchange, chain: GatewayFilterChain): Mono<Void> {
         val request = exchange.request
         val cookie = request.cookies.getFirst("atk")
-            ?: return Mono.error(IllegalArgumentException("Token is Missing!!"))
+            ?: return Mono.error(RuntimeException("Token is Missing!!"))
 
         return WebClient.create()
             .get()
@@ -96,17 +91,14 @@ class AuthorizationHeaderFilter
             .exchangeToMono { response ->
                 val headers = response.headers().asHttpHeaders()
                 val cookies = headers[HttpHeaders.SET_COOKIE]
-
                 response.bodyToMono(String::class.java)
                     .flatMap {
                         val obj = jacksonObjectMapper().readValue(it, Map::class.java)
                         val accessToken = obj["accessToken"] as String
-
                         cookies?.forEach { cookie ->
                             val httpHeaders = exchange.response.headers
                             httpHeaders.add(HttpHeaders.SET_COOKIE, cookie)
                         }
-
                         addSubjectOnRequest(accessToken, exchange, chain)
                     }
                     .onErrorResume {
