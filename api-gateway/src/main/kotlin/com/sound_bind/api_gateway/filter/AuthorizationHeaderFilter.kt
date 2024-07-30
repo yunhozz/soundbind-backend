@@ -20,8 +20,8 @@ class AuthorizationHeaderFilter
     : AbstractGatewayFilterFactory<AuthorizationHeaderFilter.Config>(Config::class.java) {
 
     companion object {
-        private const val USER_SUBJECT_INQUIRY_API = "http://localhost:8090/api/auth/subject"
-        private const val TOKEN_REFRESH_API = "http://localhost:8090/api/auth/refresh"
+        private const val USER_SUBJECT_INQUIRY_URI = "http://localhost:8090/api/auth/subject"
+        private const val TOKEN_REFRESH_URI = "http://localhost:8090/api/auth/token/refresh"
     }
 
     private val log = LoggerFactory.getLogger(AuthorizationHeaderFilter::class.java)
@@ -59,7 +59,7 @@ class AuthorizationHeaderFilter
     ): Mono<Void> {
         return WebClient.create()
             .get()
-            .uri(USER_SUBJECT_INQUIRY_API)
+            .uri(USER_SUBJECT_INQUIRY_URI)
             .accept(MediaType.APPLICATION_JSON)
             .header(HttpHeaders.AUTHORIZATION, token)
             .retrieve()
@@ -90,7 +90,7 @@ class AuthorizationHeaderFilter
 
         return WebClient.create()
             .get()
-            .uri(TOKEN_REFRESH_API)
+            .uri(TOKEN_REFRESH_URI)
             .accept(MediaType.APPLICATION_JSON)
             .cookie("atk", cookie.value)
             .exchangeToMono { response ->
@@ -101,6 +101,12 @@ class AuthorizationHeaderFilter
                     .flatMap {
                         val obj = jacksonObjectMapper().readValue(it, Map::class.java)
                         val accessToken = obj["accessToken"] as String
+
+                        cookies?.forEach { cookie ->
+                            val httpHeaders = exchange.response.headers
+                            httpHeaders.add(HttpHeaders.SET_COOKIE, cookie)
+                        }
+
                         addSubjectOnRequest(accessToken, exchange, chain)
                     }
                     .onErrorResume {
