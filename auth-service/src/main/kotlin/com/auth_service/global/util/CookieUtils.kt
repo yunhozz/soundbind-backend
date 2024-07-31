@@ -15,9 +15,8 @@ import java.util.Base64
 class CookieUtils {
 
     companion object {
-        fun getCookie(request: HttpServletRequest, name: String): Cookie =
+        fun getCookie(request: HttpServletRequest, name: String): Cookie? =
             request.cookies?.find { it.name == name }
-                ?: throw IllegalArgumentException("Cookie with name $name not found")
 
         fun addCookie(response: HttpServletResponse, name: String, value: String, maxAge: Long?) {
             val cookieBuilder = ResponseCookie.from(name, value)
@@ -25,7 +24,7 @@ class CookieUtils {
                 .httpOnly(true)
                 .secure(true)
                 .sameSite(SameSite.LAX.attributeValue())
-            maxAge?.let { cookieBuilder.maxAge(Duration.ofMillis(it)) }
+            maxAge?.let { cookieBuilder.maxAge(Duration.ofSeconds(it)) }
             val cookie = cookieBuilder.build()
             response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString())
         }
