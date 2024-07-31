@@ -1,5 +1,7 @@
 package com.auth_service.domain.persistence.entity
 
+import com.auth_service.global.auth.enums.LoginType
+import com.auth_service.global.auth.enums.Role
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
@@ -32,19 +34,5 @@ class User private constructor(
 
     internal fun updateLoginType(loginType: LoginType) {
         this.loginType = loginType
-    }
-
-    enum class LoginType {
-        LOCAL, SOCIAL
-    }
-
-    enum class Role {
-        ADMIN, USER, GUEST;
-
-        companion object {
-            fun of(name: String): Role = entries.find {
-                it.name == name
-            } ?: throw IllegalArgumentException("Unknown role: $name")
-        }
     }
 }

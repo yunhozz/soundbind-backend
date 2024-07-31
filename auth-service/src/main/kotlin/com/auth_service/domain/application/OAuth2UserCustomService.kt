@@ -1,11 +1,11 @@
 package com.auth_service.domain.application
 
 import com.auth_service.domain.persistence.entity.User
-import com.auth_service.domain.persistence.entity.User.LoginType
-import com.auth_service.domain.persistence.entity.User.Role
 import com.auth_service.domain.persistence.entity.UserProfile
 import com.auth_service.domain.persistence.repository.UserProfileRepository
 import com.auth_service.domain.persistence.repository.UserRepository
+import com.auth_service.global.auth.enums.LoginType
+import com.auth_service.global.auth.enums.Role
 import com.auth_service.global.auth.oauth.OAuth2Provider
 import com.auth_service.global.auth.oauth.OAuth2Registrar
 import org.springframework.security.core.authority.AuthorityUtils

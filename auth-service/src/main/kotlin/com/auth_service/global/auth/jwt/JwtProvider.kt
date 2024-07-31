@@ -1,6 +1,7 @@
 package com.auth_service.global.auth.jwt
 
 import com.auth_service.domain.persistence.entity.User
+import com.auth_service.global.auth.enums.Role
 import com.auth_service.global.dto.response.TokenResponseDTO
 import com.auth_service.global.exception.AuthException.TokenExpiredException
 import com.auth_service.global.exception.AuthException.TokenVerifyFailException
@@ -38,7 +39,7 @@ class JwtProvider: InitializingBean {
         secretKey = Jwts.SIG.HS256.key().build() // generate random secret key
     }
 
-    fun generateToken(username: String, role: User.Role): TokenResponseDTO {
+    fun generateToken(username: String, role: Role): TokenResponseDTO {
         val accessToken = createToken(username, role, TokenType.ACCESS, accessTokenValidTime.toLong())
         val refreshToken = createToken(username, role, TokenType.REFRESH, refreshTokenValidTime.toLong())
         return TokenResponseDTO(
@@ -53,7 +54,7 @@ class JwtProvider: InitializingBean {
     fun generateToken(authentication: Authentication): TokenResponseDTO {
         val authorities = authentication.authorities
         val authority = authorities.first().authority
-        return generateToken(authentication.name, User.Role.of(authority))
+        return generateToken(authentication.name, Role.of(authority))
     }
 
     fun getAuthentication(token: String): Authentication {
@@ -78,7 +79,7 @@ class JwtProvider: InitializingBean {
             }
         }
 
-    private fun createToken(username: String, role: User.Role, type: TokenType, validTime: Long): String {
+    private fun createToken(username: String, role: Role, type: TokenType, validTime: Long): String {
         val claims = Jwts.claims()
             .subject(username)
             .add("role", role.name)

@@ -1,5 +1,6 @@
 package com.auth_service.domain.persistence.entity
 
+import com.auth_service.global.auth.enums.LoginType
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
@@ -40,7 +41,7 @@ class UserProfile private constructor(
     var profileUrl = profileUrl
         protected set
 
-    fun updateBySocialLogin(name: String, loginType: User.LoginType) {
+    fun updateBySocialLogin(name: String, loginType: LoginType) {
         this.name = name
         user.updateLoginType(loginType)
     }
