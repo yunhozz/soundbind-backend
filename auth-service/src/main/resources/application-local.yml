@@ -32,6 +32,7 @@ spring:
   config:
     activate:
       on-profile: jwt-local
+
 jwt:
   tokenType: "Bearer"
   accessTokenValidTime: 60000 #1분
@@ -43,6 +44,9 @@ spring:
   config:
     activate:
       on-profile: redis-local
+
 redis:
   host: 127.0.0.1
   port: 6379
+
+---
