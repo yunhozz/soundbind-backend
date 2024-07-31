@@ -47,6 +47,7 @@ class AuthController(private val authService: AuthService) {
     ): APIResponse {
         val authentication = authService.signOut(token)
         SecurityContextLogoutHandler().logout(request, response, authentication)
+        CookieUtils.deleteCookie(request, response, "atk")
         return APIResponse.of("Logout successful")
     }
 
