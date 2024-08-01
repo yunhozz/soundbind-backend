@@ -2,8 +2,8 @@ package com.sound_bind.api_gateway.filter
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.slf4j.LoggerFactory
-import org.springframework.cloud.gateway.filter.GatewayFilter
 import org.springframework.cloud.gateway.filter.GatewayFilterChain
+import org.springframework.cloud.gateway.filter.OrderedGatewayFilter
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
@@ -26,31 +26,32 @@ class AuthorizationHeaderFilter
 
     private val log = LoggerFactory.getLogger(AuthorizationHeaderFilter::class.java)
 
-    override fun apply(config: Config?): GatewayFilter {
-        return GatewayFilter { exchange, chain ->
-            val request = exchange.request
-            val response = exchange.response
+    override fun apply(config: Config?) =
+        OrderedGatewayFilter(
+            { exchange, chain ->
+                val request = exchange.request
+                val response = exchange.response
 
-            val cookie = request.cookies.getFirst("atk")
-            val cookieValue = cookie?.value
-                ?: throw RuntimeException("Token is Missing!!")
+                val cookie = request.cookies.getFirst("atk")
+                val cookieValue = cookie?.value
+                    ?: throw RuntimeException("Token is Missing!!")
 
-            log.info("[Authorization Header Filter Start] Request ID -> ${request.id}")
-            log.info("[Request URI] ${request.uri}")
+                log.info("[Authorization Header Filter Start] Request ID -> ${request.id}")
+                log.info("Request URI : ${request.uri}")
 
-            val bytes = Base64.getUrlDecoder().decode(cookieValue)
-            val token = ByteArrayInputStream(bytes).use { bais ->
-                ObjectInputStream(bais).use { ois ->
-                    ois.readObject().toString()
+                val bytes = Base64.getUrlDecoder().decode(cookieValue)
+                val token = ByteArrayInputStream(bytes).use { bais ->
+                    ObjectInputStream(bais).use { ois ->
+                        ois.readObject().toString()
+                    }
                 }
-            }
 
-            addSubjectOnRequest(token, exchange, chain)
-                .then(Mono.fromRunnable {
-                    log.info("[Authorization Header Filter End] Response Code -> ${response.statusCode}")
-                })
-        }
-    }
+                addSubjectOnRequest(token, exchange, chain)
+                    .then(Mono.fromRunnable {
+                        log.info("[Authorization Header Filter End] Response Code -> ${response.statusCode}")
+                    })
+            }, -1
+        )
 
     private fun addSubjectOnRequest(token: String, exchange: ServerWebExchange, chain: GatewayFilterChain): Mono<Void> =
         WebClient.create()
@@ -60,10 +61,14 @@ class AuthorizationHeaderFilter
             .header(HttpHeaders.AUTHORIZATION, token)
             .retrieve()
             .bodyToMono(String::class.java)
-            .flatMap { subject ->
+            .flatMap { response ->
+                val obj = jacksonObjectMapper().readValue(response, Map::class.java)
                 val requestMutate = exchange.request.mutate()
-                    .header(HttpHeaders.AUTHORIZATION, token)
-                    .header("sub", subject)
+                    .headers {
+                        it.add(HttpHeaders.AUTHORIZATION, token)
+                        it.add("sub", obj["subject"] as String)
+                        it.add("role", obj["role"] as String)
+                    }
                     .build()
 
                 val exchangeMutate = exchange.mutate()
@@ -71,7 +76,6 @@ class AuthorizationHeaderFilter
                     .build()
 
                 chain.filter(exchangeMutate)
-                    .then(Mono.empty<Void>())
             }
             .onErrorResume {
                 log.warn("Token Expired!!")
@@ -102,7 +106,7 @@ class AuthorizationHeaderFilter
                         addSubjectOnRequest(accessToken, exchange, chain)
                     }
                     .onErrorResume {
-                        log.error("[Error Message] ${it.localizedMessage}", it)
+                        log.error("Error Message : ${it.localizedMessage}", it)
                         Mono.error(RuntimeException(it.localizedMessage))
                     }
             }

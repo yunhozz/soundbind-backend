@@ -31,11 +31,13 @@ spring:
           uri: lb://MUSIC-SERVICE
           filters:
             - AuthorizationHeaderFilter
+            - AuthenticationUserFilter
           predicates:
             - Path=/api/music/**
         - id: review-service
           uri: lb://REVIEW-SERVICE
           filters:
             - AuthorizationHeaderFilter
+            - AuthenticationUserFilter
           predicates:
             - Path=/api/reviews/**, /api/comments/**

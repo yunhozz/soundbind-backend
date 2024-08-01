@@ -4,6 +4,7 @@ import com.auth_service.domain.application.AuthService
 import com.auth_service.domain.interfaces.dto.APIResponse
 import com.auth_service.global.annotation.HeaderToken
 import com.auth_service.global.dto.request.SignInRequestDTO
+import com.auth_service.global.dto.response.SubjectResponseDTO
 import com.auth_service.global.dto.response.TokenResponseDTO
 import com.auth_service.global.util.CookieUtils
 import jakarta.servlet.http.Cookie
@@ -66,5 +67,5 @@ class AuthController(private val authService: AuthService) {
 
     @GetMapping("/subject")
     @ResponseStatus(HttpStatus.OK)
-    fun getSubject(@HeaderToken token: String): String = authService.getSubjectByToken(token)
+    fun getSubject(@HeaderToken token: String): SubjectResponseDTO = authService.getSubjectByToken(token)
 }

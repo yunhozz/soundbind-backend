@@ -4,6 +4,7 @@ import com.auth_service.domain.persistence.repository.UserPasswordRepository
 import com.auth_service.domain.persistence.repository.UserProfileRepository
 import com.auth_service.global.auth.jwt.JwtProvider
 import com.auth_service.global.dto.request.SignInRequestDTO
+import com.auth_service.global.dto.response.SubjectResponseDTO
 import com.auth_service.global.dto.response.TokenResponseDTO
 import com.auth_service.global.exception.AuthException.PasswordInvalidException
 import com.auth_service.global.exception.AuthException.PasswordNotFoundException
@@ -66,9 +67,10 @@ class AuthService(
 
         } ?: throw TokenNotFoundException("Token not found. Need login.")
 
-    fun getSubjectByToken(token: String): String {
+    fun getSubjectByToken(token: String): SubjectResponseDTO {
         val authentication = jwtProvider.getAuthentication(token)
-        return authentication.name
+        val authorities = authentication.authorities
+        return SubjectResponseDTO(authentication.name, authorities.first().authority)
     }
 
     private fun saveRefreshTokenOnRedis(tokenResponseDTO: TokenResponseDTO) =

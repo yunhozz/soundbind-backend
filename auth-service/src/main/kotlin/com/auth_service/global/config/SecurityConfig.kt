@@ -42,7 +42,7 @@ class SecurityConfig(
             .csrf { it.disable() }
             .authorizeHttpRequests {
                 it.requestMatchers(HttpMethod.POST, "/api/users").permitAll()
-                it.requestMatchers(HttpMethod.DELETE, "/api/users").hasAnyRole(Role.USER.name, Role.ADMIN.name)
+                it.requestMatchers(HttpMethod.DELETE, "/api/users").permitAll()
                 it.requestMatchers("/api/auth/**").permitAll()
             }
             .headers { it.frameOptions { fo -> fo.sameOrigin() } }

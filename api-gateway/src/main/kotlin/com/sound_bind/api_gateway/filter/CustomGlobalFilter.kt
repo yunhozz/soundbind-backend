@@ -21,7 +21,7 @@ class CustomGlobalFilter: GlobalFilter, Ordered {
 
         // Can't access the corresponding url
         if (RestrictedPath.isRestricted(path)) {
-            response.statusCode = HttpStatus.FORBIDDEN
+            response.statusCode = HttpStatus.NOT_FOUND
             return response.setComplete()
         }
 
@@ -33,7 +33,7 @@ class CustomGlobalFilter: GlobalFilter, Ordered {
             })
     }
 
-    override fun getOrder() = -1
+    override fun getOrder() = Ordered.HIGHEST_PRECEDENCE
 
     private enum class RestrictedPath(val path: String) {
         TOKEN_REFRESH("/auth/token/refresh"),
