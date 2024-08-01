@@ -48,6 +48,7 @@ services:
       - CONFIG_SERVER=http://config-server:8888
       - EUREKA_SERVICE_URL=http://eureka-server:8761/eureka/
     depends_on:
+      - eureka-server
       - config-server
     restart: on-failure
     networks:
@@ -72,6 +73,31 @@ services:
       - eureka-server
       - config-server
       - api-gateway
+    restart: on-failure
+    networks:
+      - soundbind-network
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
+    image: soundbind/auth-service:latest
+    container_name: soundbind-auth-service
+    ports:
+      - "8090:8090"
+    environment:
+      - PROFILES_ACTIVE=dev
+      - SERVER_PORT=8090
+      - CONFIG_NAME=auth-service
+      - CONFIG_PROFILE=dev,oauth
+      - CONFIG_SERVER=http://config-server:8888
+      - EUREKA_SERVICE_URL=http://eureka-server:8761/eureka/
+    depends_on:
+      - eureka-server
+      - config-server
+      - api-gateway
+      - kafka-server
+      - mysql
     restart: on-failure
     networks:
       - soundbind-network
