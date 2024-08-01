@@ -1,0 +1,8 @@
+spring:
+  profiles:
+    active: ${PROFILES_ACTIVE:local}
+    include: oauth
+    group:
+      local:
+        - jwt-local
+        - redis-local

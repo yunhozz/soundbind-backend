@@ -39,37 +39,40 @@ class WebClientConfig {
     fun commonWebClient(
         @Qualifier(WEB_CLIENT_DEFAULT_HTTP_CLIENT) httpClient: HttpClient,
         @Qualifier(WEB_CLIENT_DEFAULT_EXCHANGE_STRATEGIES) exchangeStrategies: ExchangeStrategies
-    ) = WebClient.builder()
-        .clientConnector(ReactorClientHttpConnector(HttpClient.create()))
-        .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-        .exchangeFunction(ExchangeFunctions.create(ReactorClientHttpConnector(httpClient), exchangeStrategies))
-        .exchangeStrategies(exchangeStrategies)
-        .build()
+    ): WebClient =
+        WebClient.builder()
+            .clientConnector(ReactorClientHttpConnector(httpClient))
+            .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+            .exchangeFunction(ExchangeFunctions.create(ReactorClientHttpConnector(httpClient), exchangeStrategies))
+            .exchangeStrategies(exchangeStrategies)
+            .build()
 
     @Bean(WEB_CLIENT_DEFAULT_HTTP_CLIENT)
     fun defaultWebClient(
         @Qualifier(WEB_CLIENT_CONNECTION_PROVIDER) provider: ConnectionProvider
-    ) = HttpClient.create(provider)
-        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
-        .doOnConnected {
-            it.addHandlerLast(ReadTimeoutHandler(5))
-                .addHandlerLast(WriteTimeoutHandler(5))
-        } // Read and write timeout (5 seconds)
-
+    ): HttpClient =
+        HttpClient.create(provider)
+            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
+            .doOnConnected {
+                it.addHandlerLast(ReadTimeoutHandler(5))
+                    .addHandlerLast(WriteTimeoutHandler(5))
+            } // Read and write timeout (5 seconds)
 
     @Bean(WEB_CLIENT_CONNECTION_PROVIDER)
-    fun connectionProvider() = ConnectionProvider.builder("http-pool")
-        .maxConnections(100) // Number of connection pools
-        .pendingAcquireTimeout(Duration.ofMillis(0)) // Maximum time to wait to get a connection from a connection pool
-        .pendingAcquireMaxCount(-1) // Number of attempts to get a connection from the connection pool (-1: no limit)
-        .maxIdleTime(Duration.ofMillis(2000L)) // Time to maintain connection in idle state in connection pool
-        .build()
+    fun connectionProvider(): ConnectionProvider =
+        ConnectionProvider.builder("http-pool")
+            .maxConnections(100) // Number of connection pools
+            .pendingAcquireTimeout(Duration.ofSeconds(10)) // Maximum time to wait to get a connection from a connection pool
+            .pendingAcquireMaxCount(-1) // Number of attempts to get a connection from the connection pool (-1: no limit)
+            .maxIdleTime(Duration.ofMinutes(1)) // Time to maintain connection in idle state in connection pool
+            .build()
 
     @Bean(WEB_CLIENT_DEFAULT_EXCHANGE_STRATEGIES)
-    fun defaultExchangeStrategies() = ExchangeStrategies.builder()
-        .codecs {
-            it.defaultCodecs().jackson2JsonEncoder(Jackson2JsonEncoder(OM, MediaType.APPLICATION_JSON))
-            it.defaultCodecs().jackson2JsonDecoder(Jackson2JsonDecoder(OM, MediaType.APPLICATION_JSON))
-            it.defaultCodecs().maxInMemorySize(1024 * 1024) // Max buffer = 1MB
-        }.build()
+    fun defaultExchangeStrategies(): ExchangeStrategies =
+        ExchangeStrategies.builder()
+            .codecs {
+                it.defaultCodecs().jackson2JsonEncoder(Jackson2JsonEncoder(OM, MediaType.APPLICATION_JSON))
+                it.defaultCodecs().jackson2JsonDecoder(Jackson2JsonDecoder(OM, MediaType.APPLICATION_JSON))
+                it.defaultCodecs().maxInMemorySize(1024 * 1024) // Max buffer = 1MB
+            }.build()
 }
