@@ -1,6 +1,5 @@
 package com.auth_service.global.auth.oauth
 
-import com.auth_service.global.auth.oauth.OAuth2AuthorizationRequestCookieRepository.Companion.REDIRECT_URI_PARAM_COOKIE_NAME
 import com.auth_service.global.util.CookieUtils
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -23,7 +22,7 @@ class OAuth2AuthenticationFailureHandler(
         exception: AuthenticationException
     ) {
         log.error(exception.localizedMessage)
-        var redirectUri = CookieUtils.getCookie(request, REDIRECT_URI_PARAM_COOKIE_NAME)?.let { cookie ->
+        var redirectUri = CookieUtils.getCookie(request, CookieUtils.REDIRECT_URI_PARAM_COOKIE_NAME)?.let { cookie ->
             cookie.value
         } ?: "/"
 

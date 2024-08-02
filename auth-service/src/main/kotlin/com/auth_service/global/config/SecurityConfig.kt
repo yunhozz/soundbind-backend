@@ -9,7 +9,6 @@ import com.auth_service.global.auth.oauth.OAuth2AuthenticationSuccessHandler
 import com.auth_service.global.auth.oauth.OAuth2AuthorizationRequestCookieRepository
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.http.HttpMethod
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
@@ -40,8 +39,7 @@ class SecurityConfig(
             .cors { it.disable() }
             .csrf { it.disable() }
             .authorizeHttpRequests {
-                it.requestMatchers(HttpMethod.POST, "/api/users").permitAll()
-                it.requestMatchers(HttpMethod.DELETE, "/api/users").permitAll()
+                it.requestMatchers("/api/users/**").permitAll()
                 it.requestMatchers("/api/auth/**").permitAll()
             }
             .headers { it.frameOptions { fo -> fo.sameOrigin() } }
