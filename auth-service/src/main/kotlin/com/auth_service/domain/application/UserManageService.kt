@@ -7,6 +7,7 @@ import com.auth_service.domain.persistence.repository.UserPasswordRepository
 import com.auth_service.domain.persistence.repository.UserProfileRepository
 import com.auth_service.domain.persistence.repository.UserRepository
 import com.auth_service.global.dto.request.SignUpRequestDTO
+import com.auth_service.global.dto.response.UserSimpleInfoResponseDTO
 import com.auth_service.global.exception.UserManageException.EmailDuplicateException
 import com.auth_service.global.exception.UserManageException.UserNotFoundException
 import com.auth_service.global.util.RedisUtils
@@ -44,11 +45,21 @@ class UserManageService(
         return guest.id!!
     }
 
+    @Transactional(readOnly = true)
+    fun findSimpleUserInfoByUserId(userId: Long): UserSimpleInfoResponseDTO {
+        val userProfile = userProfileRepository.findWithUserByUserId(userId)
+            ?: throw UserNotFoundException("User not found with id: $userId")
+        return UserSimpleInfoResponseDTO(
+            userProfile.user.id!!,
+            userProfile.nickname,
+            userProfile.profileUrl,
+        )
+    }
+
     @Transactional
     fun deleteLocalUser(userId: Long, token: String) {
         val user = userRepository.findById(userId)
-            .orElseThrow { throw UserNotFoundException("User not found : $userId") }
-
+            .orElseThrow { UserNotFoundException("User not found : $userId") }
         RedisUtils.deleteValue(token)
 
         userPasswordRepository.deleteByUser(user)

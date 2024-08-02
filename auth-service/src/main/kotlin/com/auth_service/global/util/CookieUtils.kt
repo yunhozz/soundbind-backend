@@ -9,7 +9,6 @@ import org.springframework.http.ResponseCookie
 import org.springframework.util.SerializationUtils
 import java.io.ByteArrayInputStream
 import java.io.ObjectInputStream
-import java.time.Duration
 import java.util.Base64
 
 class CookieUtils {
@@ -18,15 +17,17 @@ class CookieUtils {
         fun getCookie(request: HttpServletRequest, name: String): Cookie? =
             request.cookies?.find { it.name == name }
 
-        fun addCookie(response: HttpServletResponse, name: String, value: String, maxAge: Long?) {
+        fun addCookie(response: HttpServletResponse, name: String, value: String, maxAgeSec: Long?) {
             val cookieBuilder = ResponseCookie.from(name, value)
                 .path("/")
                 .httpOnly(true)
                 .secure(true)
                 .sameSite(SameSite.LAX.attributeValue())
-            maxAge?.let { cookieBuilder.maxAge(Duration.ofSeconds(it)) }
-            val cookie = cookieBuilder.build()
-            response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString())
+
+            maxAgeSec?.let { cookieBuilder.maxAge(it) }
+                ?: run { cookieBuilder.maxAge(60 * 60 * 24 * 365 * 10) } // 10 years
+
+            response.addHeader(HttpHeaders.SET_COOKIE, cookieBuilder.build().toString())
         }
 
         fun deleteCookie(request: HttpServletRequest, response: HttpServletResponse, name: String) =

@@ -45,7 +45,6 @@ class AuthService(
         }
     }
 
-    @Transactional(readOnly = true)
     fun signOut(token: String): Authentication =
         RedisUtils.getValue(token)?.let { refreshToken ->
             val authentication = jwtProvider.getAuthentication(token)

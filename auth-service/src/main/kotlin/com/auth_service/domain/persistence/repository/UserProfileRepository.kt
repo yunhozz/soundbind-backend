@@ -14,6 +14,9 @@ interface UserProfileRepository: JpaRepository<UserProfile, Long> {
 
     fun findByUser(user: User): UserProfile?
 
+    @Query("select up from UserProfile up join fetch up.user u where u.id = :userId")
+    fun findWithUserByUserId(userId: Long): UserProfile?
+
     @Query("select up from UserProfile up join fetch up.user u where up.email = :email")
     fun findWithUserByEmail(email: String): UserProfile?
 
