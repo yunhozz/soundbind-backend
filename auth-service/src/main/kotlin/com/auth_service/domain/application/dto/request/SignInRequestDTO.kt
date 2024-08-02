@@ -1,4 +1,4 @@
-package com.auth_service.global.dto.request
+package com.auth_service.domain.application.dto.request
 
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank

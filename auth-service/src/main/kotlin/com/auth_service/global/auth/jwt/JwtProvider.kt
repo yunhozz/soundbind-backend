@@ -1,8 +1,6 @@
 package com.auth_service.global.auth.jwt
 
-import com.auth_service.domain.persistence.entity.User
 import com.auth_service.global.auth.enums.Role
-import com.auth_service.global.dto.response.TokenResponseDTO
 import com.auth_service.global.exception.AuthException.TokenExpiredException
 import com.auth_service.global.exception.AuthException.TokenVerifyFailException
 import io.jsonwebtoken.Claims

@@ -1,13 +1,13 @@
 package com.auth_service.domain.application
 
+import com.auth_service.domain.application.dto.request.SignUpRequestDTO
+import com.auth_service.domain.application.dto.response.UserSimpleInfoResponseDTO
 import com.auth_service.domain.persistence.entity.User
 import com.auth_service.domain.persistence.entity.UserPassword
 import com.auth_service.domain.persistence.entity.UserProfile
 import com.auth_service.domain.persistence.repository.UserPasswordRepository
 import com.auth_service.domain.persistence.repository.UserProfileRepository
 import com.auth_service.domain.persistence.repository.UserRepository
-import com.auth_service.global.dto.request.SignUpRequestDTO
-import com.auth_service.global.dto.response.UserSimpleInfoResponseDTO
 import com.auth_service.global.exception.UserManageException.EmailDuplicateException
 import com.auth_service.global.exception.UserManageException.UserNotFoundException
 import com.auth_service.global.util.RedisUtils

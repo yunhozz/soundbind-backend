@@ -1,4 +1,4 @@
-package com.auth_service.global.dto.response
+package com.auth_service.domain.application.dto.response
 
 data class UserSimpleInfoResponseDTO(
     val userId: Long,

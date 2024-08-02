@@ -1,7 +1,6 @@
 package com.auth_service.global.config
 
 import com.auth_service.domain.application.OAuth2UserCustomService
-import com.auth_service.global.auth.enums.Role
 import com.auth_service.global.auth.jwt.JwtAccessDeniedHandler
 import com.auth_service.global.auth.jwt.JwtAuthenticationEntryPoint
 import com.auth_service.global.auth.jwt.JwtFilter

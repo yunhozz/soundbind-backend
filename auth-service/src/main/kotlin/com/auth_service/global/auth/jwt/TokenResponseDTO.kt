@@ -1,4 +1,4 @@
-package com.auth_service.global.dto.response
+package com.auth_service.global.auth.jwt
 
 data class TokenResponseDTO(
     val tokenType: String,

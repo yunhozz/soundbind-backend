@@ -1,11 +1,11 @@
 package com.auth_service.domain.application
 
+import com.auth_service.domain.application.dto.request.SignInRequestDTO
+import com.auth_service.domain.application.dto.response.SubjectResponseDTO
 import com.auth_service.domain.persistence.repository.UserPasswordRepository
 import com.auth_service.domain.persistence.repository.UserProfileRepository
 import com.auth_service.global.auth.jwt.JwtProvider
-import com.auth_service.global.dto.request.SignInRequestDTO
-import com.auth_service.global.dto.response.SubjectResponseDTO
-import com.auth_service.global.dto.response.TokenResponseDTO
+import com.auth_service.global.auth.jwt.TokenResponseDTO
 import com.auth_service.global.exception.AuthException.PasswordInvalidException
 import com.auth_service.global.exception.AuthException.PasswordNotFoundException
 import com.auth_service.global.exception.AuthException.TokenNotFoundException

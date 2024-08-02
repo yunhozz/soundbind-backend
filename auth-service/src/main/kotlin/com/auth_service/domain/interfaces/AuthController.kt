@@ -1,11 +1,11 @@
 package com.auth_service.domain.interfaces
 
 import com.auth_service.domain.application.AuthService
+import com.auth_service.domain.application.dto.request.SignInRequestDTO
+import com.auth_service.domain.application.dto.response.SubjectResponseDTO
 import com.auth_service.domain.interfaces.dto.APIResponse
 import com.auth_service.global.annotation.HeaderToken
-import com.auth_service.global.dto.request.SignInRequestDTO
-import com.auth_service.global.dto.response.SubjectResponseDTO
-import com.auth_service.global.dto.response.TokenResponseDTO
+import com.auth_service.global.auth.jwt.TokenResponseDTO
 import com.auth_service.global.util.CookieUtils
 import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletRequest
