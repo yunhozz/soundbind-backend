@@ -7,5 +7,6 @@ include(
     ":auth-service",
     ":music-service",
     ":review-service",
-    ":notification-service"
+    ":notification-service",
+    ":pay-service"
 )
