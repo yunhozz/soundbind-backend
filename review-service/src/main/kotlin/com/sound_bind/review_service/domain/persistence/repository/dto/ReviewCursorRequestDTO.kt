@@ -1,4 +1,4 @@
-package com.sound_bind.review_service.global.dto.request
+package com.sound_bind.review_service.domain.persistence.repository.dto
 
 import java.time.LocalDateTime
 

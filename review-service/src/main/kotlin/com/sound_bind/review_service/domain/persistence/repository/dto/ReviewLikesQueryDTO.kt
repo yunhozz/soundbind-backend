@@ -1,4 +1,4 @@
-package com.sound_bind.review_service.global.dto.response
+package com.sound_bind.review_service.domain.persistence.repository.dto
 
 import com.querydsl.core.annotations.QueryProjection
 

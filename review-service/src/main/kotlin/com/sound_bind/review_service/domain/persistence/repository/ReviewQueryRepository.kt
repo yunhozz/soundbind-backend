@@ -1,7 +1,7 @@
 package com.sound_bind.review_service.domain.persistence.repository
 
-import com.sound_bind.review_service.global.dto.request.ReviewCursorRequestDTO
-import com.sound_bind.review_service.global.dto.response.ReviewQueryDTO
+import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorRequestDTO
+import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewQueryDTO
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Slice
 

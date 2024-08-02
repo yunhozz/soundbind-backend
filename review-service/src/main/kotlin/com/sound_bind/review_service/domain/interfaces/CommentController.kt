@@ -2,7 +2,7 @@ package com.sound_bind.review_service.domain.interfaces
 
 import com.review_service.domain.interfaces.dto.APIResponse
 import com.sound_bind.review_service.domain.application.CommentService
-import com.sound_bind.review_service.global.dto.request.CommentCreateDTO
+import com.sound_bind.review_service.domain.application.dto.request.CommentCreateDTO
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping

@@ -1,4 +1,4 @@
-package com.sound_bind.review_service.global.dto.request
+package com.sound_bind.review_service.domain.application.dto.request
 
 import jakarta.validation.constraints.NotBlank
 

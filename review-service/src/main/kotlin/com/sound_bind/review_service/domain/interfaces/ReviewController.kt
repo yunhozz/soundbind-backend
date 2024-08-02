@@ -2,9 +2,9 @@ package com.sound_bind.review_service.domain.interfaces
 
 import com.review_service.domain.interfaces.dto.APIResponse
 import com.sound_bind.review_service.domain.application.ReviewService
-import com.sound_bind.review_service.global.dto.request.ReviewCreateDTO
-import com.sound_bind.review_service.global.dto.request.ReviewCursorRequestDTO
-import com.sound_bind.review_service.global.dto.request.ReviewUpdateDTO
+import com.sound_bind.review_service.domain.application.dto.request.ReviewCreateDTO
+import com.sound_bind.review_service.domain.application.dto.request.ReviewUpdateDTO
+import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorRequestDTO
 import jakarta.validation.Valid
 import khttp.get
 import org.springframework.data.domain.Pageable

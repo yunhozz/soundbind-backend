@@ -3,8 +3,8 @@ package com.sound_bind.review_service.domain.persistence.repository
 import com.querydsl.jpa.impl.JPAQueryFactory
 import com.sound_bind.review_service.domain.persistence.entity.QComment.comment
 import com.sound_bind.review_service.domain.persistence.entity.QReview.review
-import com.sound_bind.review_service.global.dto.response.CommentQueryDTO
-import com.sound_bind.review_service.global.dto.response.QCommentQueryDTO
+import com.sound_bind.review_service.domain.persistence.repository.dto.CommentQueryDTO
+import com.sound_bind.review_service.domain.persistence.repository.dto.QCommentQueryDTO
 import org.springframework.stereotype.Repository
 
 @Repository
