@@ -32,7 +32,7 @@ class AuthController(private val authService: AuthService) {
         val result = authService.signInByLocalUser(dto)
         CookieUtils.addCookie(
             response,
-            "atk",
+            CookieUtils.ACCESS_TOKEN_COOKIE_NAME,
             CookieUtils.serialize(result.accessToken),
             null
         )
@@ -58,7 +58,7 @@ class AuthController(private val authService: AuthService) {
         val result = authService.tokenRefresh(CookieUtils.deserialize(tokenCookie, String::class.java))
         CookieUtils.addCookie(
             response,
-            "atk",
+            CookieUtils.ACCESS_TOKEN_COOKIE_NAME,
             CookieUtils.serialize(result.accessToken),
             null
         )

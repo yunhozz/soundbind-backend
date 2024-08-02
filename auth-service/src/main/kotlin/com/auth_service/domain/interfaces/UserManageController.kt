@@ -47,7 +47,7 @@ class UserManageController(private val userManageService: UserManageService) {
         response: HttpServletResponse
     ): APIResponse {
         userManageService.deleteLocalUser(id.toLong(), token)
-        CookieUtils.deleteCookie(request, response, "atk")
+        CookieUtils.deleteCookie(request, response, CookieUtils.ACCESS_TOKEN_COOKIE_NAME)
         val record = mapOf(
             "topic" to "user-deletion-topic",
             "message" to mapOf("userId" to id)
