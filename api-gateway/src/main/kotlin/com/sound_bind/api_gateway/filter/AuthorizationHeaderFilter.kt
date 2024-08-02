@@ -85,7 +85,7 @@ class AuthorizationHeaderFilter
     private fun tokenRefreshRequest(exchange: ServerWebExchange, chain: GatewayFilterChain): Mono<Void> {
         val request = exchange.request
         val cookie = request.cookies.getFirst("atk")
-            ?: return Mono.error(RuntimeException("Token is Missing!!"))
+            ?: return Mono.error(RuntimeException("Token is missing!! Need login."))
 
         return WebClient.create()
             .get()

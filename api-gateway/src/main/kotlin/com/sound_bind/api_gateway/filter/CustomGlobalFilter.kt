@@ -35,13 +35,14 @@ class CustomGlobalFilter: GlobalFilter, Ordered {
 
     override fun getOrder() = Ordered.HIGHEST_PRECEDENCE
 
-    private enum class RestrictedPath(val path: String) {
-        TOKEN_REFRESH("/auth/token/refresh"),
-        GET_SUBJECT("/auth/subject")
+    private enum class RestrictedPath(val pattern: Regex) {
+        TOKEN_REFRESH(Regex("^/auth/token/refresh$")),
+        GET_SUBJECT(Regex("^/auth/subject$")),
+        GET_SIMPLE_USER_INFO(Regex("^/users/\\d+/simple$"))
         ;
 
         companion object {
-            fun isRestricted(path: String): Boolean = entries.any { path.contains(it.path) }
+            fun isRestricted(path: String): Boolean = entries.any { it.pattern.matches(path) }
         }
     }
 }
