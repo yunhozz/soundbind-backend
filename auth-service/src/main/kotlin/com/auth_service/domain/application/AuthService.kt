@@ -28,7 +28,7 @@ class AuthService(
     @Transactional(readOnly = true)
     fun signInByLocalUser(dto: SignInRequestDTO): TokenResponseDTO {
         val userProfile = userProfileRepository.findWithUserByEmail(dto.email)
-            ?: throw UserNotFoundException("User not found")
+            ?: throw UserNotFoundException("User not found with email: ${dto.email}")
 
         val user = userProfile.user
         val userPassword = userPasswordRepository.findWithUserByUserId(user.id!!)
@@ -41,7 +41,7 @@ class AuthService(
             return tokenResponseDTO
 
         } else {
-            throw PasswordInvalidException("Invalid password")
+            throw PasswordInvalidException("Password incorrect")
         }
     }
 

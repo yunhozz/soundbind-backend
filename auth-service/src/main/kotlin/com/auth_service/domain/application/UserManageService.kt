@@ -1,13 +1,13 @@
 package com.auth_service.domain.application
 
 import com.auth_service.domain.application.dto.request.SignUpRequestDTO
-import com.auth_service.domain.application.dto.response.UserSimpleInfoResponseDTO
 import com.auth_service.domain.persistence.entity.User
 import com.auth_service.domain.persistence.entity.UserPassword
 import com.auth_service.domain.persistence.entity.UserProfile
 import com.auth_service.domain.persistence.repository.UserPasswordRepository
 import com.auth_service.domain.persistence.repository.UserProfileRepository
 import com.auth_service.domain.persistence.repository.UserRepository
+import com.auth_service.domain.persistence.repository.dto.UserSimpleInfoQueryDTO
 import com.auth_service.global.exception.UserManageException.EmailDuplicateException
 import com.auth_service.global.exception.UserManageException.UserNotFoundException
 import com.auth_service.global.util.RedisUtils
@@ -46,15 +46,9 @@ class UserManageService(
     }
 
     @Transactional(readOnly = true)
-    fun findSimpleUserInfoByUserId(userId: Long): UserSimpleInfoResponseDTO {
-        val userProfile = userProfileRepository.findWithUserByUserId(userId)
-            ?: throw UserNotFoundException("User not found with id: $userId")
-        return UserSimpleInfoResponseDTO(
-            userProfile.user.id!!,
-            userProfile.nickname,
-            userProfile.profileUrl,
-        )
-    }
+    fun findSimpleUserInfoByEmail(email: String): UserSimpleInfoQueryDTO =
+        userProfileRepository.findSimpleInfoByEmail(email)
+            ?: throw UserNotFoundException("User not found with email: $email")
 
     @Transactional
     fun deleteLocalUser(userId: Long, token: String) {

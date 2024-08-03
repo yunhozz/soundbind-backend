@@ -2,7 +2,6 @@ package com.auth_service.domain.interfaces
 
 import com.auth_service.domain.application.UserManageService
 import com.auth_service.domain.application.dto.request.SignUpRequestDTO
-import com.auth_service.domain.application.dto.response.UserSimpleInfoResponseDTO
 import com.auth_service.domain.interfaces.dto.APIResponse
 import com.auth_service.global.annotation.HeaderSubject
 import com.auth_service.global.annotation.HeaderToken
@@ -14,8 +13,6 @@ import jakarta.validation.Valid
 import khttp.post
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -33,11 +30,6 @@ class UserManageController(private val userManageService: UserManageService) {
         return APIResponse.of("Local user joined success", result)
     }
 
-    @GetMapping("/{id}/simple")
-    @ResponseStatus(HttpStatus.OK)
-    fun getUserSimpleInformation(@PathVariable id: String): UserSimpleInfoResponseDTO =
-        userManageService.findSimpleUserInfoByUserId(id.toLong())
-
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun withdrawMember(
@@ -47,7 +39,7 @@ class UserManageController(private val userManageService: UserManageService) {
         response: HttpServletResponse
     ): APIResponse {
         userManageService.deleteLocalUser(id.toLong(), token)
-        CookieUtils.deleteCookie(request, response, CookieUtils.ACCESS_TOKEN_COOKIE_NAME)
+        CookieUtils.deleteAllCookies(request, response)
         val record = mapOf(
             "topic" to "user-deletion-topic",
             "message" to mapOf("userId" to id)

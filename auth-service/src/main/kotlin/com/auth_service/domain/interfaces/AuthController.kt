@@ -1,12 +1,14 @@
 package com.auth_service.domain.interfaces
 
 import com.auth_service.domain.application.AuthService
+import com.auth_service.domain.application.UserManageService
 import com.auth_service.domain.application.dto.request.SignInRequestDTO
 import com.auth_service.domain.application.dto.response.SubjectResponseDTO
 import com.auth_service.domain.interfaces.dto.APIResponse
 import com.auth_service.global.annotation.HeaderToken
 import com.auth_service.global.auth.jwt.TokenResponseDTO
 import com.auth_service.global.util.CookieUtils
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -24,7 +26,10 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/auth")
-class AuthController(private val authService: AuthService) {
+class AuthController(
+    private val authService: AuthService,
+    private val userManageService: UserManageService
+) {
 
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.CREATED)
@@ -36,6 +41,16 @@ class AuthController(private val authService: AuthService) {
             CookieUtils.serialize(result.accessToken),
             null
         )
+
+        val userInfo = userManageService.findSimpleUserInfoByEmail(dto.email)
+        val userInfoStr = jacksonObjectMapper().writeValueAsString(userInfo)
+        CookieUtils.addCookie(
+            response,
+            CookieUtils.USER_SIMPLE_INFO_COOKIE_NAME,
+            CookieUtils.serialize(userInfoStr),
+            null
+        )
+
         return APIResponse.of("Login successful", result)
     }
 
@@ -48,7 +63,7 @@ class AuthController(private val authService: AuthService) {
     ): APIResponse {
         val authentication = authService.signOut(token)
         SecurityContextLogoutHandler().logout(request, response, authentication)
-        CookieUtils.deleteCookie(request, response, "atk")
+        CookieUtils.deleteAllCookies(request, response)
         return APIResponse.of("Logout successful")
     }
 
