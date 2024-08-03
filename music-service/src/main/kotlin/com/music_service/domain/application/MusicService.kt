@@ -1,19 +1,19 @@
 package com.music_service.domain.application
 
+import com.music_service.domain.application.dto.request.MusicCreateDTO
+import com.music_service.domain.application.dto.request.MusicUpdateDTO
+import com.music_service.domain.application.dto.response.MusicFileResponseDTO
 import com.music_service.domain.application.file.FileHandler
-import com.music_service.domain.interfaces.MusicServiceException.MusicFileNotExistException
-import com.music_service.domain.interfaces.MusicServiceException.MusicNotFoundException
 import com.music_service.domain.persistence.entity.FileEntity
 import com.music_service.domain.persistence.entity.FileEntity.FileType.IMAGE
 import com.music_service.domain.persistence.entity.FileEntity.FileType.MUSIC
 import com.music_service.domain.persistence.entity.Music
 import com.music_service.domain.persistence.repository.FileRepository
 import com.music_service.domain.persistence.repository.MusicRepository
-import com.music_service.global.dto.request.MusicCreateDTO
-import com.music_service.global.dto.request.MusicUpdateDTO
-import com.music_service.global.dto.response.MusicDetailsQueryDTO
-import com.music_service.global.dto.response.MusicFileResponseDTO
-import com.music_service.global.dto.response.MusicSimpleQueryDTO
+import com.music_service.domain.persistence.repository.dto.MusicDetailsQueryDTO
+import com.music_service.domain.persistence.repository.dto.MusicSimpleQueryDTO
+import com.music_service.global.exception.MusicServiceException.MusicFileNotExistException
+import com.music_service.global.exception.MusicServiceException.MusicNotFoundException
 import org.springframework.core.io.Resource
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Slice

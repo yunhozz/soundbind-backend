@@ -1,9 +1,9 @@
 package com.music_service.domain.interfaces
 
 import com.music_service.domain.application.MusicService
+import com.music_service.domain.application.dto.request.MusicCreateDTO
+import com.music_service.domain.application.dto.request.MusicUpdateDTO
 import com.music_service.domain.interfaces.dto.APIResponse
-import com.music_service.global.dto.request.MusicCreateDTO
-import com.music_service.global.dto.request.MusicUpdateDTO
 import jakarta.validation.Valid
 import org.springframework.core.io.Resource
 import org.springframework.http.ContentDisposition

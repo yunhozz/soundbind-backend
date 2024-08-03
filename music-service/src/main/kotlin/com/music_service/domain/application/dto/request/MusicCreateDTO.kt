@@ -1,4 +1,4 @@
-package com.music_service.global.dto.request
+package com.music_service.domain.application.dto.request
 
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotEmpty

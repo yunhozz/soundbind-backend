@@ -1,4 +1,4 @@
-package com.music_service.global.dto.response
+package com.music_service.domain.application.dto.response
 
 import org.springframework.core.io.Resource
 

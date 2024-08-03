@@ -1,4 +1,4 @@
-package com.music_service.global.dto.response
+package com.music_service.domain.persistence.repository.dto
 
 import com.querydsl.core.annotations.QueryProjection
 

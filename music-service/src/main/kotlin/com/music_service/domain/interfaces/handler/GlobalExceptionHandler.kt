@@ -1,7 +1,8 @@
-package com.music_service.domain.interfaces
+package com.music_service.domain.interfaces.handler
 
 import com.music_service.domain.interfaces.dto.ErrorResponse
-import com.music_service.domain.interfaces.dto.ErrorResponse.ErrorCode
+import com.music_service.global.exception.ErrorCode
+import com.music_service.global.exception.MusicServiceException
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
@@ -45,13 +46,4 @@ class GlobalExceptionHandler {
             .status(e.statusCode)
             .body(ErrorResponse.of(ErrorCode.METHOD_NOT_ALLOWED, e.responseBodyAsString))
     }
-}
-
-sealed class MusicServiceException(
-    val errorCode: ErrorCode,
-    override val message: String
-): RuntimeException(message) {
-
-    class MusicNotFoundException(override val message: String): MusicServiceException(ErrorCode.NOT_FOUND, message)
-    class MusicFileNotExistException(override val message: String): MusicServiceException(ErrorCode.NOT_FOUND, message)
 }
