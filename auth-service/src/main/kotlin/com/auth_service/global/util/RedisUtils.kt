@@ -6,7 +6,6 @@ import org.springframework.beans.factory.InitializingBean
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.ValueOperations
 import org.springframework.stereotype.Component
-import sun.jvm.hotspot.oops.CellTypeState.value
 import java.time.Duration
 
 @Component

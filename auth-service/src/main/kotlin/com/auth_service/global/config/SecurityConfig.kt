@@ -38,10 +38,7 @@ class SecurityConfig(
         http
             .cors { it.disable() }
             .csrf { it.disable() }
-            .authorizeHttpRequests {
-                it.requestMatchers("/api/users/**").permitAll()
-                it.requestMatchers("/api/auth/**").permitAll()
-            }
+            .authorizeHttpRequests { it.anyRequest().permitAll() }
             .headers { it.frameOptions { fo -> fo.sameOrigin() } }
             .formLogin { it.disable() }
             .httpBasic { it.disable() }
