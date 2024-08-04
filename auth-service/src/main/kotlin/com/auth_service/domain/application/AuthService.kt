@@ -46,18 +46,16 @@ class AuthService(
     }
 
     fun signOut(token: String): Authentication =
-        RedisUtils.getValue(token)?.let { refreshToken ->
-            val authentication = jwtProvider.getAuthentication(token)
-            RedisUtils.deleteValue(token)
-            RedisUtils.saveValue(refreshToken, "LOGOUT", Duration.ofMinutes(10))
-
+        RedisUtils.getValue(token)?.let {
+            val authentication = jwtProvider.getAuthentication(it)
+            RedisUtils.updateValue(token, "LOGOUT", Duration.ofMinutes(10))
             authentication
 
         } ?: throw TokenNotFoundException("Token not found")
 
     fun tokenRefresh(token: String): TokenResponseDTO =
-        RedisUtils.getValue(token)?.let { refreshToken ->
-            val authentication = jwtProvider.getAuthentication(refreshToken)
+        RedisUtils.getValue(token)?.let {
+            val authentication = jwtProvider.getAuthentication(it)
             val tokenResponseDTO = jwtProvider.generateToken(authentication)
 
             RedisUtils.deleteValue(token)

@@ -8,7 +8,6 @@ import com.auth_service.domain.interfaces.dto.APIResponse
 import com.auth_service.global.annotation.HeaderToken
 import com.auth_service.global.auth.jwt.TokenResponseDTO
 import com.auth_service.global.util.CookieUtils
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -41,16 +40,7 @@ class AuthController(
             CookieUtils.serialize(result.accessToken),
             null
         )
-
-        val userInfo = userManageService.findSimpleUserInfoByEmail(dto.email)
-        val userInfoStr = jacksonObjectMapper().writeValueAsString(userInfo)
-        CookieUtils.addCookie(
-            response,
-            CookieUtils.USER_SIMPLE_INFO_COOKIE_NAME,
-            CookieUtils.serialize(userInfoStr),
-            null
-        )
-
+        userManageService.saveUserSimpleInfoOnRedis(dto.email)
         return APIResponse.of("Login successful", result)
     }
 

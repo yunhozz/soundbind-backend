@@ -17,7 +17,6 @@ class CookieUtils {
         const val ACCESS_TOKEN_COOKIE_NAME = "atk"
         const val OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME = "oauth2_auth_request"
         const val REDIRECT_URI_PARAM_COOKIE_NAME = "redirect_uri"
-        const val USER_SIMPLE_INFO_COOKIE_NAME = "user_simple_info"
         const val COOKIE_EXPIRE_SECONDS = 180L
 
         fun getCookie(request: HttpServletRequest, name: String): Cookie? =
@@ -49,8 +48,7 @@ class CookieUtils {
             val cookieNameSet = setOf(
                 ACCESS_TOKEN_COOKIE_NAME,
                 OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME,
-                REDIRECT_URI_PARAM_COOKIE_NAME,
-                USER_SIMPLE_INFO_COOKIE_NAME
+                REDIRECT_URI_PARAM_COOKIE_NAME
             )
             request.cookies.forEach { cookie ->
                 val cookieName = cookie.name

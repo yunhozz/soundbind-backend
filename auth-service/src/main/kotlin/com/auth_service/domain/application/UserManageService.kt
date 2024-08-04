@@ -7,13 +7,14 @@ import com.auth_service.domain.persistence.entity.UserProfile
 import com.auth_service.domain.persistence.repository.UserPasswordRepository
 import com.auth_service.domain.persistence.repository.UserProfileRepository
 import com.auth_service.domain.persistence.repository.UserRepository
-import com.auth_service.domain.persistence.repository.dto.UserSimpleInfoQueryDTO
 import com.auth_service.global.exception.UserManageException.EmailDuplicateException
 import com.auth_service.global.exception.UserManageException.UserNotFoundException
 import com.auth_service.global.util.RedisUtils
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Duration
 
 @Service
 class UserManageService(
@@ -46,15 +47,19 @@ class UserManageService(
     }
 
     @Transactional(readOnly = true)
-    fun findSimpleUserInfoByEmail(email: String): UserSimpleInfoQueryDTO =
-        userProfileRepository.findSimpleInfoByEmail(email)
+    fun saveUserSimpleInfoOnRedis(email: String) {
+        val userInfo = userProfileRepository.findSimpleInfoByEmail(email)
             ?: throw UserNotFoundException("User not found with email: $email")
+        val userInfoStr = jacksonObjectMapper().writeValueAsString(userInfo)
+        RedisUtils.saveValue("user:${userInfo.getId()}", userInfoStr, Duration.ofDays(1))
+    }
 
     @Transactional
     fun deleteLocalUser(userId: Long, token: String) {
         val user = userRepository.findById(userId)
             .orElseThrow { UserNotFoundException("User not found : $userId") }
         RedisUtils.deleteValue(token)
+        RedisUtils.deleteValue("user:${user.id}")
 
         userPasswordRepository.deleteByUser(user)
         userProfileRepository.deleteByUser(user)
