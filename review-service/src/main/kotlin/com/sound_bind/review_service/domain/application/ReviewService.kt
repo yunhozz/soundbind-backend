@@ -16,6 +16,7 @@ import com.sound_bind.review_service.global.exception.ReviewServiceException.Rev
 import com.sound_bind.review_service.global.exception.ReviewServiceException.ReviewNotFoundException
 import com.sound_bind.review_service.global.exception.ReviewServiceException.ReviewNotUpdatableException
 import com.sound_bind.review_service.global.exception.ReviewServiceException.ReviewUpdateNotAuthorizedException
+import com.sound_bind.review_service.global.util.RedisUtils
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Slice
 import org.springframework.kafka.annotation.KafkaListener
@@ -36,11 +37,13 @@ class ReviewService(
         if (reviewRepository.existsReviewByMusicIdAndUserId(musicId, userId)) {
             throw ReviewAlreadyExistException("Review already exists")
         }
+        val userInfo = RedisUtils.getJson("user:$userId", Map::class.java)
+            ?: throw IllegalArgumentException("Value is not Present by Key : user:$userId")
         val review = Review.create(
             musicId,
             userId,
-            dto.userNickname,
-            dto.userImageUrl,
+            userInfo["nickname"] as String,
+            userInfo["profileUrl"] as String,
             dto.message,
             dto.score
         )

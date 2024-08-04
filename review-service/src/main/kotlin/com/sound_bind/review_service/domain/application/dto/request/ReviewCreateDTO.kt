@@ -5,9 +5,6 @@ import jakarta.validation.constraints.NotNull
 
 data class ReviewCreateDTO(
     @field:NotBlank
-    val userNickname: String,
-    val userImageUrl: String,
-    @field:NotBlank
     val message: String,
     @field:NotNull
     val score: Double

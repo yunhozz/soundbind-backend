@@ -3,6 +3,7 @@ package com.sound_bind.review_service.domain.interfaces
 import com.review_service.domain.interfaces.dto.APIResponse
 import com.sound_bind.review_service.domain.application.CommentService
 import com.sound_bind.review_service.domain.application.dto.request.CommentCreateDTO
+import com.sound_bind.review_service.global.annotation.HeaderSubject
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -17,17 +18,16 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/comments")
-class CommentController(
-    private val commentService: CommentService
-) {
+class CommentController(private val commentService: CommentService) {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun makeCommentOnReview(
+        @HeaderSubject sub: String,
         @RequestParam reviewId: String,
         @Valid @RequestBody dto: CommentCreateDTO
     ): APIResponse {
-        val commentId = commentService.createComment(reviewId.toLong(), 789L, dto)
+        val commentId = commentService.createComment(reviewId.toLong(), sub.toLong(), dto)
         return APIResponse.of("Comment Created", commentId)
     }
 
