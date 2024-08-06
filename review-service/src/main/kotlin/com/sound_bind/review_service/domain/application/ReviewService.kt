@@ -43,7 +43,7 @@ class ReviewService(
             musicId,
             userId,
             userInfo["nickname"] as String,
-            userInfo["profileUrl"] as String,
+            userInfo["profileUrl"] as? String,
             dto.message,
             dto.score
         )

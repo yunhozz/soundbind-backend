@@ -14,6 +14,7 @@ import com.music_service.domain.persistence.repository.dto.MusicDetailsQueryDTO
 import com.music_service.domain.persistence.repository.dto.MusicSimpleQueryDTO
 import com.music_service.global.exception.MusicServiceException.MusicFileNotExistException
 import com.music_service.global.exception.MusicServiceException.MusicNotFoundException
+import com.music_service.global.util.RedisUtils
 import org.springframework.core.io.Resource
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Slice
@@ -29,14 +30,15 @@ class MusicService(
 ) {
     // Spring rolls back only for RuntimeException, Error by default
     @Transactional(rollbackFor = [IOException::class])
-    fun uploadMusic(dto: MusicCreateDTO): Long? {
+    fun uploadMusic(userId: Long, dto: MusicCreateDTO): Long? {
         val genres: Set<Music.Genre> = dto.genres.map {
             Music.Genre.of(it)
         }.toHashSet()
-
+        val userInfo = RedisUtils.getJson("user:$userId", Map::class.java)
+            ?: throw IllegalArgumentException("Value is not Present by Key : user:$userId")
         val music = Music.create(
-            dto.userId,
-            dto.userNickname,
+            userId,
+            userInfo["nickname"] as String,
             dto.title,
             genres
         )

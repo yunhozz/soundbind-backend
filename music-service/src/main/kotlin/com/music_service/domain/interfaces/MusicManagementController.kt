@@ -4,6 +4,7 @@ import com.music_service.domain.application.MusicService
 import com.music_service.domain.application.dto.request.MusicCreateDTO
 import com.music_service.domain.application.dto.request.MusicUpdateDTO
 import com.music_service.domain.interfaces.dto.APIResponse
+import com.sound_bind.music_service.global.annotation.HeaderSubject
 import jakarta.validation.Valid
 import org.springframework.core.io.Resource
 import org.springframework.http.ContentDisposition
@@ -30,8 +31,11 @@ class MusicManagementController(
 ) {
     @PostMapping(consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     @ResponseStatus(HttpStatus.CREATED)
-    fun uploadMusic(@Valid @ModelAttribute dto: MusicCreateDTO): APIResponse {
-        val musicId = musicService.uploadMusic(dto)
+    fun uploadMusic(
+        @HeaderSubject sub: String,
+        @Valid @ModelAttribute dto: MusicCreateDTO
+    ): APIResponse {
+        val musicId = musicService.uploadMusic(sub.toLong(), dto)
         return APIResponse.of("Music Created", musicId)
     }
 
