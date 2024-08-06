@@ -21,10 +21,12 @@ spring:
           filters:
             - AuthorizationHeaderFilter
           predicates:
+            - Path=/api/auth/**, /api/users/**
             - Method=DELETE,PUT,PATCH
         - id: auth-service-default
           uri: lb://AUTH-SERVICE
           predicates:
+            - Path=/api/auth/**, /api/users/**
             - Method=GET,POST
         - id: music-service
           uri: lb://MUSIC-SERVICE

@@ -32,12 +32,12 @@ class AuthorizationHeaderFilter
                 val request = exchange.request
                 val response = exchange.response
 
+                log.info("[Authorization Header Filter Start] Request ID -> ${request.id}")
+                log.info("Request URI : ${request.uri}")
+
                 val cookie = request.cookies.getFirst("atk")
                 val cookieValue = cookie?.value
                     ?: throw RuntimeException("Token is Missing!!")
-
-                log.info("[Authorization Header Filter Start] Request ID -> ${request.id}")
-                log.info("Request URI : ${request.uri}")
 
                 val bytes = Base64.getUrlDecoder().decode(cookieValue)
                 val token = ByteArrayInputStream(bytes).use { bais ->

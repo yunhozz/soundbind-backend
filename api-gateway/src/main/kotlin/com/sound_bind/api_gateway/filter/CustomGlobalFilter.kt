@@ -17,6 +17,10 @@ class CustomGlobalFilter: GlobalFilter, Ordered {
     override fun filter(exchange: ServerWebExchange, chain: GatewayFilterChain): Mono<Void> {
         val request = exchange.request
         val response = exchange.response
+
+        log.info("[Global Filter Start] Request ID -> ${request.id}")
+        log.info("Request URI : ${request.uri}")
+
         val path = request.uri.path
 
         // Can't access the corresponding url
@@ -24,8 +28,6 @@ class CustomGlobalFilter: GlobalFilter, Ordered {
             response.statusCode = HttpStatus.NOT_FOUND
             return response.setComplete()
         }
-
-        log.info("[Global Filter Start] Request ID -> ${request.id}")
 
         return chain.filter(exchange)
             .then(Mono.fromRunnable {
