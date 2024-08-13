@@ -32,6 +32,11 @@ class User private constructor(
     var role = role
         protected set
 
+    fun verify() {
+        require(role != Role.GUEST) { "Role is not GUEST. Current role: $role" }
+        role = Role.USER
+    }
+
     internal fun updateLoginType(loginType: LoginType) {
         this.loginType = loginType
     }

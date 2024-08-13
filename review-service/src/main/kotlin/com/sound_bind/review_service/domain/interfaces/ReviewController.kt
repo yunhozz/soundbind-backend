@@ -2,9 +2,10 @@ package com.sound_bind.review_service.domain.interfaces
 
 import com.review_service.domain.interfaces.dto.APIResponse
 import com.sound_bind.review_service.domain.application.ReviewService
-import com.sound_bind.review_service.global.dto.request.ReviewCreateDTO
-import com.sound_bind.review_service.global.dto.request.ReviewCursorRequestDTO
-import com.sound_bind.review_service.global.dto.request.ReviewUpdateDTO
+import com.sound_bind.review_service.domain.application.dto.request.ReviewCreateDTO
+import com.sound_bind.review_service.domain.application.dto.request.ReviewUpdateDTO
+import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorRequestDTO
+import com.sound_bind.review_service.global.annotation.HeaderSubject
 import jakarta.validation.Valid
 import khttp.get
 import org.springframework.data.domain.Pageable
@@ -22,13 +23,12 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/reviews")
-class ReviewController(
-    private val reviewService: ReviewService
-) {
+class ReviewController(private val reviewService: ReviewService) {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun createReviewOnMusic(
+        @HeaderSubject sub: String,
         @RequestParam musicId: String,
         @Valid @RequestBody dto: ReviewCreateDTO
     ): APIResponse {
@@ -37,7 +37,7 @@ class ReviewController(
             val message = response.jsonObject.getString("message")
             return APIResponse.of(message)
         }
-        val reviewId = reviewService.createReview(musicId.toLong(), 123L, dto)
+        val reviewId = reviewService.createReview(musicId.toLong(), sub.toLong(), dto)
         return APIResponse.of("Review created", reviewId)
     }
 

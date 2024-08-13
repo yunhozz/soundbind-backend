@@ -17,6 +17,10 @@ class CustomGlobalFilter: GlobalFilter, Ordered {
     override fun filter(exchange: ServerWebExchange, chain: GatewayFilterChain): Mono<Void> {
         val request = exchange.request
         val response = exchange.response
+
+        log.info("[Global Filter Start] Request ID -> ${request.id}")
+        log.info("Request URI : ${request.uri}")
+
         val path = request.uri.path
 
         // Can't access the corresponding url
@@ -24,8 +28,6 @@ class CustomGlobalFilter: GlobalFilter, Ordered {
             response.statusCode = HttpStatus.NOT_FOUND
             return response.setComplete()
         }
-
-        log.info("[Global Filter Start] Request ID -> ${request.id}")
 
         return chain.filter(exchange)
             .then(Mono.fromRunnable {
@@ -35,13 +37,14 @@ class CustomGlobalFilter: GlobalFilter, Ordered {
 
     override fun getOrder() = Ordered.HIGHEST_PRECEDENCE
 
-    private enum class RestrictedPath(val path: String) {
-        TOKEN_REFRESH("/auth/token/refresh"),
-        GET_SUBJECT("/auth/subject")
+    private enum class RestrictedPath(val pattern: Regex) {
+        TOKEN_REFRESH(Regex("^/auth/token/refresh$")),
+        GET_SUBJECT(Regex("^/auth/subject$")),
+        GET_SIMPLE_USER_INFO(Regex("^/users/\\d+/simple$"))
         ;
 
         companion object {
-            fun isRestricted(path: String): Boolean = entries.any { path.contains(it.path) }
+            fun isRestricted(path: String): Boolean = entries.any { it.pattern.matches(path) }
         }
     }
 }

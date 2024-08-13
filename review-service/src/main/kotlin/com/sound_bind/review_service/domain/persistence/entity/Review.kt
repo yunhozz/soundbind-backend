@@ -13,7 +13,7 @@ class Review private constructor(
     val musicId: Long,
     val userId: Long,
     userNickname: String,
-    userImageUrl: String,
+    userImageUrl: String?,
     message: String,
     score: Double,
     comments: Int = 0,
@@ -25,7 +25,7 @@ class Review private constructor(
             musicId: Long,
             userId: Long,
             userNickname: String,
-            userImageUrl: String,
+            userImageUrl: String?,
             message: String,
             score: Double
         ) = Review(musicId, userId, userNickname, userImageUrl, message, score)

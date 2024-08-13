@@ -6,3 +6,4 @@ spring:
       local:
         - jwt-local
         - redis-local
+        - mail-local

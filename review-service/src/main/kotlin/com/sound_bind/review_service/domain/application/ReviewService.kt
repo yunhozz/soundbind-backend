@@ -1,21 +1,22 @@
 package com.sound_bind.review_service.domain.application
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.sound_bind.review_service.domain.interfaces.handler.ReviewServiceException.NegativeValueException
-import com.sound_bind.review_service.domain.interfaces.handler.ReviewServiceException.ReviewAlreadyExistException
-import com.sound_bind.review_service.domain.interfaces.handler.ReviewServiceException.ReviewNotFoundException
-import com.sound_bind.review_service.domain.interfaces.handler.ReviewServiceException.ReviewNotUpdatableException
-import com.sound_bind.review_service.domain.interfaces.handler.ReviewServiceException.ReviewUpdateNotAuthorizedException
+import com.sound_bind.review_service.domain.application.dto.request.ReviewCreateDTO
+import com.sound_bind.review_service.domain.application.dto.request.ReviewUpdateDTO
 import com.sound_bind.review_service.domain.persistence.entity.Review
 import com.sound_bind.review_service.domain.persistence.entity.ReviewLikes
 import com.sound_bind.review_service.domain.persistence.repository.CommentRepository
 import com.sound_bind.review_service.domain.persistence.repository.ReviewLikesRepository
 import com.sound_bind.review_service.domain.persistence.repository.ReviewQueryRepository.ReviewSort
 import com.sound_bind.review_service.domain.persistence.repository.ReviewRepository
-import com.sound_bind.review_service.global.dto.request.ReviewCreateDTO
-import com.sound_bind.review_service.global.dto.request.ReviewCursorRequestDTO
-import com.sound_bind.review_service.global.dto.request.ReviewUpdateDTO
-import com.sound_bind.review_service.global.dto.response.ReviewQueryDTO
+import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorRequestDTO
+import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewQueryDTO
+import com.sound_bind.review_service.global.exception.ReviewServiceException.NegativeValueException
+import com.sound_bind.review_service.global.exception.ReviewServiceException.ReviewAlreadyExistException
+import com.sound_bind.review_service.global.exception.ReviewServiceException.ReviewNotFoundException
+import com.sound_bind.review_service.global.exception.ReviewServiceException.ReviewNotUpdatableException
+import com.sound_bind.review_service.global.exception.ReviewServiceException.ReviewUpdateNotAuthorizedException
+import com.sound_bind.review_service.global.util.RedisUtils
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Slice
 import org.springframework.kafka.annotation.KafkaListener
@@ -36,11 +37,13 @@ class ReviewService(
         if (reviewRepository.existsReviewByMusicIdAndUserId(musicId, userId)) {
             throw ReviewAlreadyExistException("Review already exists")
         }
+        val userInfo = RedisUtils.getJson("user:$userId", Map::class.java)
+            ?: throw IllegalArgumentException("Value is not Present by Key : user:$userId")
         val review = Review.create(
             musicId,
             userId,
-            dto.userNickname,
-            dto.userImageUrl,
+            userInfo["nickname"] as String,
+            userInfo["profileUrl"] as? String,
             dto.message,
             dto.score
         )
@@ -69,7 +72,14 @@ class ReviewService(
         sort: String,
         dto: ReviewCursorRequestDTO,
         pageable: Pageable
-    ): Slice<ReviewQueryDTO> = reviewRepository.findReviewsOnMusic(musicId, userId, ReviewSort.of(sort), dto, pageable)
+    ): Slice<ReviewQueryDTO> =
+        reviewRepository.findReviewsOnMusic(
+            musicId,
+            userId,
+            ReviewSort.of(sort),
+            dto,
+            pageable
+        )
 
     @Transactional
     fun changeLikesFlag(reviewId: Long, userId: Long) =

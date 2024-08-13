@@ -16,17 +16,18 @@ spring:
           uri: lb://KAFKA-SERVER
           predicates:
             - Path=/api/kafka/**
-        - id: auth-service-user
+        - id: auth-service-authorized
           uri: lb://AUTH-SERVICE
           filters:
             - AuthorizationHeaderFilter
           predicates:
-            - Path=/api/users, /api/auth/logout
-            - Method=DELETE
+            - Path=/api/auth/**, /api/users/**
+            - Method=DELETE,PUT,PATCH
         - id: auth-service-default
           uri: lb://AUTH-SERVICE
           predicates:
-            - Path=/api/auth/**, /api/users
+            - Path=/api/auth/**, /api/users/**
+            - Method=GET,POST
         - id: music-service
           uri: lb://MUSIC-SERVICE
           filters:

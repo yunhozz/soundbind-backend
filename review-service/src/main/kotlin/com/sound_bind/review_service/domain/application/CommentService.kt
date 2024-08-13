@@ -1,12 +1,13 @@
 package com.sound_bind.review_service.domain.application
 
-import com.sound_bind.review_service.domain.interfaces.handler.CommentServiceException.CommentUpdateNotAuthorizedException
-import com.sound_bind.review_service.domain.interfaces.handler.ReviewServiceException
+import com.sound_bind.review_service.domain.application.dto.request.CommentCreateDTO
 import com.sound_bind.review_service.domain.persistence.entity.Comment
 import com.sound_bind.review_service.domain.persistence.repository.CommentRepository
 import com.sound_bind.review_service.domain.persistence.repository.ReviewRepository
-import com.sound_bind.review_service.global.dto.request.CommentCreateDTO
-import com.sound_bind.review_service.global.dto.response.CommentQueryDTO
+import com.sound_bind.review_service.domain.persistence.repository.dto.CommentQueryDTO
+import com.sound_bind.review_service.global.exception.CommentServiceException.CommentUpdateNotAuthorizedException
+import com.sound_bind.review_service.global.exception.ReviewServiceException.ReviewNotFoundException
+import com.sound_bind.review_service.global.util.RedisUtils
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -19,15 +20,19 @@ class CommentService(
     @Transactional
     fun createComment(reviewId: Long, userId: Long, dto: CommentCreateDTO): Long? {
         val review = reviewRepository.findById(reviewId)
-            .orElseThrow { ReviewServiceException.ReviewNotFoundException("Review not found: $reviewId") }
+            .orElseThrow { ReviewNotFoundException("Review not found: $reviewId") }
+        val userInfo = RedisUtils.getJson("user:$userId", Map::class.java)
+            ?: throw IllegalArgumentException("Value is not Present by Key : user:$userId")
         val comment = Comment.create(
             review,
             userId,
-            dto.userNickname,
+            userInfo["nickname"] as String,
             dto.message
         )
+
         review.addComments(1)
         commentRepository.save(comment)
+
         return comment.id
     }
 

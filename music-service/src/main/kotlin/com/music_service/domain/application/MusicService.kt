@@ -1,19 +1,21 @@
 package com.music_service.domain.application
 
-import com.music_service.domain.application.file.FileHandler
-import com.music_service.domain.interfaces.MusicServiceException.MusicFileNotExistException
-import com.music_service.domain.interfaces.MusicServiceException.MusicNotFoundException
+import com.music_service.domain.application.dto.request.MusicCreateDTO
+import com.music_service.domain.application.dto.request.MusicUpdateDTO
+import com.music_service.domain.application.dto.response.MusicFileResponseDTO
+import com.music_service.domain.application.file.ImageFileProcessor
+import com.music_service.domain.application.file.MusicFileProcessor
 import com.music_service.domain.persistence.entity.FileEntity
 import com.music_service.domain.persistence.entity.FileEntity.FileType.IMAGE
 import com.music_service.domain.persistence.entity.FileEntity.FileType.MUSIC
 import com.music_service.domain.persistence.entity.Music
 import com.music_service.domain.persistence.repository.FileRepository
 import com.music_service.domain.persistence.repository.MusicRepository
-import com.music_service.global.dto.request.MusicCreateDTO
-import com.music_service.global.dto.request.MusicUpdateDTO
-import com.music_service.global.dto.response.MusicDetailsQueryDTO
-import com.music_service.global.dto.response.MusicFileResponseDTO
-import com.music_service.global.dto.response.MusicSimpleQueryDTO
+import com.music_service.domain.persistence.repository.dto.MusicDetailsQueryDTO
+import com.music_service.domain.persistence.repository.dto.MusicSimpleQueryDTO
+import com.music_service.global.exception.MusicServiceException.MusicFileNotExistException
+import com.music_service.global.exception.MusicServiceException.MusicNotFoundException
+import com.music_service.global.util.RedisUtils
 import org.springframework.core.io.Resource
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Slice
@@ -25,28 +27,30 @@ import java.io.IOException
 class MusicService(
     private val musicRepository: MusicRepository,
     private val fileRepository: FileRepository,
-    private val fileHandler: FileHandler
+    private val musicHandler: MusicFileProcessor,
+    private val imageHandler: ImageFileProcessor
 ) {
     // Spring rolls back only for RuntimeException, Error by default
     @Transactional(rollbackFor = [IOException::class])
-    fun uploadMusic(dto: MusicCreateDTO): Long? {
+    fun uploadMusic(userId: Long, dto: MusicCreateDTO): Long? {
         val genres: Set<Music.Genre> = dto.genres.map {
             Music.Genre.of(it)
         }.toHashSet()
-
+        val userInfo = RedisUtils.getJson("user:$userId", Map::class.java)
+            ?: throw IllegalArgumentException("Value is not Present by Key : user:$userId")
         val music = Music.create(
-            dto.userId,
-            dto.userNickname,
+            userId,
+            userInfo["nickname"] as String,
             dto.title,
             genres
         )
 
-        val musicFileInfo = fileHandler.uploadMusic(dto.musicFile)
+        val musicFileInfo = musicHandler.upload(dto.musicFile)
         val musicFileEntity = createFileEntity(MUSIC, musicFileInfo, music)
         fileRepository.save(musicFileEntity)
 
         dto.imageFile?.let {
-            val imageFileInfo = fileHandler.uploadImage(it)
+            val imageFileInfo = imageHandler.upload(it)
             val imageFileEntity = createFileEntity(IMAGE, imageFileInfo, music)
             fileRepository.save(imageFileEntity)
         }
@@ -70,7 +74,7 @@ class MusicService(
             val files = fileRepository.findFilesWhereMusicId(it)
             files.forEach { file ->
                 if (file.fileType == IMAGE) {
-                    fileHandler.updateImage(file.fileUrl, dto.imageFile)
+                    imageHandler.update(file.fileUrl, dto.imageFile)
                     fileRepository.save(file)
                 }
             }
@@ -91,7 +95,7 @@ class MusicService(
             var musicInfo: Pair<Resource, String>?
             files.forEach { file ->
                 if (file.fileType == MUSIC) {
-                    musicInfo = fileHandler.downloadMusic(file.fileUrl)
+                    musicInfo = musicHandler.download(file.fileUrl)
                     return musicInfo?.let { info ->
                         MusicFileResponseDTO(
                             musicFile = info.first,
@@ -112,8 +116,8 @@ class MusicService(
             val files = fileRepository.findFilesWhereMusicId(it)
             files.forEach { file ->
                 when(file.fileType) {
-                    MUSIC -> fileHandler.deleteMusic(file.fileUrl)
-                    IMAGE -> fileHandler.deleteImage(file.fileUrl)
+                    MUSIC -> musicHandler.delete(file.fileUrl)
+                    IMAGE -> imageHandler.delete(file.fileUrl)
                 }
             }
             fileRepository.deleteAllInBatch(files)
