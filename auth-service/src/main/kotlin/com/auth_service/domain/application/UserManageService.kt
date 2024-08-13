@@ -9,12 +9,12 @@ import com.auth_service.domain.persistence.repository.UserProfileRepository
 import com.auth_service.domain.persistence.repository.UserRepository
 import com.auth_service.global.exception.UserManageException.EmailDuplicateException
 import com.auth_service.global.exception.UserManageException.UserNotFoundException
+import com.auth_service.global.exception.UserManageException.VerifyingCodeDifferentException
+import com.auth_service.global.exception.UserManageException.VerifyingCodeNotFoundException
 import com.auth_service.global.util.RedisUtils
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.Duration
 
 @Service
 class UserManageService(
@@ -46,12 +46,20 @@ class UserManageService(
         return guest.id!!
     }
 
-    @Transactional(readOnly = true)
-    fun saveUserSimpleInfoOnRedis(email: String) {
-        val userInfo = userProfileRepository.findSimpleInfoByEmail(email)
-            ?: throw UserNotFoundException("User not found with email: $email")
-        val userInfoStr = jacksonObjectMapper().writeValueAsString(userInfo)
-        RedisUtils.saveValue("user:${userInfo.getId()}", userInfoStr, Duration.ofDays(1))
+    @Transactional
+    fun verifyByEmail(userId: Long, code: String) {
+        val userProfile = findUserProfileWithUserByUserId(userId)
+        val email = userProfile.email
+
+        val verifyingCode = RedisUtils.getValue("verify:$email")
+            ?: throw VerifyingCodeNotFoundException("Please proceed again by retransmitting the verifying mail")
+        if (verifyingCode != code) {
+            throw VerifyingCodeDifferentException("The verifying code you entered does not match. Please re-enter.")
+        }
+
+        val user = userProfile.user
+        user.verify() // Role : GUEST -> USER
+        RedisUtils.deleteValue("verify:$email")
     }
 
     @Transactional
@@ -65,4 +73,9 @@ class UserManageService(
         userProfileRepository.deleteByUser(user)
         userRepository.delete(user)
     }
+
+    @Transactional(readOnly = true)
+    fun findUserProfileWithUserByUserId(userId: Long): UserProfile =
+        userProfileRepository.findWithUserByUserId(userId)
+            ?: throw UserNotFoundException("User not found with id: $userId")
 }

@@ -1,7 +1,6 @@
 package com.auth_service.domain.interfaces
 
 import com.auth_service.domain.application.AuthService
-import com.auth_service.domain.application.UserManageService
 import com.auth_service.domain.application.dto.request.SignInRequestDTO
 import com.auth_service.domain.application.dto.response.SubjectResponseDTO
 import com.auth_service.domain.interfaces.dto.APIResponse
@@ -25,10 +24,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/auth")
-class AuthController(
-    private val authService: AuthService,
-    private val userManageService: UserManageService
-) {
+class AuthController(private val authService: AuthService) {
 
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.CREATED)
@@ -40,7 +36,6 @@ class AuthController(
             CookieUtils.serialize(result.accessToken),
             null
         )
-        userManageService.saveUserSimpleInfoOnRedis(dto.email)
         return APIResponse.of("Login successful", result)
     }
 

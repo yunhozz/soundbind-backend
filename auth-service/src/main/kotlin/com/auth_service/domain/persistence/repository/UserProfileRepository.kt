@@ -16,12 +16,15 @@ interface UserProfileRepository: JpaRepository<UserProfile, Long> {
     fun findByUser(user: User): UserProfile?
 
     @Query(
-        "select u.id as id, up.nickname as nickname, up.profileUrl as profileUrl " +
+        "select u.id as userId, up.email as email, up.nickname as nickname, up.profileUrl as profileUrl " +
                 "from UserProfile up " +
                 "join up.user u " +
                 "where up.email = :email"
     )
     fun findSimpleInfoByEmail(email: String): UserSimpleInfoQueryDTO?
+
+    @Query("select up from UserProfile up join fetch up.user u where u.id = :userId")
+    fun findWithUserByUserId(userId: Long): UserProfile?
 
     @Query("select up from UserProfile up join fetch up.user u where up.email = :email")
     fun findWithUserByEmail(email: String): UserProfile?
