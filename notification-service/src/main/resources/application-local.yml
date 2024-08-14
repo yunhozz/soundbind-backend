@@ -1,0 +1,17 @@
+server:
+  port: 8040
+
+spring:
+  application:
+    name: notification-service
+  cloud:
+    config:
+      enabled: false
+  data:
+    mongodb:
+      uri: ${MONGO_DB_URL}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
