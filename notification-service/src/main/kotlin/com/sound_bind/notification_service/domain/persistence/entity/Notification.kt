@@ -8,15 +8,14 @@ import java.time.LocalDateTime
 
 @Document(collection = "notification")
 class Notification private constructor(
-    val senderId: String,
-    val receiverId: String,
+    val userId: String,
     val message: String,
     isChecked: Boolean = false
 ) {
 
     companion object {
-        fun create(senderId: String, receiverId: String, message: String) =
-            Notification(senderId, receiverId, message)
+        fun create(userId: String, message: String) =
+            Notification(userId, message)
     }
 
     @Id
