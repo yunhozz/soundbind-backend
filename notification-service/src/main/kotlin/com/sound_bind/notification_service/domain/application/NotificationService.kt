@@ -1,5 +1,6 @@
 package com.sound_bind.notification_service.domain.application
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.sound_bind.notification_service.domain.application.dto.response.NotificationResponseDTO
 import com.sound_bind.notification_service.domain.persistence.entity.Notification
 import com.sound_bind.notification_service.domain.persistence.repository.NotificationRepository
@@ -7,6 +8,7 @@ import com.sound_bind.notification_service.domain.persistence.repository.SseEmit
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import org.springframework.http.MediaType
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Service
@@ -30,8 +32,8 @@ class NotificationService(
         val emitter = SseEmitter(EMITTER_TIMEOUT)
         emitterRepository.saveEmitter(emitterId, emitter)
 
-        emitter.onCompletion { complete(emitterId) }
-        emitter.onTimeout { complete(emitterId) }
+        emitter.onCompletion { emitterRepository.deleteEmitterById(emitterId) }
+        emitter.onTimeout { emitter.complete() }
 
         sendToClient(emitter, emitterId, "[Event Stream Created] user id = $userId")
 
@@ -49,12 +51,16 @@ class NotificationService(
         groupId = "notification-service-group",
         topics = ["music-like-topic", "review-like-topic", "review-added-topic", "comment-added-topic"],
     )
-    fun sendMessage(userId: String, @Payload message: String): String {
-        val notification = Notification.create(userId, message)
+    fun sendMessage(@Payload message: String): String {
+        val obj = jacksonObjectMapper().readValue(message, Map::class.java)
+        val userId = obj["userId"] as String
+        val content = obj["content"] as String
+
+        val notification = Notification.create(userId, content)
         emitterRepository.findEmittersByUserId(userId)
             .forEach { (emitterId, emitter) ->
                 emitterRepository.saveNotification(emitterId, notification)
-                sendToClient(emitter, userId, NotificationResponseDTO(notification))
+                sendToClient(emitter, emitterId, notification.message)
             }
 
         notificationRepository.save(notification)
@@ -76,17 +82,12 @@ class NotificationService(
     @Transactional
     fun deleteNotificationById(id: String) = notificationRepository.deleteById(id)
 
-    private fun complete(emitterId: String) {
-        log.info("Emitter Completed")
-        emitterRepository.deleteEmitterById(emitterId)
-    }
-
     private fun sendToClient(emitter: SseEmitter, emitterId: String, data: Any) =
         try {
             val event = SseEmitter.event()
                 .id(emitterId)
                 .name("sse")
-                .data(data)
+                .data(data, MediaType.APPLICATION_JSON)
                 .build()
             emitter.send(event)
             log.info("Data send to $emitterId")
@@ -94,6 +95,6 @@ class NotificationService(
         } catch (e: IOException) {
             log.error("Fail to send data", e)
             emitterRepository.deleteEmitterById(emitterId)
-            throw IllegalArgumentException(e.localizedMessage)
+            emitter.completeWithError(e)
         }
 }
