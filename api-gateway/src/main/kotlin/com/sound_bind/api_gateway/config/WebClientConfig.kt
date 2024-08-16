@@ -29,37 +29,53 @@ class WebClientConfig {
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .registerModule(JavaTimeModule())
 
-        private const val COMMON_WEB_CLIENT = "commonWebClient"
-        private const val WEB_CLIENT_DEFAULT_HTTP_CLIENT = "defaultHttpClient"
-        private const val WEB_CLIENT_CONNECTION_PROVIDER = "connectionProvider"
-        private const val WEB_CLIENT_DEFAULT_EXCHANGE_STRATEGIES = "defaultExchangeStrategies"
+        const val COMMON_WEB_CLIENT = "commonWebClient"
+        const val SSE_WEB_CLIENT = "sseWebClient"
+        const val WEB_CLIENT_CONNECTION_PROVIDER = "connectionProvider"
+        const val WEB_CLIENT_DEFAULT_EXCHANGE_STRATEGIES = "defaultExchangeStrategies"
     }
 
     @Bean(COMMON_WEB_CLIENT)
     fun commonWebClient(
-        @Qualifier(WEB_CLIENT_DEFAULT_HTTP_CLIENT) httpClient: HttpClient,
+        @Qualifier(WEB_CLIENT_CONNECTION_PROVIDER) provider: ConnectionProvider,
         @Qualifier(WEB_CLIENT_DEFAULT_EXCHANGE_STRATEGIES) exchangeStrategies: ExchangeStrategies
-    ): WebClient =
-        WebClient.builder()
-            .clientConnector(ReactorClientHttpConnector(httpClient))
-            .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-            .exchangeFunction(ExchangeFunctions.create(ReactorClientHttpConnector(httpClient), exchangeStrategies))
-            .exchangeStrategies(exchangeStrategies)
-            .build()
-
-    @Bean(WEB_CLIENT_DEFAULT_HTTP_CLIENT)
-    fun defaultWebClient(
-        @Qualifier(WEB_CLIENT_CONNECTION_PROVIDER) provider: ConnectionProvider
-    ): HttpClient =
-        HttpClient.create(provider)
+    ): WebClient {
+        val httpClient = HttpClient.create(provider)
             .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
             .doOnConnected {
                 it.addHandlerLast(ReadTimeoutHandler(5))
                     .addHandlerLast(WriteTimeoutHandler(5))
             } // Read and write timeout (5 seconds)
 
+        return WebClient.builder()
+            .clientConnector(ReactorClientHttpConnector(httpClient))
+            .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+            .exchangeFunction(ExchangeFunctions.create(ReactorClientHttpConnector(httpClient), exchangeStrategies))
+            .exchangeStrategies(exchangeStrategies)
+            .build()
+    }
+
+    @Bean(SSE_WEB_CLIENT)
+    fun sseWebClient(
+        @Qualifier(WEB_CLIENT_CONNECTION_PROVIDER) provider: ConnectionProvider,
+        @Qualifier(WEB_CLIENT_DEFAULT_EXCHANGE_STRATEGIES) exchangeStrategies: ExchangeStrategies
+    ): WebClient {
+        val httpClient = HttpClient.create(provider)
+            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
+            .doOnConnected {
+                it.addHandlerLast(ReadTimeoutHandler(0))
+                    .addHandlerLast(WriteTimeoutHandler(0))
+            } // Disable timeout for SSE connection
+
+        return WebClient.builder()
+            .clientConnector(ReactorClientHttpConnector(httpClient))
+            .exchangeFunction(ExchangeFunctions.create(ReactorClientHttpConnector(httpClient), exchangeStrategies))
+            .exchangeStrategies(exchangeStrategies)
+            .build()
+    }
+
     @Bean(WEB_CLIENT_CONNECTION_PROVIDER)
-    fun connectionProvider(): ConnectionProvider =
+    fun connectionProvider() =
         ConnectionProvider.builder("http-pool")
             .maxConnections(100) // Number of connection pools
             .pendingAcquireTimeout(Duration.ofSeconds(10)) // Maximum time to wait to get a connection from a connection pool
@@ -68,7 +84,7 @@ class WebClientConfig {
             .build()
 
     @Bean(WEB_CLIENT_DEFAULT_EXCHANGE_STRATEGIES)
-    fun defaultExchangeStrategies(): ExchangeStrategies =
+    fun defaultExchangeStrategies() =
         ExchangeStrategies.builder()
             .codecs {
                 it.defaultCodecs().jackson2JsonEncoder(Jackson2JsonEncoder(OM, MediaType.APPLICATION_JSON))
