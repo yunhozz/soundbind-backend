@@ -1,12 +1,12 @@
 package com.sound_bind.notification_service.domain.application
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.sound_bind.notification_service.domain.application.dto.response.NotificationResponseDTO
 import com.sound_bind.notification_service.domain.persistence.entity.Notification
 import com.sound_bind.notification_service.domain.persistence.repository.NotificationRepository
 import com.sound_bind.notification_service.domain.persistence.repository.SseEmitterRepository
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.http.MediaType
 import org.springframework.kafka.annotation.KafkaListener
@@ -68,19 +68,30 @@ class NotificationService(
     }
 
     @Transactional
-    fun checkNotificationById(id: String): NotificationResponseDTO {
+    fun checkNotificationById(id: String) {
         val notification = notificationRepository.findById(id)
             .orElseThrow { IllegalArgumentException("Notification with id $id does not exist") }
         notification.check()
-        return NotificationResponseDTO(notification)
+        notificationRepository.save(notification)
+    }
+
+    @Transactional
+    fun checkNotificationsInPage(userId: String, page: Int) {
+        val pageable = PageRequest.of(page, 10)
+        notificationRepository.findAndCheckNotificationsInPage(userId, pageable)
     }
 
     @Transactional(readOnly = true)
-    fun lookUpPageOfNotifications(receiverId: String, pageable: Pageable): Page<Notification> =
-        notificationRepository.findSimpleNotificationsByReceiverId(receiverId, pageable)
+    fun lookUpPageOfNotifications(userId: String, pageable: Pageable): Page<Notification> =
+        notificationRepository.findSimpleNotificationsByUserId(userId, pageable)
 
     @Transactional
     fun deleteNotificationById(id: String) = notificationRepository.deleteById(id)
+
+    @Transactional
+    fun deleteNotificationsCheckedInPage(userId: String, page: Int) {
+        // TODO
+    }
 
     private fun sendToClient(emitter: SseEmitter, emitterId: String, data: Any) =
         try {

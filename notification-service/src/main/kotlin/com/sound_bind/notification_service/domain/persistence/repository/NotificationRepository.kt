@@ -6,8 +6,12 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.data.mongodb.repository.Query
 
-interface NotificationRepository: MongoRepository<Notification, String> {
+interface NotificationRepository: MongoRepository<Notification, String>, NotificationQueryRepository {
 
-    @Query(value = "{ receiverId: ?0 }", fields = "{ id: 1, message: 1, createdAt: 1 }")
-    fun findSimpleNotificationsByReceiverId(receiverId: String, pageable: Pageable): Page<Notification>
+    @Query(
+        value = "{ userId: ?0 }",
+        fields = "{ id: 1, message: 1, isChecked: 1, createdAt: 1, userId: ?0 }",
+        sort = "{ createdAt: -1 }"
+    )
+    fun findSimpleNotificationsByUserId(userId: String, pageable: Pageable): Page<Notification>
 }
