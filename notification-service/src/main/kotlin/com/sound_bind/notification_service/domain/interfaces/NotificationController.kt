@@ -49,7 +49,7 @@ class NotificationController(private val notificationService: NotificationServic
     @PostMapping
     fun checkNotificationsInPage(
         @HeaderSubject sub: String,
-        @RequestParam(required = false, defaultValue = "0") page: String,
+        @RequestParam(required = false, defaultValue = "0") page: String
     ): ResponseEntity<String> {
         notificationService.checkNotificationsInPage(sub, page.toInt())
         return ResponseEntity.ok("Notifications check success")

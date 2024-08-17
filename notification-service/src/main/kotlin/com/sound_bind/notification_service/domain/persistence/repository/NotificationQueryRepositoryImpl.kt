@@ -19,7 +19,10 @@ class NotificationQueryRepositoryImpl(private val template: MongoTemplate): Noti
             limit(pageable.pageSize)
             with(Sort.by(Sort.Direction.DESC, "createdAt"))
         }
-        val update = Update().apply { set("isChecked", true) }
-        template.updateMulti(query, update, Notification::class.java)
+        template.find(query, Notification::class.java).forEach { notification ->
+            val updateQuery = Query(Criteria.where("_id").`is`(notification.id))
+            val update = Update().apply { set("isChecked", true) }
+            template.updateFirst(updateQuery, update, Notification::class.java)
+        }
     }
 }
