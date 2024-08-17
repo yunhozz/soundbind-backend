@@ -10,7 +10,7 @@ interface NotificationRepository: MongoRepository<Notification, String>, Notific
 
     @Query(
         value = "{ userId: ?0 }",
-        fields = "{ id: 1, message: 1, isChecked: 1, createdAt: 1, userId: ?0 }",
+        fields = "{ id: 1, message: 1, link: 1, isChecked: 1, createdAt: 1, userId: ?0 }",
         sort = "{ createdAt: -1 }"
     )
     fun findSimpleNotificationsByUserId(userId: String, pageable: Pageable): Page<Notification>

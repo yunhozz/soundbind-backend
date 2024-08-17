@@ -55,8 +55,9 @@ class NotificationService(
         val obj = jacksonObjectMapper().readValue(message, Map::class.java)
         val userId = obj["userId"] as String
         val content = obj["content"] as String
+        val link = obj["link"] as? String
 
-        val notification = Notification.create(userId, content)
+        val notification = Notification.create(userId, content, link)
         emitterRepository.findEmittersByUserId(userId)
             .forEach { (emitterId, emitter) ->
                 emitterRepository.saveNotification(emitterId, notification)

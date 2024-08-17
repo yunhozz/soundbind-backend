@@ -10,12 +10,13 @@ import java.time.LocalDateTime
 class Notification private constructor(
     val userId: String,
     val message: String,
+    val link: String?,
     isChecked: Boolean = false
 ) {
 
     companion object {
-        fun create(userId: String, message: String) =
-            Notification(userId, message)
+        fun create(userId: String, message: String, link: String?) =
+            Notification(userId, message, link)
     }
 
     @Id
