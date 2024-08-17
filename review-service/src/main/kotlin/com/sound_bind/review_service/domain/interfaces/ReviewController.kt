@@ -1,5 +1,6 @@
 package com.sound_bind.review_service.domain.interfaces
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.review_service.domain.interfaces.dto.APIResponse
 import com.sound_bind.review_service.domain.application.ReviewService
 import com.sound_bind.review_service.domain.application.dto.request.ReviewCreateDTO
@@ -8,10 +9,12 @@ import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCur
 import com.sound_bind.review_service.global.annotation.HeaderSubject
 import jakarta.validation.Valid
 import khttp.get
+import khttp.post
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -37,43 +40,78 @@ class ReviewController(private val reviewService: ReviewService) {
             val message = response.jsonObject.getString("message")
             return APIResponse.of(message)
         }
+
+        val mapper = jacksonObjectMapper()
+        val obj = mapper.readValue(response.text, Map::class.java)
+        val data = mapper.readValue(mapper.writeValueAsString(obj["data"]), Map::class.java)
+
         val reviewId = reviewService.createReview(musicId.toLong(), sub.toLong(), dto)
+        val myInfo = reviewService.getUserInformationOnRedis(sub.toLong())
+        val record = mapOf(
+            "topic" to "review-added-topic",
+            "message" to mapOf(
+                "userId" to data["userId"],
+                "content" to "${myInfo["nickname"] as String} 님이 당신의 음원에 리뷰를 남겼습니다.",
+                "link" to "http://localhost:8000/api/reviews/$reviewId"
+            )
+        )
+        sendMessageToKafkaProducer(record)
         return APIResponse.of("Review created", reviewId)
     }
 
     @PostMapping("/found")
     @ResponseStatus(HttpStatus.CREATED)
-    fun findReviewsOnMusic(
+    fun lookupReviewsInMusic(
+        @HeaderSubject sub: String,
         @RequestParam musicId: String,
         @RequestParam(required = false, defaultValue = "likes") sort: String,
         @RequestBody dto: ReviewCursorRequestDTO,
         @PageableDefault(size = 20) pageable: Pageable
     ): APIResponse {
-        val result = reviewService.findReviewListByMusicId(musicId.toLong(), 123L, sort, dto, pageable)
+        val result = reviewService.findReviewListByMusicId(musicId.toLong(), sub.toLong(), sort, dto, pageable)
         return APIResponse.of("Reviews found", result)
     }
 
     @PatchMapping("/{id}")
     @ResponseStatus(HttpStatus.CREATED)
     fun updateReview(
+        @HeaderSubject sub: String,
         @PathVariable("id") id: String,
         @Valid @RequestBody dto: ReviewUpdateDTO
     ): APIResponse {
-        val reviewId = reviewService.updateReviewMessageAndScore(id.toLong(), 123L, dto)
+        val reviewId = reviewService.updateReviewMessageAndScore(id.toLong(), sub.toLong(), dto)
         return APIResponse.of("Review updated", reviewId)
     }
 
-    @PatchMapping("/{id}/likes")
+    @PostMapping("/{id}/likes")
     @ResponseStatus(HttpStatus.CREATED)
-    fun updateLikesOnReview(@PathVariable("id") id: String): APIResponse {
-        reviewService.changeLikesFlag(id.toLong(), 123L)
+    fun updateLikesOnReview(@HeaderSubject sub: String, @PathVariable("id") id: String): APIResponse {
+        val reviewerId = reviewService.changeLikesFlag(id.toLong(), sub.toLong())
+        reviewerId?.let {
+            val myInfo = reviewService.getUserInformationOnRedis(sub.toLong())
+            val record = mapOf(
+                "topic" to "review-like-topic",
+                "message" to mapOf(
+                    "userId" to it,
+                    "content" to "${myInfo["nickname"] as String} 님이 당신의 리뷰에 좋아요를 눌렀습니다."
+                )
+            )
+            sendMessageToKafkaProducer(record)
+        }
         return APIResponse.of("Likes of Review Changed")
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun deleteReview(@PathVariable("id") id: String): APIResponse {
-        reviewService.deleteReview(id.toLong(), 123L)
+    fun deleteReview(@HeaderSubject sub: String, @PathVariable("id") id: String): APIResponse {
+        reviewService.deleteReview(id.toLong(), sub.toLong())
         return APIResponse.of("Review deleted")
     }
+
+    private fun sendMessageToKafkaProducer(record: Map<String, Any>) =
+        post(
+            url = "http://localhost:9000/api/kafka",
+            headers = mapOf("Content-Type" to "application/json"),
+            data = jacksonObjectMapper().writeValueAsString(record)
+        )
 }
