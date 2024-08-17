@@ -59,6 +59,13 @@ class ReviewController(private val reviewService: ReviewService) {
         return APIResponse.of("Review created", reviewId)
     }
 
+    @GetMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    fun lookupDetailsOfReview(@PathVariable id: String): APIResponse {
+        val result = reviewService.lookupDetailsOfReviewById(id.toLong())
+        return APIResponse.of("Review found", result)
+    }
+
     @PostMapping("/found")
     @ResponseStatus(HttpStatus.CREATED)
     fun lookupReviewsInMusic(

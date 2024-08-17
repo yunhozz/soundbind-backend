@@ -66,6 +66,12 @@ class ReviewService(
     }
 
     @Transactional(readOnly = true)
+    fun lookupDetailsOfReviewById(reviewId: Long): ReviewDetailsDTO {
+        val review = findReviewById(reviewId)
+        return ReviewDetailsDTO(review)
+    }
+
+    @Transactional(readOnly = true)
     fun findReviewListByMusicId(
         musicId: Long,
         userId: Long,
