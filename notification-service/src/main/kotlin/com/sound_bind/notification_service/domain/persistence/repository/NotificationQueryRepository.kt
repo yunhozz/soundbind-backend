@@ -4,4 +4,5 @@ import org.springframework.data.domain.Pageable
 
 interface NotificationQueryRepository {
     fun findAndCheckNotificationsInPage(userId: String, pageable: Pageable)
+    fun deleteCheckedNotificationsInPage(userId: String, pageable: Pageable)
 }

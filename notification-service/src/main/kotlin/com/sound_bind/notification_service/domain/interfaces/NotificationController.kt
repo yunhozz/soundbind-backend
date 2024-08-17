@@ -60,4 +60,13 @@ class NotificationController(private val notificationService: NotificationServic
         notificationService.deleteNotificationById(id)
         return ResponseEntity.noContent().build()
     }
+
+    @DeleteMapping
+    fun deleteCheckedNotificationsInPage(
+        @HeaderSubject sub: String,
+        @RequestParam(required = false, defaultValue = "0") page: String
+    ): ResponseEntity<Void> {
+        notificationService.deleteCheckedNotificationsInPage(sub, page.toInt())
+        return ResponseEntity.noContent().build()
+    }
 }

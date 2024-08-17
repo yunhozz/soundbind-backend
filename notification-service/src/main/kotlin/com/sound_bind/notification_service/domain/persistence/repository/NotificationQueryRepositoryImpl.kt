@@ -25,4 +25,17 @@ class NotificationQueryRepositoryImpl(private val template: MongoTemplate): Noti
             template.updateFirst(updateQuery, update, Notification::class.java)
         }
     }
+
+    override fun deleteCheckedNotificationsInPage(userId: String, pageable: Pageable) {
+        val query = Query().apply {
+            addCriteria(
+                Criteria.where("userId").`is`(userId)
+                    .and("isChecked").`is`(true)
+            )
+            skip(pageable.offset)
+            limit(pageable.pageSize)
+            with(Sort.by(Sort.Direction.DESC, "createdAt"))
+        }
+        template.remove(query, Notification::class.java)
+    }
 }

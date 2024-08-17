@@ -90,8 +90,9 @@ class NotificationService(
     fun deleteNotificationById(id: String) = notificationRepository.deleteById(id)
 
     @Transactional
-    fun deleteNotificationsCheckedInPage(userId: String, page: Int) {
-        // TODO
+    fun deleteCheckedNotificationsInPage(userId: String, page: Int) {
+        val pageable = PageRequest.of(page, 10)
+        notificationRepository.deleteCheckedNotificationsInPage(userId, pageable)
     }
 
     private fun sendToClient(emitter: SseEmitter, emitterId: String, data: Any) =
