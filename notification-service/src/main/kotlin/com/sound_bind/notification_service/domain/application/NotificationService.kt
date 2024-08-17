@@ -4,6 +4,9 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.sound_bind.notification_service.domain.persistence.entity.Notification
 import com.sound_bind.notification_service.domain.persistence.repository.NotificationRepository
 import com.sound_bind.notification_service.domain.persistence.repository.SseEmitterRepository
+import com.sound_bind.notification_service.global.exception.NotificationException.NotificationAlreadyCheckedException
+import com.sound_bind.notification_service.global.exception.NotificationException.NotificationNotFoundException
+import com.sound_bind.notification_service.global.exception.NotificationException.SseSendFailException
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
@@ -71,9 +74,13 @@ class NotificationService(
     @Transactional
     fun checkNotificationById(id: String) {
         val notification = notificationRepository.findById(id)
-            .orElseThrow { IllegalArgumentException("Notification with id $id does not exist") }
-        notification.check()
-        notificationRepository.save(notification)
+            .orElseThrow { NotificationNotFoundException("Notification with id $id does not exist") }
+        try {
+            notification.check()
+            notificationRepository.save(notification)
+        } catch (e: RuntimeException) {
+            throw NotificationAlreadyCheckedException(e.localizedMessage)
+        }
     }
 
     @Transactional
@@ -109,5 +116,6 @@ class NotificationService(
             log.error("Fail to send data", e)
             emitterRepository.deleteEmitterById(emitterId)
             emitter.completeWithError(e)
+            throw SseSendFailException(e.localizedMessage)
         }
 }
