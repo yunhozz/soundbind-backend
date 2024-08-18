@@ -1,6 +1,6 @@
 package com.sound_bind.review_service.domain.application
 
-import com.sound_bind.review_service.domain.application.dto.request.CommentCreateDTO
+import com.sound_bind.review_service.domain.application.dto.response.CommentIdReviewerIdDTO
 import com.sound_bind.review_service.domain.persistence.entity.Comment
 import com.sound_bind.review_service.domain.persistence.repository.CommentRepository
 import com.sound_bind.review_service.domain.persistence.repository.ReviewRepository
@@ -18,7 +18,7 @@ class CommentService(
 ) {
 
     @Transactional
-    fun createComment(reviewId: Long, userId: Long, dto: CommentCreateDTO): Long? {
+    fun createComment(reviewId: Long, userId: Long, message: String): CommentIdReviewerIdDTO {
         val review = reviewRepository.findById(reviewId)
             .orElseThrow { ReviewNotFoundException("Review not found: $reviewId") }
         val userInfo = RedisUtils.getJson("user:$userId", Map::class.java)
@@ -27,13 +27,12 @@ class CommentService(
             review,
             userId,
             userInfo["nickname"] as String,
-            dto.message
+            message
         )
 
         review.addComments(1)
         commentRepository.save(comment)
-
-        return comment.id
+        return CommentIdReviewerIdDTO(comment.id!!, review.userId)
     }
 
     @Transactional(readOnly = true)
@@ -46,4 +45,8 @@ class CommentService(
             ?: throw CommentUpdateNotAuthorizedException("Not Authorized for Delete"))
         comment.softDelete() // subtract review's comment number
     }
+
+    fun getUserInformationOnRedis(userId: Long) =
+        RedisUtils.getJson("user:$userId", Map::class.java)
+            ?: throw IllegalArgumentException("Value is not Present by Key : user:$userId")
 }

@@ -1,16 +1,15 @@
 package com.sound_bind.review_service.domain.interfaces
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.review_service.domain.interfaces.dto.APIResponse
 import com.sound_bind.review_service.domain.application.CommentService
-import com.sound_bind.review_service.domain.application.dto.request.CommentCreateDTO
 import com.sound_bind.review_service.global.annotation.HeaderSubject
-import jakarta.validation.Valid
+import khttp.post
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
@@ -25,10 +24,23 @@ class CommentController(private val commentService: CommentService) {
     fun makeCommentOnReview(
         @HeaderSubject sub: String,
         @RequestParam reviewId: String,
-        @Valid @RequestBody dto: CommentCreateDTO
+        @RequestParam message: String,
     ): APIResponse {
-        val commentId = commentService.createComment(reviewId.toLong(), sub.toLong(), dto)
-        return APIResponse.of("Comment Created", commentId)
+        val result = commentService.createComment(reviewId.toLong(), sub.toLong(), message)
+        val myInfo = commentService.getUserInformationOnRedis(sub.toLong())
+        val record = mapOf(
+            "topic" to "comment-added-topic",
+            "message" to mapOf(
+                "userId" to result.reviewerId,
+                "content" to "${myInfo["nickname"] as String} 님이 당신의 리뷰에 댓글을 남겼습니다.",
+            )
+        )
+        post(
+            url = "http://localhost:9000/api/kafka",
+            headers = mapOf("Content-Type" to "application/json"),
+            data = jacksonObjectMapper().writeValueAsString(record)
+        )
+        return APIResponse.of("Comment Created", result.commentId)
     }
 
     @GetMapping
@@ -40,8 +52,8 @@ class CommentController(private val commentService: CommentService) {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun deleteCommentOnReview(@PathVariable("id") id: String): APIResponse {
-        commentService.deleteComment(id.toLong(), 789L)
+    fun deleteCommentOnReview(@HeaderSubject sub: String, @PathVariable("id") id: String): APIResponse {
+        commentService.deleteComment(id.toLong(), sub.toLong())
         return APIResponse.of("Comment Deleted")
     }
 }

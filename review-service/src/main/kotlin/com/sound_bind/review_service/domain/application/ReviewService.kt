@@ -3,6 +3,7 @@ package com.sound_bind.review_service.domain.application
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.sound_bind.review_service.domain.application.dto.request.ReviewCreateDTO
 import com.sound_bind.review_service.domain.application.dto.request.ReviewUpdateDTO
+import com.sound_bind.review_service.domain.application.dto.response.ReviewDetailsDTO
 import com.sound_bind.review_service.domain.persistence.entity.Review
 import com.sound_bind.review_service.domain.persistence.entity.ReviewLikes
 import com.sound_bind.review_service.domain.persistence.repository.CommentRepository
@@ -37,8 +38,7 @@ class ReviewService(
         if (reviewRepository.existsReviewByMusicIdAndUserId(musicId, userId)) {
             throw ReviewAlreadyExistException("Review already exists")
         }
-        val userInfo = RedisUtils.getJson("user:$userId", Map::class.java)
-            ?: throw IllegalArgumentException("Value is not Present by Key : user:$userId")
+        val userInfo = getUserInformationOnRedis(userId)
         val review = Review.create(
             musicId,
             userId,
@@ -66,6 +66,12 @@ class ReviewService(
     }
 
     @Transactional(readOnly = true)
+    fun lookupDetailsOfReviewById(reviewId: Long): ReviewDetailsDTO {
+        val review = findReviewById(reviewId)
+        return ReviewDetailsDTO(review)
+    }
+
+    @Transactional(readOnly = true)
     fun findReviewListByMusicId(
         musicId: Long,
         userId: Long,
@@ -82,20 +88,24 @@ class ReviewService(
         )
 
     @Transactional
-    fun changeLikesFlag(reviewId: Long, userId: Long) =
-        reviewLikesRepository.findWithReviewByReviewId(reviewId)?.apply {
+    fun changeLikesFlag(reviewId: Long, userId: Long): Long? {
+        reviewLikesRepository.findWithReviewByReviewId(reviewId)?.let { rl ->
             try {
-                changeFlag() // change review's likes number
+                rl.changeFlag() // change review's likes number
+                if (rl.flag) return rl.review.userId
             } catch (e: IllegalArgumentException) {
                 throw NegativeValueException(e.localizedMessage)
             }
+            return null
         } ?: run {
-            findReviewById(reviewId).also { review ->
+            val review = findReviewById(reviewId).also { review ->
                 val reviewLikes = ReviewLikes(userId, review)
                 reviewLikesRepository.save(reviewLikes)
                 review.addLikes(1)
             }
+            return review.userId
         }
+    }
 
     @Transactional
     fun deleteReview(reviewId: Long, userId: Long) {
@@ -118,6 +128,10 @@ class ReviewService(
         val userId = obj["userId"].toString()
         reviewRepository.deleteReviewsByUserId(LocalDateTime.now(), userId.toLong())
     }
+
+    fun getUserInformationOnRedis(userId: Long) =
+        RedisUtils.getJson("user:$userId", Map::class.java)
+            ?: throw IllegalArgumentException("Value is not Present by Key : user:$userId")
 
     private fun findReviewById(id: Long): Review =
         reviewRepository.findById(id)
