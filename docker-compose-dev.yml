@@ -158,17 +158,53 @@ services:
     networks:
       - soundbind-network
 
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    image: soundbind/notification-service:latest
+    container_name: soundbind-notification-service
+    ports:
+      - "8040:8040"
+    environment:
+      - PROFILES_ACTIVE=dev
+      - SERVER_PORT=8040
+      - CONFIG_NAME=notification-service
+      - CONFIG_PROFILE=dev
+      - CONFIG_SERVER=http://config-server:8888
+      - EUREKA_SERVICE_URL=http://eureka-server:8761/eureka/
+    depends_on:
+      - eureka-server
+      - config-server
+      - api-gateway
+      - kafka-server
+      - mongodb
+    restart: on-failure
+    networks:
+      - soundbind-network
+
   mysql:
     image: soundbind/mysql:latest
     container_name: soundbind-mysql
     ports:
       - "3307:3306"
     environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_DB_PASSWORD}
       - TZ=Asia/Seoul
     volumes:
       - ./db/mysql/data:/var/lib/mysql
       - ./db/mysql/init:/docker-entrypoint-initdb.d/init.sql
+    restart: always
+    networks:
+      - soundbind-network
+
+  mongodb:
+    image: soundbind/mongodb:latest
+    container_name: soundbind-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./db/mongodb/data:/var/lib/mongodb
     restart: always
     networks:
       - soundbind-network
