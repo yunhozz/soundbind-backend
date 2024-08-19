@@ -1,7 +1,7 @@
 package com.sound_bind.review_service.domain.interfaces.handler
 
 import com.review_service.domain.interfaces.dto.ErrorResponse
-import com.review_service.domain.interfaces.dto.ErrorResponse.ErrorCode
+import com.sound_bind.review_service.global.exception.CommentServiceException
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
@@ -24,13 +24,4 @@ class CommentServiceExceptionHandler {
             .status(e.errorCode.status)
             .body(ErrorResponse.of(e.errorCode, e.message))
     }
-}
-
-sealed class CommentServiceException(
-    val errorCode: ErrorCode,
-    override val message: String
-): RuntimeException(message) {
-
-    class CommentNotFoundException(override val message: String): CommentServiceException(ErrorCode.NOT_FOUND, message)
-    class CommentUpdateNotAuthorizedException(override val message: String): CommentServiceException(ErrorCode.UNAUTHORIZED, message)
 }

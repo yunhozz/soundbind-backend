@@ -3,10 +3,10 @@ package com.music_service.domain.persistence.repository
 import com.music_service.domain.persistence.entity.FileEntity.FileType.IMAGE
 import com.music_service.domain.persistence.entity.QFileEntity.fileEntity
 import com.music_service.domain.persistence.entity.QMusic.music
-import com.music_service.global.dto.response.MusicDetailsQueryDTO
-import com.music_service.global.dto.response.MusicSimpleQueryDTO
-import com.music_service.global.dto.response.QMusicDetailsQueryDTO_MusicFileQueryDTO
-import com.music_service.global.dto.response.QMusicSimpleQueryDTO
+import com.music_service.domain.persistence.repository.dto.MusicDetailsQueryDTO
+import com.music_service.domain.persistence.repository.dto.MusicSimpleQueryDTO
+import com.music_service.domain.persistence.repository.dto.QMusicFileQueryDTO
+import com.music_service.domain.persistence.repository.dto.QMusicSimpleQueryDTO
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Slice
@@ -27,7 +27,7 @@ class MusicQueryRepositoryImpl(
         return m?.let {
             val musicFiles = queryFactory
                 .select(
-                    QMusicDetailsQueryDTO_MusicFileQueryDTO(
+                    QMusicFileQueryDTO(
                         fileEntity.id,
                         fileEntity.originalFileName,
                         fileEntity.savedName,

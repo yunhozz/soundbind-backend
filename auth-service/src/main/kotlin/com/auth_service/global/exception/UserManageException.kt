@@ -9,4 +9,6 @@ sealed class UserManageException(
     class EmailDuplicateException(message: String): UserManageException(ErrorCode.BAD_REQUEST, message)
     class UserPasswordNotFoundException(message: String): UserManageException(ErrorCode.NOT_FOUND, message)
     class UserProfileNotFoundException(message: String): UserManageException(ErrorCode.NOT_FOUND, message)
+    class VerifyingCodeNotFoundException(message: String): UserManageException(ErrorCode.BAD_REQUEST, message)
+    class VerifyingCodeDifferentException(message: String): UserManageException(ErrorCode.BAD_REQUEST, message)
 }

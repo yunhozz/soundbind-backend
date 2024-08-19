@@ -1,7 +1,7 @@
 package com.sound_bind.review_service.domain.interfaces.handler
 
 import com.review_service.domain.interfaces.dto.ErrorResponse
-import com.review_service.domain.interfaces.dto.ErrorResponse.ErrorCode
+import com.sound_bind.review_service.global.exception.ReviewServiceException
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
@@ -24,16 +24,4 @@ class ReviewServiceExceptionHandler {
             .status(e.errorCode.status)
             .body(ErrorResponse.of(e.errorCode, e.message))
     }
-}
-
-sealed class ReviewServiceException(
-    val errorCode: ErrorCode,
-    override val message: String
-): RuntimeException(message) {
-
-    class ReviewNotFoundException(override val message: String): ReviewServiceException(ErrorCode.NOT_FOUND, message)
-    class ReviewAlreadyExistException(override val message: String): ReviewServiceException(ErrorCode.BAD_REQUEST, message)
-    class ReviewNotUpdatableException(override val message: String): ReviewServiceException(ErrorCode.BAD_REQUEST, message)
-    class ReviewUpdateNotAuthorizedException(override val message: String): ReviewServiceException(ErrorCode.UNAUTHORIZED, message)
-    class NegativeValueException(override val message: String): ReviewServiceException(ErrorCode.BAD_REQUEST, message)
 }

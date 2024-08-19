@@ -1,5 +1,3 @@
-version: '3.8'
-
 networks:
   soundbind-network:
 
@@ -23,6 +21,11 @@ services:
     container_name: soundbind-config-server
     ports:
       - "8888:8888"
+    env_file:
+      - .env
+    environment:
+      - spring.cloud.config.server.git.host-key=${CONFIG_SERVER_HOST_KEY}
+      - spring.cloud.config.server.git.private-key=${CONFIG_SERVER_PRIVATE_KEY}
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://config-server:8888/actuator/health" ]
       interval: 30s
@@ -43,11 +46,9 @@ services:
     environment:
       - PROFILES_ACTIVE=dev
       - SERVER_PORT=8000
-      - CONFIG_NAME=api-gateway
       - CONFIG_PROFILE=dev
-      - CONFIG_SERVER=http://config-server:8888
-      - EUREKA_SERVICE_URL=http://eureka-server:8761/eureka/
     depends_on:
+      - eureka-server
       - config-server
     restart: on-failure
     networks:
@@ -64,14 +65,34 @@ services:
     environment:
       - PROFILES_ACTIVE=dev
       - SERVER_PORT=9000
-      - CONFIG_NAME=kafka-server
       - CONFIG_PROFILE=dev
-      - CONFIG_SERVER=http://config-server:8888
-      - EUREKA_SERVICE_URL=http://eureka-server:8761/eureka/
     depends_on:
       - eureka-server
       - config-server
       - api-gateway
+    restart: on-failure
+    networks:
+      - soundbind-network
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
+    image: soundbind/auth-service:latest
+    container_name: soundbind-auth-service
+    ports:
+      - "8090:8090"
+    environment:
+      - PROFILES_ACTIVE=dev
+      - SERVER_PORT=8090
+      - CONFIG_PROFILE=dev,jwt,oauth,redis,mail
+    depends_on:
+      - eureka-server
+      - config-server
+      - api-gateway
+      - kafka-server
+      - mysql
+      - redis
     restart: on-failure
     networks:
       - soundbind-network
@@ -87,16 +108,14 @@ services:
     environment:
       - PROFILES_ACTIVE=dev
       - SERVER_PORT=8070
-      - CONFIG_NAME=music-service
-      - CONFIG_PROFILE=dev,file
-      - CONFIG_SERVER=http://config-server:8888
-      - EUREKA_SERVICE_URL=http://eureka-server:8761/eureka/
+      - CONFIG_PROFILE=dev,file,redis
     depends_on:
       - eureka-server
       - config-server
       - api-gateway
       - kafka-server
       - mysql
+      - redis
     restart: on-failure
     networks:
       - soundbind-network
@@ -112,16 +131,36 @@ services:
     environment:
       - PROFILES_ACTIVE=dev
       - SERVER_PORT=8060
-      - CONFIG_NAME=review-service
-      - CONFIG_PROFILE=dev
-      - CONFIG_SERVER=http://config-server:8888
-      - EUREKA_SERVICE_URL=http://eureka-server:8761/eureka/
+      - CONFIG_PROFILE=dev,redis
     depends_on:
       - eureka-server
       - config-server
       - api-gateway
       - kafka-server
       - mysql
+      - redis
+    restart: on-failure
+    networks:
+      - soundbind-network
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    image: soundbind/notification-service:latest
+    container_name: soundbind-notification-service
+    ports:
+      - "8040:8040"
+    environment:
+      - PROFILES_ACTIVE=dev
+      - SERVER_PORT=8040
+      - CONFIG_PROFILE=dev
+    depends_on:
+      - eureka-server
+      - config-server
+      - api-gateway
+      - kafka-server
+      - mongodb
     restart: on-failure
     networks:
       - soundbind-network
@@ -130,15 +169,37 @@ services:
     image: soundbind/mysql:latest
     container_name: soundbind-mysql
     ports:
-      - "3306:3306"
+      - "3307:3306"
     environment:
-      - MYSQL_ROOT_PASSWORD=yh172839
+      - MYSQL_ROOT_PASSWORD=${MYSQL_DB_PASSWORD}
       - TZ=Asia/Seoul
-    env_file:
-      - .env
     volumes:
       - ./db/mysql/data:/var/lib/mysql
       - ./db/mysql/init:/docker-entrypoint-initdb.d/init.sql
+    restart: always
+    networks:
+      - soundbind-network
+
+  mongodb:
+    image: soundbind/mongodb:latest
+    container_name: soundbind-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./db/mongodb/data:/var/lib/mongodb
+    restart: always
+    networks:
+      - soundbind-network
+
+  redis:
+    image: soundbind/redis:latest
+    container_name: soundbind-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis/data:/data
+      - ./redis/conf/redis.conf:/usr/local/conf/redis.conf
+    command: redis-server /usr/local/conf/redis.conf
     restart: always
     networks:
       - soundbind-network

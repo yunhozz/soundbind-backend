@@ -1,7 +1,7 @@
 package com.auth_service.global.util
 
 import com.fasterxml.jackson.core.JsonProcessingException
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.springframework.beans.factory.InitializingBean
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.ValueOperations
@@ -13,17 +13,21 @@ class RedisUtils(private val template: RedisTemplate<String, Any>): Initializing
 
     companion object {
         private lateinit var operation: ValueOperations<String, Any>
-        private val om = ObjectMapper()
+        private val om = jacksonObjectMapper()
 
-        fun saveValue(key: String, value: String) = operation.set(key, value)
-
-        fun saveValue(key: String, value: String, duration: Duration) = operation.set(key, value, duration)
+        fun saveValue(key: String, value: String, duration: Duration?) =
+            getValue(key) ?: run {
+                duration?.let { operation.set(key, value, it) }
+                    ?: operation.set(key, value)
+            }
 
         @Throws(JsonProcessingException::class)
-        fun saveJson(key: String, json: Any) {
-            val jsonStr = om.writeValueAsString(json)
-            operation.set(key, jsonStr)
-        }
+        fun saveJson(key: String, json: Any, duration: Duration?) =
+            getValue(key) ?: run {
+                val jsonStr = om.writeValueAsString(json)
+                duration?.let { operation.set(key, jsonStr, it) }
+                    ?: operation.set(key, jsonStr)
+            }
 
         fun getValue(key: String): String? = operation[key] as? String
 
@@ -35,7 +39,12 @@ class RedisUtils(private val template: RedisTemplate<String, Any>): Initializing
             } ?: throw IllegalArgumentException("Value is not Present by Key : $key")
         }
 
-        fun deleteValue(key: String) = operation.getAndDelete(key)
+        fun updateValue(key: String, value: String, duration: Duration) {
+            deleteValue(key)
+            saveValue(key, value, duration)
+        }
+
+        fun deleteValue(key: String): Any? = operation.getAndDelete(key)
     }
 
     override fun afterPropertiesSet() {

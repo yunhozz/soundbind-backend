@@ -1,0 +1,15 @@
+server:
+  port: ${SERVER_PORT}
+
+spring:
+  cloud:
+    config:
+      name: notification-service
+      profile: ${CONFIG_PROFILE}
+  config:
+    import: configserver:http://config-server:8888
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka/

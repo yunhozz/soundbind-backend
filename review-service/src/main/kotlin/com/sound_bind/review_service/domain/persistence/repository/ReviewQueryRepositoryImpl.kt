@@ -6,11 +6,11 @@ import com.querydsl.jpa.impl.JPAQueryFactory
 import com.sound_bind.review_service.domain.persistence.entity.QReview.review
 import com.sound_bind.review_service.domain.persistence.entity.QReviewLikes.reviewLikes
 import com.sound_bind.review_service.domain.persistence.repository.ReviewQueryRepository.ReviewSort
-import com.sound_bind.review_service.global.dto.request.ReviewCursorRequestDTO
-import com.sound_bind.review_service.global.dto.response.QReviewLikesQueryDTO
-import com.sound_bind.review_service.global.dto.response.QReviewQueryDTO
-import com.sound_bind.review_service.global.dto.response.ReviewLikesQueryDTO
-import com.sound_bind.review_service.global.dto.response.ReviewQueryDTO
+import com.sound_bind.review_service.domain.persistence.repository.dto.QReviewLikesQueryDTO
+import com.sound_bind.review_service.domain.persistence.repository.dto.QReviewQueryDTO
+import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorRequestDTO
+import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewLikesQueryDTO
+import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewQueryDTO
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Slice
 import org.springframework.data.domain.SliceImpl

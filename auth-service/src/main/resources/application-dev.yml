@@ -4,12 +4,12 @@ server:
 spring:
   cloud:
     config:
-      name: ${CONFIG_NAME}
+      name: auth-service
       profile: ${CONFIG_PROFILE}
   config:
-    import: configserver:${CONFIG_SERVER}
+    import: configserver:http://config-server:8888
 
 eureka:
   client:
     service-url:
-      defaultZone: ${EUREKA_SERVICE_URL}
+      defaultZone: http://eureka-server:8761/eureka/

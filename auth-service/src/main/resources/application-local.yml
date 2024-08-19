@@ -15,11 +15,15 @@ spring:
         format_sql: true
         default_batch_fetch_size: 100
         dialect: org.hibernate.dialect.MySQLDialect
+    defer-datasource-initialization: true
   datasource:
-    url: jdbc:mysql://localhost:3306/sound-bind
-    username: root
-    password: yh172839
+    url: ${MYSQL_DB_URL}
+    username: ${MYSQL_DB_USERNAME}
+    password: ${MYSQL_DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+  sql:
+    init:
+      mode: always
 
 eureka:
   client:
@@ -48,5 +52,24 @@ spring:
 redis:
   host: 127.0.0.1
   port: 6379
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: mail-local
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        starttls:
+          enable: true
+        smtp:
+          auth: true
+          timeout: 20000
 
 ---

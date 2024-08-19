@@ -1,8 +1,7 @@
 package com.auth_service.global.auth.oauth
 
 import com.auth_service.global.auth.jwt.JwtProvider
-import com.auth_service.global.auth.oauth.OAuth2AuthorizationRequestCookieRepository.Companion.REDIRECT_URI_PARAM_COOKIE_NAME
-import com.auth_service.global.dto.response.TokenResponseDTO
+import com.auth_service.global.auth.jwt.TokenResponseDTO
 import com.auth_service.global.util.CookieUtils
 import com.auth_service.global.util.RedisUtils
 import jakarta.servlet.http.HttpServletRequest
@@ -50,7 +49,7 @@ class OAuth2AuthenticationSuccessHandler(
         response: HttpServletResponse,
         authentication: Authentication
     ): String {
-        val redirectUri = CookieUtils.getCookie(request, REDIRECT_URI_PARAM_COOKIE_NAME)?.let { cookie ->
+        val redirectUri = CookieUtils.getCookie(request, CookieUtils.REDIRECT_URI_PARAM_COOKIE_NAME)?.let { cookie ->
             val uri = cookie.value
             require(isAuthorizedRedirectUri(uri)) { "Unauthorized Redirect URI: $uri" }
             uri

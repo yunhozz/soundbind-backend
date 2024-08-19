@@ -1,21 +1,23 @@
 package com.sound_bind.review_service.domain.application
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.sound_bind.review_service.domain.interfaces.handler.ReviewServiceException.NegativeValueException
-import com.sound_bind.review_service.domain.interfaces.handler.ReviewServiceException.ReviewAlreadyExistException
-import com.sound_bind.review_service.domain.interfaces.handler.ReviewServiceException.ReviewNotFoundException
-import com.sound_bind.review_service.domain.interfaces.handler.ReviewServiceException.ReviewNotUpdatableException
-import com.sound_bind.review_service.domain.interfaces.handler.ReviewServiceException.ReviewUpdateNotAuthorizedException
+import com.sound_bind.review_service.domain.application.dto.request.ReviewCreateDTO
+import com.sound_bind.review_service.domain.application.dto.request.ReviewUpdateDTO
+import com.sound_bind.review_service.domain.application.dto.response.ReviewDetailsDTO
 import com.sound_bind.review_service.domain.persistence.entity.Review
 import com.sound_bind.review_service.domain.persistence.entity.ReviewLikes
 import com.sound_bind.review_service.domain.persistence.repository.CommentRepository
 import com.sound_bind.review_service.domain.persistence.repository.ReviewLikesRepository
 import com.sound_bind.review_service.domain.persistence.repository.ReviewQueryRepository.ReviewSort
 import com.sound_bind.review_service.domain.persistence.repository.ReviewRepository
-import com.sound_bind.review_service.global.dto.request.ReviewCreateDTO
-import com.sound_bind.review_service.global.dto.request.ReviewCursorRequestDTO
-import com.sound_bind.review_service.global.dto.request.ReviewUpdateDTO
-import com.sound_bind.review_service.global.dto.response.ReviewQueryDTO
+import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorRequestDTO
+import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewQueryDTO
+import com.sound_bind.review_service.global.exception.ReviewServiceException.NegativeValueException
+import com.sound_bind.review_service.global.exception.ReviewServiceException.ReviewAlreadyExistException
+import com.sound_bind.review_service.global.exception.ReviewServiceException.ReviewNotFoundException
+import com.sound_bind.review_service.global.exception.ReviewServiceException.ReviewNotUpdatableException
+import com.sound_bind.review_service.global.exception.ReviewServiceException.ReviewUpdateNotAuthorizedException
+import com.sound_bind.review_service.global.util.RedisUtils
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Slice
 import org.springframework.kafka.annotation.KafkaListener
@@ -36,11 +38,12 @@ class ReviewService(
         if (reviewRepository.existsReviewByMusicIdAndUserId(musicId, userId)) {
             throw ReviewAlreadyExistException("Review already exists")
         }
+        val userInfo = getUserInformationOnRedis(userId)
         val review = Review.create(
             musicId,
             userId,
-            dto.userNickname,
-            dto.userImageUrl,
+            userInfo["nickname"] as String,
+            userInfo["profileUrl"] as? String,
             dto.message,
             dto.score
         )
@@ -63,29 +66,46 @@ class ReviewService(
     }
 
     @Transactional(readOnly = true)
+    fun lookupDetailsOfReviewById(reviewId: Long): ReviewDetailsDTO {
+        val review = findReviewById(reviewId)
+        return ReviewDetailsDTO(review)
+    }
+
+    @Transactional(readOnly = true)
     fun findReviewListByMusicId(
         musicId: Long,
         userId: Long,
         sort: String,
         dto: ReviewCursorRequestDTO,
         pageable: Pageable
-    ): Slice<ReviewQueryDTO> = reviewRepository.findReviewsOnMusic(musicId, userId, ReviewSort.of(sort), dto, pageable)
+    ): Slice<ReviewQueryDTO> =
+        reviewRepository.findReviewsOnMusic(
+            musicId,
+            userId,
+            ReviewSort.of(sort),
+            dto,
+            pageable
+        )
 
     @Transactional
-    fun changeLikesFlag(reviewId: Long, userId: Long) =
-        reviewLikesRepository.findWithReviewByReviewId(reviewId)?.apply {
+    fun changeLikesFlag(reviewId: Long, userId: Long): Long? {
+        reviewLikesRepository.findWithReviewByReviewId(reviewId)?.let { rl ->
             try {
-                changeFlag() // change review's likes number
+                rl.changeFlag() // change review's likes number
+                if (rl.flag) return rl.review.userId
             } catch (e: IllegalArgumentException) {
                 throw NegativeValueException(e.localizedMessage)
             }
+            return null
         } ?: run {
-            findReviewById(reviewId).also { review ->
+            val review = findReviewById(reviewId).also { review ->
                 val reviewLikes = ReviewLikes(userId, review)
                 reviewLikesRepository.save(reviewLikes)
                 review.addLikes(1)
             }
+            return review.userId
         }
+    }
 
     @Transactional
     fun deleteReview(reviewId: Long, userId: Long) {
@@ -108,6 +128,10 @@ class ReviewService(
         val userId = obj["userId"].toString()
         reviewRepository.deleteReviewsByUserId(LocalDateTime.now(), userId.toLong())
     }
+
+    fun getUserInformationOnRedis(userId: Long) =
+        RedisUtils.getJson("user:$userId", Map::class.java)
+            ?: throw IllegalArgumentException("Value is not Present by Key : user:$userId")
 
     private fun findReviewById(id: Long): Review =
         reviewRepository.findById(id)
