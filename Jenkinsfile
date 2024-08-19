@@ -9,10 +9,13 @@ pipeline {
         PATH = "/usr/local/bin:$PATH"
 
         AWS_CREDENTIAL_NAME = 'AKIA44Y6CG32YILLPVC3'
-        AWS_CONTAINER_NAME = 'soundbind-container'
-        AWS_ECR_PATH = '886436935413.dkr.ecr.ap-northeast-2.amazonaws.com'
-        AWS_ECR_IMAGE_PATH = '886436935413.dkr.ecr.ap-northeast-2.amazonaws.com/sound-bind'
         AWS_REGION = 'ap-northeast-2'
+        AWS_ECR_REGISTRY = '886436935413.dkr.ecr.ap-northeast-2.amazonaws.com'
+        AWS_ECR_REPOSITORY = 'sound-bind'
+        AWS_ECS_SERVICE = 'soundbind-service'
+        AWS_ECS_CLUSTER = 'soundbind-cluster'
+        AWS_ECS_TASK_DEFINITION = 'soundbind-task-revision.json'
+        AWS_CONTAINER_NAME = 'soundbind-container'
     }
 
     triggers {
@@ -25,23 +28,28 @@ pipeline {
                 git branch: "${GIT_BRANCH}", url: "${GIT_URL}"
             }
         }
-        stage('Build Docker Images') {
+        stage('Build, Tag, and Push Images to Amazon ECR') {
             steps {
                 script {
-                    sh "docker-compose -f ${DOCKER_COMPOSE_FILE} build"
+                    def services = sh(script: "docker compose -f ${DOCKER_COMPOSE_FILE} config --services", returnStdout: true).trim().split('\n')
+                    services.each { service ->
+                        def imageName = "${AWS_ECR_REGISTRY}/${AWS_ECR_REPOSITORY}:${service}-latest"
+                        sh "docker compose -f ${DOCKER_COMPOSE_FILE} build ${service}"
+                        sh "docker tag soundbind/${service}:latest ${imageName}"
+                        sh "docker push ${imageName}"
+                    }
                 }
             }
         }
-        stage('Tag and Push to ECR') {
+        stage('Deploy to ECS') {
             steps {
                 script {
-                    sh "docker tag ${AWS_CONTAINER_NAME}:latest ${AWS_ECR_IMAGE_PATH}:latest"
-                    sh "docker tag ${AWS_CONTAINER_NAME}:latest ${AWS_ECR_IMAGE_PATH}:${BUILD_NUMBER}"
-
-                    docker.withRegistry("https://${AWS_ECR_PATH}", "ecr:${AWS_REGION}:${AWS_CREDENTIAL_NAME}") {
-                        docker.image("${AWS_ECR_IMAGE_PATH}:${BUILD_NUMBER}").push()
-                        docker.image("${AWS_ECR_IMAGE_PATH}:latest").push()
-                    }
+                    sh """
+                    aws ecs update-service \
+                        --cluster ${AWS_ECS_CLUSTER} \
+                        --service ${AWS_ECS_SERVICE} \
+                        --force-new-deployment
+                    """
                 }
             }
         }

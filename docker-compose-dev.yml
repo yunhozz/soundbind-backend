@@ -21,8 +21,6 @@ services:
     container_name: soundbind-config-server
     ports:
       - "8888:8888"
-    env_file:
-      - .env
     environment:
       - spring.cloud.config.server.git.host-key=${CONFIG_SERVER_HOST_KEY}
       - spring.cloud.config.server.git.private-key=${CONFIG_SERVER_PRIVATE_KEY}
