@@ -17,7 +17,7 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
     defer-datasource-initialization: true
   datasource:
-    url: ${MYSQL_DB_URL}
+    url: ${MYSQL_AUTH_SERVICE_DB_URL}
     username: ${MYSQL_DB_USERNAME}
     password: ${MYSQL_DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
