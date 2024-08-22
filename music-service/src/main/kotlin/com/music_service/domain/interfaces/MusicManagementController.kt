@@ -26,9 +26,8 @@ import java.nio.charset.StandardCharsets
 
 @RestController
 @RequestMapping("/api/music")
-class MusicManagementController(
-    private val musicService: MusicService
-) {
+class MusicManagementController(private val musicService: MusicService) {
+
     @PostMapping(consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     @ResponseStatus(HttpStatus.CREATED)
     fun uploadMusic(

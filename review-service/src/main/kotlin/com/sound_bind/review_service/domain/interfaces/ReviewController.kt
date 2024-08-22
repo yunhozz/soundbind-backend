@@ -5,6 +5,7 @@ import com.review_service.domain.interfaces.dto.APIResponse
 import com.sound_bind.review_service.domain.application.ReviewService
 import com.sound_bind.review_service.domain.application.dto.request.ReviewCreateDTO
 import com.sound_bind.review_service.domain.application.dto.request.ReviewUpdateDTO
+import com.sound_bind.review_service.domain.interfaces.dto.KafkaRecordDTO
 import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorRequestDTO
 import com.sound_bind.review_service.global.annotation.HeaderSubject
 import jakarta.validation.Valid
@@ -47,13 +48,11 @@ class ReviewController(private val reviewService: ReviewService) {
 
         val reviewId = reviewService.createReview(musicId.toLong(), sub.toLong(), dto)
         val myInfo = reviewService.getUserInformationOnRedis(sub.toLong())
-        val record = mapOf(
-            "topic" to "review-added-topic",
-            "message" to mapOf(
-                "userId" to data["userId"],
-                "content" to "${myInfo["nickname"] as String} 님이 당신의 음원에 리뷰를 남겼습니다.",
-                "link" to "http://localhost:8000/api/reviews/$reviewId"
-            )
+        val record = KafkaRecordDTO(
+            "review-added-topic",
+            data["userId"].toString(),
+            "${myInfo["nickname"]} 님이 당신의 음원에 리뷰를 남겼습니다.",
+            "http://localhost:8000/api/reviews/$reviewId"
         )
         sendMessageToKafkaProducer(record)
         return APIResponse.of("Review created", reviewId)
@@ -93,15 +92,13 @@ class ReviewController(private val reviewService: ReviewService) {
     @PostMapping("/{id}/likes")
     @ResponseStatus(HttpStatus.CREATED)
     fun updateLikesOnReview(@HeaderSubject sub: String, @PathVariable("id") id: String): APIResponse {
-        val reviewerId = reviewService.changeLikesFlag(id.toLong(), sub.toLong())
-        reviewerId?.let {
+        reviewService.changeLikesFlag(id.toLong(), sub.toLong())?.let {
             val myInfo = reviewService.getUserInformationOnRedis(sub.toLong())
-            val record = mapOf(
-                "topic" to "review-like-topic",
-                "message" to mapOf(
-                    "userId" to it,
-                    "content" to "${myInfo["nickname"] as String} 님이 당신의 리뷰에 좋아요를 눌렀습니다."
-                )
+            val record = KafkaRecordDTO(
+                "review-like-topic",
+                it.toString(),
+                "${myInfo["nickname"] as String} 님이 당신의 리뷰에 좋아요를 눌렀습니다.",
+                null
             )
             sendMessageToKafkaProducer(record)
         }
@@ -115,7 +112,7 @@ class ReviewController(private val reviewService: ReviewService) {
         return APIResponse.of("Review deleted")
     }
 
-    private fun sendMessageToKafkaProducer(record: Map<String, Any>) =
+    private fun sendMessageToKafkaProducer(record: KafkaRecordDTO) =
         post(
             url = "http://localhost:9000/api/kafka",
             headers = mapOf("Content-Type" to "application/json"),

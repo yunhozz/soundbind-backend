@@ -3,6 +3,7 @@ package com.sound_bind.review_service.domain.interfaces
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.review_service.domain.interfaces.dto.APIResponse
 import com.sound_bind.review_service.domain.application.CommentService
+import com.sound_bind.review_service.domain.interfaces.dto.KafkaRecordDTO
 import com.sound_bind.review_service.global.annotation.HeaderSubject
 import khttp.post
 import org.springframework.http.HttpStatus
@@ -28,12 +29,11 @@ class CommentController(private val commentService: CommentService) {
     ): APIResponse {
         val result = commentService.createComment(reviewId.toLong(), sub.toLong(), message)
         val myInfo = commentService.getUserInformationOnRedis(sub.toLong())
-        val record = mapOf(
-            "topic" to "comment-added-topic",
-            "message" to mapOf(
-                "userId" to result.reviewerId,
-                "content" to "${myInfo["nickname"] as String} 님이 당신의 리뷰에 댓글을 남겼습니다.",
-            )
+        val record = KafkaRecordDTO(
+            "comment-added-topic",
+            result.reviewerId.toString(),
+            "${myInfo["nickname"] as String} 님이 당신의 리뷰에 댓글을 남겼습니다.",
+            null
         )
         post(
             url = "http://localhost:9000/api/kafka",
