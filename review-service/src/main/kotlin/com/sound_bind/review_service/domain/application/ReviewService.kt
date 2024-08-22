@@ -1,6 +1,5 @@
 package com.sound_bind.review_service.domain.application
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.sound_bind.review_service.domain.application.dto.request.ReviewCreateDTO
 import com.sound_bind.review_service.domain.application.dto.request.ReviewUpdateDTO
 import com.sound_bind.review_service.domain.application.dto.response.ReviewDetailsDTO
@@ -20,8 +19,6 @@ import com.sound_bind.review_service.global.exception.ReviewServiceException.Rev
 import com.sound_bind.review_service.global.util.RedisUtils
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Slice
-import org.springframework.kafka.annotation.KafkaListener
-import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -34,7 +31,7 @@ class ReviewService(
 ) {
 
     @Transactional
-    fun createReview(musicId: Long, userId: Long, dto: ReviewCreateDTO): Long? {
+    fun createReview(musicId: Long, userId: Long, dto: ReviewCreateDTO): ReviewDetailsDTO {
         if (reviewRepository.existsReviewByMusicIdAndUserId(musicId, userId)) {
             throw ReviewAlreadyExistException("Review already exists")
         }
@@ -48,18 +45,18 @@ class ReviewService(
             dto.score
         )
         reviewRepository.save(review)
-        return review.id
+        return ReviewDetailsDTO(review)
     }
 
     @Transactional
-    fun updateReviewMessageAndScore(reviewId: Long, userId: Long, dto: ReviewUpdateDTO): Long? {
+    fun updateReviewMessageAndScore(reviewId: Long, userId: Long, dto: ReviewUpdateDTO): ReviewDetailsDTO? {
         val review = reviewRepository.findReviewByIdAndUserId(reviewId, userId)
             ?: throw ReviewUpdateNotAuthorizedException("Not Authorized for Update")
         review.id?.let {
             val before30Days = LocalDateTime.now().minusDays(30)
             if (reviewRepository.isReviewEligibleForUpdate(it, before30Days)) {
                 review.updateMessageAndScore(dto.message, dto.score)
-                return review.id
+                return ReviewDetailsDTO(review)
             }
         }
         throw ReviewNotUpdatableException("It can be modified 30 days after the initial creation.")
@@ -122,12 +119,8 @@ class ReviewService(
     }
 
     @Transactional
-    @KafkaListener(topics = ["user-deletion-topic"], groupId = "review-service-group")
-    fun deleteReviewByUserWithdraw(@Payload message: String) {
-        val obj = jacksonObjectMapper().readValue(message, Map::class.java)
-        val userId = obj["userId"].toString()
+    fun deleteReviewsByUserWithdraw(userId: String) =
         reviewRepository.deleteReviewsByUserId(LocalDateTime.now(), userId.toLong())
-    }
 
     fun getUserInformationOnRedis(userId: Long) =
         RedisUtils.getJson("user:$userId", Map::class.java)

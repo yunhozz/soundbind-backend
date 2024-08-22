@@ -2,6 +2,7 @@ package com.sound_bind.review_service.domain.interfaces
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.review_service.domain.interfaces.dto.APIResponse
+import com.sound_bind.review_service.domain.application.ReviewAsyncService
 import com.sound_bind.review_service.domain.application.ReviewService
 import com.sound_bind.review_service.domain.application.dto.request.ReviewCreateDTO
 import com.sound_bind.review_service.domain.application.dto.request.ReviewUpdateDTO
@@ -14,6 +15,8 @@ import khttp.post
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
+import org.springframework.kafka.annotation.KafkaListener
+import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -27,7 +30,10 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/reviews")
-class ReviewController(private val reviewService: ReviewService) {
+class ReviewController(
+    private val reviewService: ReviewService,
+    private val reviewAsyncService: ReviewAsyncService
+) {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -41,21 +47,21 @@ class ReviewController(private val reviewService: ReviewService) {
             val message = response.jsonObject.getString("message")
             return APIResponse.of(message)
         }
+        val reviewDetailsDTO = reviewService.createReview(musicId.toLong(), sub.toLong(), dto)
+        reviewAsyncService.indexReviewInElasticSearch(reviewDetailsDTO)
 
-        val mapper = jacksonObjectMapper()
         val obj = mapper.readValue(response.text, Map::class.java)
         val data = mapper.readValue(mapper.writeValueAsString(obj["data"]), Map::class.java)
-
-        val reviewId = reviewService.createReview(musicId.toLong(), sub.toLong(), dto)
         val myInfo = reviewService.getUserInformationOnRedis(sub.toLong())
+
         val record = KafkaRecordDTO(
             "review-added-topic",
             data["userId"].toString(),
             "${myInfo["nickname"]} 님이 당신의 음원에 리뷰를 남겼습니다.",
-            "http://localhost:8000/api/reviews/$reviewId"
+            "http://localhost:8000/api/reviews/${reviewDetailsDTO.id}"
         )
         sendMessageToKafkaProducer(record)
-        return APIResponse.of("Review created", reviewId)
+        return APIResponse.of("Review created", reviewDetailsDTO.id)
     }
 
     @GetMapping("/{id}")
@@ -108,14 +114,27 @@ class ReviewController(private val reviewService: ReviewService) {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteReview(@HeaderSubject sub: String, @PathVariable("id") id: String): APIResponse {
-        reviewService.deleteReview(id.toLong(), sub.toLong())
+        val reviewId = reviewService.deleteReview(id.toLong(), sub.toLong())
+        reviewAsyncService.deleteReviewInElasticSearch(reviewId)
         return APIResponse.of("Review deleted")
+    }
+
+    @KafkaListener(groupId = "review-service-group", topics = ["user-deletion-topic"])
+    fun deleteReviewsByUserWithdraw(@Payload message: String) {
+        val obj = mapper.readValue(message, Map::class.java)
+        val userId = obj["userId"].toString()
+        reviewService.deleteReviewsByUserWithdraw(userId)
+        reviewAsyncService.deleteReviewsByUserIdInElasticSearch(userId.toLong())
     }
 
     private fun sendMessageToKafkaProducer(record: KafkaRecordDTO) =
         post(
             url = "http://localhost:9000/api/kafka",
             headers = mapOf("Content-Type" to "application/json"),
-            data = jacksonObjectMapper().writeValueAsString(record)
+            data = mapper.writeValueAsString(record)
         )
+
+    companion object {
+        private val mapper = jacksonObjectMapper()
+    }
 }
