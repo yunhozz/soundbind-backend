@@ -37,7 +37,7 @@ class ReviewQueryRepositoryImpl(private val queryFactory: JPAQueryFactory): Revi
                     review.userImageUrl,
                     review.message,
                     review.score,
-                    review.comments,
+                    review.commentNum,
                     review.likes,
                     review.createdAt,
                     review.updatedAt

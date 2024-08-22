@@ -108,17 +108,17 @@ class ReviewService(
     }
 
     @Transactional
-    fun deleteReview(reviewId: Long, userId: Long) {
+    fun deleteReview(reviewId: Long, userId: Long): Long {
         val review = reviewRepository.findReviewByIdAndUserId(reviewId, userId)
             ?: throw ReviewUpdateNotAuthorizedException("Not Authorized for Delete")
-        review.id?.let {
-            val comments = commentRepository.findCommentsByReview(review)
-            val reviewLikesList = reviewLikesRepository.findByReview(review)
+        val comments = commentRepository.findCommentsByReview(review)
+        val reviewLikesList = reviewLikesRepository.findByReview(review)
 
-            comments.forEach { comment -> comment.softDelete() }
-            review.softDelete()
-            reviewLikesRepository.deleteAllInBatch(reviewLikesList)
-        }
+        comments.forEach { it.softDelete() }
+        review.softDelete()
+        reviewLikesRepository.deleteAllInBatch(reviewLikesList)
+
+        return reviewId
     }
 
     @Transactional

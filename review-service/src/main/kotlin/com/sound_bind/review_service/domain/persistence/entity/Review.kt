@@ -16,7 +16,7 @@ class Review private constructor(
     userImageUrl: String?,
     message: String,
     score: Double,
-    comments: Int = 0,
+    commentNum: Int = 0,
     likes: Int = 0
 ): BaseEntity() {
 
@@ -47,7 +47,7 @@ class Review private constructor(
     var score = score
         protected set
 
-    var comments = comments
+    var commentNum = commentNum
         protected set
 
     var likes = likes
@@ -70,13 +70,15 @@ class Review private constructor(
     }
 
     fun addComments(count: Int) {
-        comments += count
+        commentNum += count
     }
 
     fun subtractComments(count: Int) {
-        require(comments - count >= 0) { throw IllegalArgumentException("Comments must not be negative") }
-        comments -= count
+        require(commentNum - count >= 0) { throw IllegalArgumentException("Comments must not be negative") }
+        commentNum -= count
     }
 
-    fun softDelete(): LocalDateTime = deletedAt ?: LocalDateTime.now()
+    fun softDelete() {
+        deletedAt = deletedAt ?: LocalDateTime.now()
+    }
 }

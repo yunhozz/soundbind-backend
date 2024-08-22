@@ -7,7 +7,7 @@ data class ReviewQueryDTO @QueryProjection constructor(
     val id: Long,
     val userId: Long,
     val userNickname: String,
-    val userImageUrl: String,
+    val userImageUrl: String?,
     val message: String,
     val score: Double,
     val numberOfComments: Int,
