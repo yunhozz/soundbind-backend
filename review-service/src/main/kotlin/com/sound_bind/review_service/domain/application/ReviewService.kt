@@ -7,9 +7,9 @@ import com.sound_bind.review_service.domain.persistence.entity.Review
 import com.sound_bind.review_service.domain.persistence.entity.ReviewLikes
 import com.sound_bind.review_service.domain.persistence.repository.CommentRepository
 import com.sound_bind.review_service.domain.persistence.repository.ReviewLikesRepository
-import com.sound_bind.review_service.domain.persistence.repository.ReviewQueryRepository.ReviewSort
 import com.sound_bind.review_service.domain.persistence.repository.ReviewRepository
-import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorRequestDTO
+import com.sound_bind.review_service.domain.persistence.repository.ReviewSort
+import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorDTO
 import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewQueryDTO
 import com.sound_bind.review_service.global.exception.ReviewServiceException.NegativeValueException
 import com.sound_bind.review_service.global.exception.ReviewServiceException.ReviewAlreadyExistException
@@ -72,14 +72,14 @@ class ReviewService(
     fun findReviewListByMusicId(
         musicId: Long,
         userId: Long,
-        sort: String,
-        dto: ReviewCursorRequestDTO,
+        reviewSort: ReviewSort,
+        dto: ReviewCursorDTO?,
         pageable: Pageable
     ): Slice<ReviewQueryDTO> =
         reviewRepository.findReviewsOnMusic(
             musicId,
             userId,
-            ReviewSort.of(sort),
+            reviewSort,
             dto,
             pageable
         )

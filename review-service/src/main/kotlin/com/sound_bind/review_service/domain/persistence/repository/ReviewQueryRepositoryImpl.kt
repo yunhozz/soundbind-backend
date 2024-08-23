@@ -5,17 +5,15 @@ import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.jpa.impl.JPAQueryFactory
 import com.sound_bind.review_service.domain.persistence.entity.QReview.review
 import com.sound_bind.review_service.domain.persistence.entity.QReviewLikes.reviewLikes
-import com.sound_bind.review_service.domain.persistence.repository.ReviewQueryRepository.ReviewSort
 import com.sound_bind.review_service.domain.persistence.repository.dto.QReviewLikesQueryDTO
 import com.sound_bind.review_service.domain.persistence.repository.dto.QReviewQueryDTO
-import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorRequestDTO
+import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorDTO
 import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewLikesQueryDTO
 import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewQueryDTO
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Slice
 import org.springframework.data.domain.SliceImpl
 import org.springframework.stereotype.Repository
-import java.time.LocalDateTime
 
 @Repository
 class ReviewQueryRepositoryImpl(private val queryFactory: JPAQueryFactory): ReviewQueryRepository {
@@ -24,7 +22,7 @@ class ReviewQueryRepositoryImpl(private val queryFactory: JPAQueryFactory): Revi
         musicId: Long,
         userId: Long,
         sort: ReviewSort,
-        dto: ReviewCursorRequestDTO,
+        dto: ReviewCursorDTO?,
         pageable: Pageable
     ): Slice<ReviewQueryDTO> {
         val pageSize = pageable.pageSize
@@ -46,7 +44,7 @@ class ReviewQueryRepositoryImpl(private val queryFactory: JPAQueryFactory): Revi
             .from(review)
             .where(
                 review.musicId.eq(musicId),
-                reviewCursorLt(dto.idCursor, dto.likesCursor, dto.createdAtCursor, sort)
+                reviewCursorLt(dto, sort)
             )
             .orderBy(sortReview(sort), review.id.desc())
             .limit(pageSize.toLong() + 1)
@@ -87,22 +85,22 @@ class ReviewQueryRepositoryImpl(private val queryFactory: JPAQueryFactory): Revi
     }
 
     private fun reviewCursorLt(
-        idCursor: Long?,
-        likesCursor: Int?,
-        createdAtCursor: LocalDateTime?,
+        dto: ReviewCursorDTO?,
         sort: ReviewSort
     ): BooleanExpression? {
-        when (sort) {
-            ReviewSort.LIKES ->
-                if (idCursor != null && likesCursor != null) {
-                    return review.likes.lt(likesCursor)
-                        .or(review.likes.eq(likesCursor).and(review.id.lt(idCursor)))
-                }
-            ReviewSort.LATEST ->
-                if (idCursor != null && createdAtCursor != null) {
-                    return review.createdAt.lt(createdAtCursor)
-                        .or(review.createdAt.eq(createdAtCursor).and(review.id.lt(idCursor)))
-                }
+        dto?.let {
+            when (sort) {
+                ReviewSort.LIKES ->
+                    if (it.idCursor != null && it.likesCursor != null) {
+                        return review.likes.lt(it.likesCursor)
+                            .or(review.likes.eq(it.likesCursor).and(review.id.lt(it.idCursor)))
+                    }
+                ReviewSort.LATEST ->
+                    if (it.idCursor != null && it.createdAtCursor != null) {
+                        return review.createdAt.lt(it.createdAtCursor)
+                            .or(review.createdAt.eq(it.createdAtCursor).and(review.id.lt(it.idCursor)))
+                    }
+            }
         }
         return null
     }

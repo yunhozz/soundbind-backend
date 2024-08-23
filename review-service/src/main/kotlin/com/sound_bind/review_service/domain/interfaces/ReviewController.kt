@@ -7,13 +7,13 @@ import com.sound_bind.review_service.domain.application.ReviewService
 import com.sound_bind.review_service.domain.application.dto.request.ReviewCreateDTO
 import com.sound_bind.review_service.domain.application.dto.request.ReviewUpdateDTO
 import com.sound_bind.review_service.domain.interfaces.dto.KafkaRecordDTO
-import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorRequestDTO
+import com.sound_bind.review_service.domain.persistence.repository.ReviewSort
+import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorDTO
 import com.sound_bind.review_service.global.annotation.HeaderSubject
 import jakarta.validation.Valid
 import khttp.get
 import khttp.post
-import org.springframework.data.domain.Pageable
-import org.springframework.data.web.PageableDefault
+import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.messaging.handler.annotation.Payload
@@ -71,16 +71,39 @@ class ReviewController(
         return APIResponse.of("Review found", result)
     }
 
+    @GetMapping("/found")
+    @ResponseStatus(HttpStatus.OK)
+    fun lookUpReviewsInMusicByDefault(
+        @HeaderSubject sub: String,
+        @RequestParam musicId: String,
+        @RequestParam(required = false, defaultValue = "0") page: String
+    ): APIResponse {
+        val result = reviewService.findReviewListByMusicId(
+            musicId.toLong(),
+            sub.toLong(),
+            ReviewSort.LATEST,
+            null,
+            PageRequest.of(page.toInt(), 20)
+        )
+        return APIResponse.of("Reviews found", result)
+    }
+
     @PostMapping("/found")
     @ResponseStatus(HttpStatus.CREATED)
-    fun lookupReviewsInMusic(
+    fun lookupReviewsInMusicByConditions(
         @HeaderSubject sub: String,
         @RequestParam musicId: String,
         @RequestParam(required = false, defaultValue = "likes") sort: String,
-        @RequestBody dto: ReviewCursorRequestDTO,
-        @PageableDefault(size = 20) pageable: Pageable
+        @RequestParam(required = false, defaultValue = "0") page: String,
+        @RequestBody(required = false) dto: ReviewCursorDTO,
     ): APIResponse {
-        val result = reviewService.findReviewListByMusicId(musicId.toLong(), sub.toLong(), sort, dto, pageable)
+        val result = reviewService.findReviewListByMusicId(
+            musicId.toLong(),
+            sub.toLong(),
+            ReviewSort.of(sort),
+            dto,
+            PageRequest.of(page.toInt(), 20)
+        )
         return APIResponse.of("Reviews found", result)
     }
 
