@@ -15,6 +15,7 @@ dependencies {
 	implementation("com.querydsl:querydsl-apt:5.1.0:jakarta")
 	implementation("jakarta.persistence:jakarta.persistence-api")
 	implementation("jakarta.annotation:jakarta.annotation-api")
+	implementation("org.elasticsearch.client:elasticsearch-rest-high-level-client:7.17.0")
 	kapt("com.querydsl:querydsl-apt:5.1.0:jakarta")
 	kapt("org.springframework.boot:spring-boot-configuration-processor")
 
