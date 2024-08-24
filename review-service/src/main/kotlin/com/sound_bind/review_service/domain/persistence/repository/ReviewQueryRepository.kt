@@ -8,11 +8,13 @@ import org.springframework.data.domain.Slice
 interface ReviewQueryRepository {
 
     fun findReviewsOnMusic(musicId: Long, userId: Long, sort: ReviewSort, dto: ReviewCursorDTO?, pageable: Pageable): Slice<ReviewQueryDTO>
+    fun findReviewsOnMusicByElasticsearch(musicId: Long, sort: ReviewSort, dto: ReviewCursorDTO?, pageable: Pageable): MutableList<ReviewQueryDTO>
+    fun processSliceQueryFromReviewIds(reviews: MutableList<ReviewQueryDTO>, userId: Long, pageable: Pageable): Slice<ReviewQueryDTO>
 }
 
-enum class ReviewSort(val key: String, val value: String) {
-    LIKES("likes", "인기순"),
-    LATEST("latest", "최신순")
+enum class ReviewSort(val key: String, val value: String, val target: String) {
+    LIKES("likes", "인기순", "likes"),
+    LATEST("latest", "최신순", "createdAt")
     ;
 
     companion object {

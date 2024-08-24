@@ -5,7 +5,8 @@ import com.sound_bind.review_service.domain.persistence.es.ReviewDocument
 import com.sound_bind.review_service.domain.persistence.es.ReviewSearchRepository
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
-import java.time.temporal.ChronoUnit
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @Service
 class ReviewAsyncService(private val reviewSearchRepository: ReviewSearchRepository) {
@@ -22,8 +23,8 @@ class ReviewAsyncService(private val reviewSearchRepository: ReviewSearchReposit
             dto.score,
             dto.commentNum,
             dto.likes,
-            dto.createdAt.truncatedTo(ChronoUnit.MILLIS),
-            dto.updatedAt.truncatedTo(ChronoUnit.MILLIS)
+            convertLocalDateTimeToString(dto.createdAt),
+            convertLocalDateTimeToString(dto.updatedAt)
         )
         reviewSearchRepository.save(reviewDocument)
     }
@@ -35,4 +36,9 @@ class ReviewAsyncService(private val reviewSearchRepository: ReviewSearchReposit
     @Async
     fun deleteReviewsByUserIdInElasticSearch(userId: Long) =
         reviewSearchRepository.deleteAllByUserId(userId)
+
+    companion object {
+        private fun convertLocalDateTimeToString(time: LocalDateTime): String =
+            time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSS"))
+    }
 }

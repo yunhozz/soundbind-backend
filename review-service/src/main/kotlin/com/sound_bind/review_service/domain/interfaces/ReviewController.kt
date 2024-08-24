@@ -81,7 +81,7 @@ class ReviewController(
         val result = reviewService.findReviewListByMusicId(
             musicId.toLong(),
             sub.toLong(),
-            ReviewSort.LATEST,
+            ReviewSort.LIKES,
             null,
             PageRequest.of(page.toInt(), 20)
         )
