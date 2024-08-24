@@ -68,7 +68,7 @@ class ReviewQueryRepositoryImpl(
             .toMutableList()
     }
 
-    override fun processSliceQueryFromReviewIds(
+    override fun processSliceQueryFromReviews(
         reviews: MutableList<ReviewQueryDTO>,
         userId: Long,
         pageable: Pageable

@@ -82,7 +82,7 @@ class ReviewService(
             dto,
             pageable
         )
-        return reviewRepository.processSliceQueryFromReviewIds(
+        return reviewRepository.processSliceQueryFromReviews(
             reviews,
             userId,
             pageable
