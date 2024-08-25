@@ -78,7 +78,7 @@ class ReviewController(
         @RequestParam musicId: String,
         @RequestParam(required = false, defaultValue = "0") page: String
     ): APIResponse {
-        val result = reviewService.findReviewListByMusicId(
+        val result = reviewService.findReviewListByMusicIdV2(
             musicId.toLong(),
             sub.toLong(),
             ReviewSort.LIKES,
@@ -88,16 +88,35 @@ class ReviewController(
         return APIResponse.of("Reviews found", result)
     }
 
-    @PostMapping("/found")
+    @PostMapping("/found/v1")
     @ResponseStatus(HttpStatus.CREATED)
-    fun lookupReviewsInMusicByConditions(
+    fun lookupReviewsInMusicByConditionsV1(
         @HeaderSubject sub: String,
         @RequestParam musicId: String,
         @RequestParam(required = false, defaultValue = "likes") sort: String,
         @RequestParam(required = false, defaultValue = "0") page: String,
         @RequestBody(required = false) dto: ReviewCursorDTO,
     ): APIResponse {
-        val result = reviewService.findReviewListByMusicId(
+        val result = reviewService.findReviewListByMusicIdV1(
+            musicId.toLong(),
+            sub.toLong(),
+            ReviewSort.of(sort),
+            dto,
+            PageRequest.of(page.toInt(), 20)
+        )
+        return APIResponse.of("Reviews found", result)
+    }
+
+    @PostMapping("/found/v2")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun lookupReviewsInMusicByConditionsV2(
+        @HeaderSubject sub: String,
+        @RequestParam musicId: String,
+        @RequestParam(required = false, defaultValue = "likes") sort: String,
+        @RequestParam(required = false, defaultValue = "0") page: String,
+        @RequestBody(required = false) dto: ReviewCursorDTO,
+    ): APIResponse {
+        val result = reviewService.findReviewListByMusicIdV2(
             musicId.toLong(),
             sub.toLong(),
             ReviewSort.of(sort),

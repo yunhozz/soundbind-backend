@@ -6,9 +6,8 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Slice
 
 interface ReviewQueryRepository {
-    fun findReviewsOnMusicByElasticsearch(musicId: Long, sort: ReviewSort, dto: ReviewCursorDTO?, pageable: Pageable): MutableList<ReviewQueryDTO>
-    fun processSliceQueryFromReviewIds(reviews: MutableList<ReviewQueryDTO>, userId: Long, pageable: Pageable): Slice<ReviewQueryDTO>
-    fun processSliceQueryFromReviews(reviews: MutableList<ReviewQueryDTO>, userId: Long, pageable: Pageable): Slice<ReviewQueryDTO>
+    fun findReviewsOnMusic(musicId: Long, userId: Long, sort: ReviewSort, dto: ReviewCursorDTO?, pageable: Pageable): Slice<ReviewQueryDTO>
+    fun findReviewsOnMusicWithElasticsearch(musicId: Long, userId: Long, sort: ReviewSort, dto: ReviewCursorDTO?, pageable: Pageable): Slice<ReviewQueryDTO>
 }
 
 enum class ReviewSort(val key: String, val value: String, val target: String) {

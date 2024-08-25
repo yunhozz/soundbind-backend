@@ -69,25 +69,36 @@ class ReviewService(
     }
 
     @Transactional(readOnly = true)
-    fun findReviewListByMusicId(
+    fun findReviewListByMusicIdV1(
         musicId: Long,
         userId: Long,
         reviewSort: ReviewSort,
         dto: ReviewCursorDTO?,
         pageable: Pageable
-    ): Slice<ReviewQueryDTO> {
-        val reviews = reviewRepository.findReviewsOnMusicByElasticsearch(
+    ): Slice<ReviewQueryDTO> =
+        reviewRepository.findReviewsOnMusic(
             musicId,
+            userId,
             reviewSort,
             dto,
             pageable
         )
-        return reviewRepository.processSliceQueryFromReviews(
-            reviews,
+
+    @Transactional(readOnly = true)
+    fun findReviewListByMusicIdV2(
+        musicId: Long,
+        userId: Long,
+        reviewSort: ReviewSort,
+        dto: ReviewCursorDTO?,
+        pageable: Pageable
+    ): Slice<ReviewQueryDTO> =
+        reviewRepository.findReviewsOnMusicWithElasticsearch(
+            musicId,
             userId,
+            reviewSort,
+            dto,
             pageable
         )
-    }
 
     @Transactional
     fun changeLikesFlag(reviewId: Long, userId: Long): Long? {

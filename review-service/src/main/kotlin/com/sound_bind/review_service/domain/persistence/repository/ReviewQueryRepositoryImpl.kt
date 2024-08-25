@@ -5,14 +5,18 @@ import co.elastic.clients.elasticsearch._types.SortOrder
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders
 import co.elastic.clients.elasticsearch.core.SearchRequest
 import co.elastic.clients.json.JsonData
+import com.querydsl.core.types.OrderSpecifier
+import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.jpa.impl.JPAQueryFactory
 import com.sound_bind.review_service.domain.persistence.entity.QReview.review
 import com.sound_bind.review_service.domain.persistence.entity.QReviewLikes.reviewLikes
 import com.sound_bind.review_service.domain.persistence.es.ReviewDocument
 import com.sound_bind.review_service.domain.persistence.repository.dto.QReviewLikesQueryDTO
+import com.sound_bind.review_service.domain.persistence.repository.dto.QReviewQueryDTO
 import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorDTO
 import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewLikesQueryDTO
 import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewQueryDTO
+import com.sound_bind.review_service.global.util.DateTimeUtils
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Slice
 import org.springframework.data.domain.SliceImpl
@@ -24,12 +28,48 @@ class ReviewQueryRepositoryImpl(
     private val elasticsearchClient: ElasticsearchClient,
 ): ReviewQueryRepository {
 
-    override fun findReviewsOnMusicByElasticsearch(
+    override fun findReviewsOnMusic(
         musicId: Long,
+        userId: Long,
         sort: ReviewSort,
         dto: ReviewCursorDTO?,
         pageable: Pageable
-    ): MutableList<ReviewQueryDTO> {
+    ): Slice<ReviewQueryDTO> {
+        val pageSize = pageable.pageSize
+        val reviews = queryFactory
+            .select(
+                QReviewQueryDTO(
+                    review.id,
+                    review.userId,
+                    review.userNickname,
+                    review.userImageUrl,
+                    review.message,
+                    review.score,
+                    review.commentNum,
+                    review.likes,
+                    review.createdAt,
+                    review.updatedAt
+                )
+            )
+            .from(review)
+            .where(
+                review.musicId.eq(musicId),
+                reviewCursorLt(dto, sort)
+            )
+            .orderBy(sortReview(sort), review.id.desc())
+            .limit(pageSize.toLong() + 1)
+            .fetch()
+
+        return processSliceQueryFromReviews(reviews, userId, pageable)
+    }
+
+    override fun findReviewsOnMusicWithElasticsearch(
+        musicId: Long,
+        userId: Long,
+        sort: ReviewSort,
+        dto: ReviewCursorDTO?,
+        pageable: Pageable
+    ): Slice<ReviewQueryDTO> {
         val boolQuery = QueryBuilders.bool()
             .must {
                 it.term { t -> t.field("musicId").value(musicId) }
@@ -64,11 +104,14 @@ class ReviewQueryRepositoryImpl(
         val metadata = searchResponse.hits()
         val reviews = metadata.hits().map { it.source() }
 
-        return reviews.map { ReviewQueryDTO(it!!) }
-            .toMutableList()
+        return processSliceQueryFromReviews(
+            reviews.map { ReviewQueryDTO(it!!) }.toMutableList(),
+            userId,
+            pageable
+        )
     }
 
-    override fun processSliceQueryFromReviews(
+    private fun processSliceQueryFromReviews(
         reviews: MutableList<ReviewQueryDTO>,
         userId: Long,
         pageable: Pageable
@@ -120,8 +163,9 @@ class ReviewQueryRepositoryImpl(
                     }
                 ReviewSort.LATEST ->
                     if (it.idCursor != null && it.createdAtCursor != null) {
-                        return review.createdAt.lt(it.createdAtCursor)
-                            .or(review.createdAt.eq(it.createdAtCursor).and(review.id.lt(it.idCursor)))
+                        val createdAtCursor = DateTimeUtils.convertStringToLocalDateTime(it.createdAtCursor)
+                        return review.createdAt.lt(createdAtCursor)
+                            .or(review.createdAt.eq(createdAtCursor).and(review.id.lt(it.idCursor)))
                     }
             }
         }
