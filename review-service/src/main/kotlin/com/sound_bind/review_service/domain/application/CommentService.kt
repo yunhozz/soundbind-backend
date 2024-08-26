@@ -1,10 +1,9 @@
 package com.sound_bind.review_service.domain.application
 
-import com.sound_bind.review_service.domain.application.dto.response.CommentIdReviewerIdDTO
+import com.sound_bind.review_service.domain.application.dto.response.CommentDetailsDTO
 import com.sound_bind.review_service.domain.persistence.entity.Comment
 import com.sound_bind.review_service.domain.persistence.repository.CommentRepository
 import com.sound_bind.review_service.domain.persistence.repository.ReviewRepository
-import com.sound_bind.review_service.domain.persistence.repository.dto.CommentQueryDTO
 import com.sound_bind.review_service.global.exception.CommentServiceException.CommentUpdateNotAuthorizedException
 import com.sound_bind.review_service.global.exception.ReviewServiceException.ReviewNotFoundException
 import com.sound_bind.review_service.global.util.RedisUtils
@@ -18,7 +17,7 @@ class CommentService(
 ) {
 
     @Transactional
-    fun createComment(reviewId: Long, userId: Long, message: String): CommentIdReviewerIdDTO {
+    fun createComment(reviewId: Long, userId: Long, message: String): CommentDetailsDTO {
         val review = reviewRepository.findById(reviewId)
             .orElseThrow { ReviewNotFoundException("Review not found: $reviewId") }
         val userInfo = RedisUtils.getJson("user:$userId", Map::class.java)
@@ -32,18 +31,19 @@ class CommentService(
 
         review.addComments(1)
         commentRepository.save(comment)
-        return CommentIdReviewerIdDTO(comment.id!!, review.userId)
+        return CommentDetailsDTO(comment, review)
     }
-
-    @Transactional(readOnly = true)
-    fun findCommentListByReviewId(reviewId: Long): List<CommentQueryDTO> =
-        commentRepository.findCommentsByReviewId(reviewId)
 
     @Transactional
     fun deleteComment(commentId: Long, userId: Long) {
         val comment = (commentRepository.findWithReviewByIdAndUserId(commentId, userId)
             ?: throw CommentUpdateNotAuthorizedException("Not Authorized for Delete"))
         comment.softDelete() // subtract review's comment number
+    }
+
+    @Transactional
+    fun deleteCommentsByUserWithdraw(userId: Long) {
+        // TODO : userId 로 comment list 조회 -> 각 comment 마다 softDelete() 실행
     }
 
     fun getUserInformationOnRedis(userId: Long) =

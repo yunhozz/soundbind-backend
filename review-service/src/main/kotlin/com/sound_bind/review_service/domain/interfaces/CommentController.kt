@@ -3,6 +3,7 @@ package com.sound_bind.review_service.domain.interfaces
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.review_service.domain.interfaces.dto.APIResponse
 import com.sound_bind.review_service.domain.application.CommentService
+import com.sound_bind.review_service.domain.application.ElasticsearchService
 import com.sound_bind.review_service.domain.interfaces.dto.KafkaRecordDTO
 import com.sound_bind.review_service.global.annotation.HeaderSubject
 import khttp.post
@@ -18,7 +19,10 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/comments")
-class CommentController(private val commentService: CommentService) {
+class CommentController(
+    private val commentService: CommentService,
+    private val elasticsearchService: ElasticsearchService
+) {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -27,11 +31,13 @@ class CommentController(private val commentService: CommentService) {
         @RequestParam reviewId: String,
         @RequestParam message: String,
     ): APIResponse {
-        val result = commentService.createComment(reviewId.toLong(), sub.toLong(), message)
+        val commentDetailsDTO = commentService.createComment(reviewId.toLong(), sub.toLong(), message)
+        elasticsearchService.indexCommentInElasticSearch(commentDetailsDTO)
+
         val myInfo = commentService.getUserInformationOnRedis(sub.toLong())
         val record = KafkaRecordDTO(
             "comment-added-topic",
-            result.reviewerId.toString(),
+            commentDetailsDTO.reviewerId.toString(),
             "${myInfo["nickname"] as String} 님이 당신의 리뷰에 댓글을 남겼습니다.",
             null
         )
@@ -40,13 +46,14 @@ class CommentController(private val commentService: CommentService) {
             headers = mapOf("Content-Type" to "application/json"),
             data = jacksonObjectMapper().writeValueAsString(record)
         )
-        return APIResponse.of("Comment Created", result.commentId)
+
+        return APIResponse.of("Comment Created", commentDetailsDTO.id)
     }
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     fun getCommentListByReview(@RequestParam reviewId: String): APIResponse {
-        val comments = commentService.findCommentListByReviewId(reviewId.toLong())
+        val comments = elasticsearchService.findCommentsByReviewInElasticsearch(reviewId.toLong())
         return APIResponse.of("Comments in Review Found", comments)
     }
 
@@ -54,6 +61,7 @@ class CommentController(private val commentService: CommentService) {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteCommentOnReview(@HeaderSubject sub: String, @PathVariable("id") id: String): APIResponse {
         commentService.deleteComment(id.toLong(), sub.toLong())
+        elasticsearchService.deleteCommentInElasticSearch(id.toLong())
         return APIResponse.of("Comment Deleted")
     }
 }
