@@ -49,7 +49,7 @@ class ReviewService(
     }
 
     @Transactional
-    fun updateReviewMessageAndScore(reviewId: Long, userId: Long, dto: ReviewUpdateDTO): ReviewDetailsDTO? {
+    fun updateReviewMessageAndScore(reviewId: Long, userId: Long, dto: ReviewUpdateDTO): ReviewDetailsDTO {
         val review = reviewRepository.findReviewByIdAndUserId(reviewId, userId)
             ?: throw ReviewUpdateNotAuthorizedException("Not Authorized for Update")
         review.id?.let {

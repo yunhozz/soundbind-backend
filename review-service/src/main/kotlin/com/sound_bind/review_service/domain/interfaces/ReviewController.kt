@@ -2,7 +2,7 @@ package com.sound_bind.review_service.domain.interfaces
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.review_service.domain.interfaces.dto.APIResponse
-import com.sound_bind.review_service.domain.application.ReviewAsyncService
+import com.sound_bind.review_service.domain.application.ElasticsearchService
 import com.sound_bind.review_service.domain.application.ReviewService
 import com.sound_bind.review_service.domain.application.dto.request.ReviewCreateDTO
 import com.sound_bind.review_service.domain.application.dto.request.ReviewUpdateDTO
@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/reviews")
 class ReviewController(
     private val reviewService: ReviewService,
-    private val reviewAsyncService: ReviewAsyncService
+    private val elasticsearchService: ElasticsearchService
 ) {
 
     @PostMapping
@@ -48,7 +48,7 @@ class ReviewController(
             return APIResponse.of(message)
         }
         val reviewDetailsDTO = reviewService.createReview(musicId.toLong(), sub.toLong(), dto)
-        reviewAsyncService.indexReviewInElasticSearch(reviewDetailsDTO)
+        elasticsearchService.indexReviewInElasticSearch(reviewDetailsDTO)
 
         val obj = mapper.readValue(response.text, Map::class.java)
         val data = mapper.readValue(mapper.writeValueAsString(obj["data"]), Map::class.java)
@@ -133,8 +133,9 @@ class ReviewController(
         @PathVariable("id") id: String,
         @Valid @RequestBody dto: ReviewUpdateDTO
     ): APIResponse {
-        val reviewId = reviewService.updateReviewMessageAndScore(id.toLong(), sub.toLong(), dto)
-        return APIResponse.of("Review updated", reviewId)
+        val reviewDetailsDTO = reviewService.updateReviewMessageAndScore(id.toLong(), sub.toLong(), dto)
+        elasticsearchService.indexReviewInElasticSearch(reviewDetailsDTO)
+        return APIResponse.of("Review updated", reviewDetailsDTO.id)
     }
 
     @PostMapping("/{id}/likes")
@@ -157,7 +158,7 @@ class ReviewController(
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteReview(@HeaderSubject sub: String, @PathVariable("id") id: String): APIResponse {
         val reviewId = reviewService.deleteReview(id.toLong(), sub.toLong())
-        reviewAsyncService.deleteReviewInElasticSearch(reviewId)
+        elasticsearchService.deleteReviewInElasticSearch(reviewId)
         return APIResponse.of("Review deleted")
     }
 
@@ -166,7 +167,7 @@ class ReviewController(
         val obj = mapper.readValue(message, Map::class.java)
         val userId = obj["userId"].toString()
         reviewService.deleteReviewsByUserWithdraw(userId)
-        reviewAsyncService.deleteReviewsByUserIdInElasticSearch(userId.toLong())
+        elasticsearchService.deleteReviewsByUserIdInElasticSearch(userId.toLong())
     }
 
     private fun sendMessageToKafkaProducer(record: KafkaRecordDTO) =
