@@ -7,7 +7,7 @@ import org.springframework.data.domain.Slice
 
 interface ReviewQueryRepository {
     fun findReviewsOnMusic(musicId: Long, userId: Long, sort: ReviewSort, dto: ReviewCursorDTO?, pageable: Pageable): Slice<ReviewQueryDTO>
-    fun findReviewsOnMusicWithElasticsearch(musicId: Long, userId: Long, sort: ReviewSort, dto: ReviewCursorDTO?, pageable: Pageable): Slice<ReviewQueryDTO>
+    fun findReviewsOnMusicWithElasticsearch(musicId: Long, userId: Long, sort: ReviewSort, dto: ReviewCursorDTO?, pageable: Pageable): List<ReviewQueryDTO>
 }
 
 enum class ReviewSort(val key: String, val value: String, val target: String) {

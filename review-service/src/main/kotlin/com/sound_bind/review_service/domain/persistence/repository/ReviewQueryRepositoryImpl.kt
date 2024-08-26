@@ -1,10 +1,10 @@
 package com.sound_bind.review_service.domain.persistence.repository
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient
+import co.elastic.clients.elasticsearch._types.FieldValue
 import co.elastic.clients.elasticsearch._types.SortOrder
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders
 import co.elastic.clients.elasticsearch.core.SearchRequest
-import co.elastic.clients.json.JsonData
 import com.querydsl.core.types.OrderSpecifier
 import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.jpa.impl.JPAQueryFactory
@@ -69,53 +69,60 @@ class ReviewQueryRepositoryImpl(
         sort: ReviewSort,
         dto: ReviewCursorDTO?,
         pageable: Pageable
-    ): Slice<ReviewQueryDTO> {
+    ): List<ReviewQueryDTO> {
         val boolQuery = QueryBuilders.bool()
             .must {
                 it.term { t -> t.field("musicId").value(musicId) }
             }
+        val searchAfterValues = mutableListOf<FieldValue?>()
+
         dto?.let {
             when (sort) {
                 ReviewSort.LIKES ->
                     if (it.idCursor != null && it.likesCursor != null) {
-                        boolQuery.must { s ->
-                            s.range { r -> r.field("likes").lt(JsonData.of(it.likesCursor)) }
-                        }
+                        searchAfterValues.add(FieldValue.of(it.likesCursor))
+                        searchAfterValues.add(FieldValue.of(it.idCursor))
                     }
                 ReviewSort.LATEST ->
                     if (it.idCursor != null && it.createdAtCursor != null) {
-                        boolQuery.must { s ->
-                            s.range { r -> r.field("createdAt").lt(JsonData.of(it.createdAtCursor)) }
-                        }
+                        searchAfterValues.add(FieldValue.of(it.createdAtCursor))
+                        searchAfterValues.add(FieldValue.of(it.idCursor))
                     }
             }
         }
-        val searchRequest = SearchRequest.Builder()
-            .index("review")
+
+        val pitResponse = elasticsearchClient.openPointInTime {
+            it.index("review")
+                .keepAlive { a -> a.time("1m") }
+        }
+        val pitId = pitResponse.id()
+
+        val searchRequestBuilder = SearchRequest.Builder()
             .query { it.bool(boolQuery.build()) }
             .sort { s -> s.field { f -> f.field(sort.target).order(SortOrder.Desc) } }
             .sort { s -> s.field { f -> f.field("id").order(SortOrder.Desc) } }
-            .size(pageable.pageSize + 1)
-            .build()
+            .pit { p -> p.id(pitId) }
+        if (searchAfterValues.isNotEmpty()) {
+            searchRequestBuilder.searchAfter(searchAfterValues)
+        }
+
         val searchResponse = elasticsearchClient.search(
-            searchRequest,
+            searchRequestBuilder.build(),
             ReviewDocument::class.java
         )
         val metadata = searchResponse.hits()
         val reviews = metadata.hits().map { it.source() }
 
-        return processSliceQueryFromReviews(
+        return addIsLikedToReviewDocuments(
             reviews.map { ReviewQueryDTO(it!!) }.toMutableList(),
-            userId,
-            pageable
+            userId
         )
     }
 
-    private fun processSliceQueryFromReviews(
+    private fun addIsLikedToReviewDocuments(
         reviews: MutableList<ReviewQueryDTO>,
-        userId: Long,
-        pageable: Pageable
-    ): Slice<ReviewQueryDTO> {
+        userId: Long
+    ): MutableList<ReviewQueryDTO> {
         val reviewIds = reviews.map { it.id }
         val reviewLikesList = queryFactory
             .select(
@@ -141,13 +148,24 @@ class ReviewQueryRepositoryImpl(
             } ?: run { review.isLiked = false }
         }
 
+        return reviews
+    }
+
+    private fun processSliceQueryFromReviews(
+        reviews: MutableList<ReviewQueryDTO>,
+        userId: Long,
+        pageable: Pageable
+    ): Slice<ReviewQueryDTO> {
+        val updatedReviews = addIsLikedToReviewDocuments(reviews, userId)
         val pageSize = pageable.pageSize
         var hasNext = false
-        if (reviews.size > pageSize) {
-            reviews.removeAt(pageSize)
+
+        if (updatedReviews.size > pageSize) {
+            updatedReviews.removeAt(pageSize)
             hasNext = true
         }
-        return SliceImpl(reviews, pageable, hasNext)
+
+        return SliceImpl(updatedReviews, pageable, hasNext)
     }
 
     private fun reviewCursorLt(

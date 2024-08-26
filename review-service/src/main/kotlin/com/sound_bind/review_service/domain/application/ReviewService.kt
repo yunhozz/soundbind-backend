@@ -91,7 +91,7 @@ class ReviewService(
         reviewSort: ReviewSort,
         dto: ReviewCursorDTO?,
         pageable: Pageable
-    ): Slice<ReviewQueryDTO> =
+    ): List<ReviewQueryDTO> =
         reviewRepository.findReviewsOnMusicWithElasticsearch(
             musicId,
             userId,
