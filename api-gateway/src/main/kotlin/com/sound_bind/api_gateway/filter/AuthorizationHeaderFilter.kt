@@ -3,6 +3,8 @@ package com.sound_bind.api_gateway.filter
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.sound_bind.api_gateway.config.WebClientConfig.Companion.COMMON_WEB_CLIENT
 import com.sound_bind.api_gateway.config.WebClientConfig.Companion.SSE_WEB_CLIENT
+import com.sound_bind.api_gateway.handler.exception.BusinessException.TokenNotFoundOnCookieException
+import com.sound_bind.api_gateway.handler.exception.BusinessException.TokenRefreshFailException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.cloud.gateway.filter.GatewayFilterChain
@@ -43,7 +45,7 @@ class AuthorizationHeaderFilter(
 
                 val cookie = request.cookies.getFirst("atk")
                 val cookieValue = cookie?.value
-                    ?: throw RuntimeException("Token is Missing!!")
+                    ?: throw TokenNotFoundOnCookieException("Token is missing!! Need login.")
 
                 val bytes = Base64.getUrlDecoder().decode(cookieValue)
                 val token = ByteArrayInputStream(bytes).use { bais ->
@@ -94,7 +96,7 @@ class AuthorizationHeaderFilter(
     private fun tokenRefreshRequest(exchange: ServerWebExchange, chain: GatewayFilterChain): Mono<Void> {
         val request = exchange.request
         val cookie = request.cookies.getFirst("atk")
-            ?: return Mono.error(RuntimeException("Token is missing!! Need login."))
+            ?: return Mono.error(TokenNotFoundOnCookieException("Token is missing!! Need login."))
 
         return commonWebClient
             .get()
@@ -116,7 +118,7 @@ class AuthorizationHeaderFilter(
                     }
                     .onErrorResume {
                         log.error("Error Message : ${it.localizedMessage}", it)
-                        Mono.error(RuntimeException(it.localizedMessage))
+                        Mono.error(TokenRefreshFailException(it.localizedMessage))
                     }
             }
     }
