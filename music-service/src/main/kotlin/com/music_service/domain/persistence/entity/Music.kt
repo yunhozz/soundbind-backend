@@ -49,15 +49,17 @@ class Music private constructor(
     var genres: Set<Genre> = genres
         protected set
 
-    var deletedAt: LocalDateTime? = null
-
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "music", orphanRemoval = true)
-    val files: MutableList<FileEntity> = mutableListOf()
+    private var files: MutableList<FileEntity> = mutableListOf()
+
+    private var deletedAt: LocalDateTime? = null
 
     fun updateInfo(title: String, genres: Set<Genre>) {
         this.title = title
         this.genres = genres
     }
+
+    fun updateFiles(file: FileEntity) = files.add(file)
 
     fun softDelete() {
         deletedAt ?: run { deletedAt = LocalDateTime.now() }

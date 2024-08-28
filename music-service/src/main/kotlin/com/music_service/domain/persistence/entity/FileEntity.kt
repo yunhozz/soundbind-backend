@@ -40,7 +40,7 @@ class FileEntity private constructor(
     var music: Music? = null
         protected set(music) {
             field = music
-            music?.files?.add(this)
+            music?.updateFiles(this)
         }
 
     enum class FileType {
