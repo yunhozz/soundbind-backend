@@ -8,9 +8,9 @@ import com.sound_bind.review_service.domain.persistence.entity.ReviewLikes
 import com.sound_bind.review_service.domain.persistence.repository.CommentRepository
 import com.sound_bind.review_service.domain.persistence.repository.ReviewLikesRepository
 import com.sound_bind.review_service.domain.persistence.repository.ReviewRepository
-import com.sound_bind.review_service.domain.persistence.repository.ReviewSort
 import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorDTO
 import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewQueryDTO
+import com.sound_bind.review_service.global.enums.ReviewSort
 import com.sound_bind.review_service.global.exception.ReviewServiceException.NegativeValueException
 import com.sound_bind.review_service.global.exception.ReviewServiceException.ReviewAlreadyExistException
 import com.sound_bind.review_service.global.exception.ReviewServiceException.ReviewNotFoundException
@@ -77,22 +77,6 @@ class ReviewService(
         pageable: Pageable
     ): Slice<ReviewQueryDTO> =
         reviewRepository.findReviewsOnMusic(
-            musicId,
-            userId,
-            reviewSort,
-            dto,
-            pageable
-        )
-
-    @Transactional(readOnly = true)
-    fun findReviewListByMusicIdV2(
-        musicId: Long,
-        userId: Long,
-        reviewSort: ReviewSort,
-        dto: ReviewCursorDTO?,
-        pageable: Pageable
-    ): List<ReviewQueryDTO> =
-        reviewRepository.findReviewsOnMusicWithElasticsearch(
             musicId,
             userId,
             reviewSort,

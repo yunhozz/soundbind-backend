@@ -7,9 +7,9 @@ import com.sound_bind.review_service.domain.application.ReviewService
 import com.sound_bind.review_service.domain.application.dto.request.ReviewCreateDTO
 import com.sound_bind.review_service.domain.application.dto.request.ReviewUpdateDTO
 import com.sound_bind.review_service.domain.interfaces.dto.KafkaRecordDTO
-import com.sound_bind.review_service.domain.persistence.repository.ReviewSort
 import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorDTO
 import com.sound_bind.review_service.global.annotation.HeaderSubject
+import com.sound_bind.review_service.global.enums.ReviewSort
 import jakarta.validation.Valid
 import khttp.get
 import khttp.post
@@ -78,7 +78,7 @@ class ReviewController(
         @RequestParam musicId: String,
         @RequestParam(required = false, defaultValue = "0") page: String
     ): APIResponse {
-        val result = reviewService.findReviewListByMusicIdV2(
+        val result = elasticsearchService.findReviewListByMusicIdV2(
             musicId.toLong(),
             sub.toLong(),
             ReviewSort.LIKES,
@@ -116,7 +116,7 @@ class ReviewController(
         @RequestParam(required = false, defaultValue = "0") page: String,
         @RequestBody(required = false) dto: ReviewCursorDTO,
     ): APIResponse {
-        val result = reviewService.findReviewListByMusicIdV2(
+        val result = elasticsearchService.findReviewListByMusicIdV2(
             musicId.toLong(),
             sub.toLong(),
             ReviewSort.of(sort),
