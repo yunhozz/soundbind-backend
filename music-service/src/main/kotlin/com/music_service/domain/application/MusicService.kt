@@ -3,8 +3,8 @@ package com.music_service.domain.application
 import com.music_service.domain.application.dto.request.MusicCreateDTO
 import com.music_service.domain.application.dto.request.MusicUpdateDTO
 import com.music_service.domain.application.dto.response.MusicFileResponseDTO
-import com.music_service.domain.application.file.ImageFileProcessor
-import com.music_service.domain.application.file.MusicFileProcessor
+import com.music_service.domain.application.file.ImageHandler
+import com.music_service.domain.application.file.MusicHandler
 import com.music_service.domain.persistence.entity.FileEntity
 import com.music_service.domain.persistence.entity.FileEntity.FileType.IMAGE
 import com.music_service.domain.persistence.entity.FileEntity.FileType.MUSIC
@@ -27,8 +27,8 @@ import java.io.IOException
 class MusicService(
     private val musicRepository: MusicRepository,
     private val fileRepository: FileRepository,
-    private val musicHandler: MusicFileProcessor,
-    private val imageHandler: ImageFileProcessor
+    private val musicHandler: MusicHandler,
+    private val imageHandler: ImageHandler
 ) {
     // Spring rolls back only for RuntimeException, Error by default
     @Transactional(rollbackFor = [IOException::class])
@@ -45,12 +45,12 @@ class MusicService(
             genres
         )
 
-        val musicFileInfo = musicHandler.upload(dto.musicFile)
+        val musicFileInfo = musicHandler.uploadMusic(dto.musicFile)
         val musicFileEntity = createFileEntity(MUSIC, musicFileInfo, music)
         fileRepository.save(musicFileEntity)
 
         dto.imageFile?.let {
-            val imageFileInfo = imageHandler.upload(it)
+            val imageFileInfo = imageHandler.uploadImage(it)
             val imageFileEntity = createFileEntity(IMAGE, imageFileInfo, music)
             fileRepository.save(imageFileEntity)
         }
@@ -74,7 +74,7 @@ class MusicService(
             val files = fileRepository.findFilesWhereMusicId(it)
             files.forEach { file ->
                 if (file.fileType == IMAGE) {
-                    imageHandler.update(file.fileUrl, dto.imageFile)
+                    imageHandler.updateImage(file.fileUrl, dto.imageFile)
                     fileRepository.save(file)
                 }
             }
@@ -95,7 +95,7 @@ class MusicService(
             var musicInfo: Pair<Resource, String>?
             files.forEach { file ->
                 if (file.fileType == MUSIC) {
-                    musicInfo = musicHandler.download(file.fileUrl)
+                    musicInfo = musicHandler.downloadMusic(file.fileUrl)
                     return musicInfo?.let { info ->
                         MusicFileResponseDTO(
                             musicFile = info.first,
@@ -116,8 +116,8 @@ class MusicService(
             val files = fileRepository.findFilesWhereMusicId(it)
             files.forEach { file ->
                 when(file.fileType) {
-                    MUSIC -> musicHandler.delete(file.fileUrl)
-                    IMAGE -> imageHandler.delete(file.fileUrl)
+                    MUSIC -> musicHandler.deleteMusic(file.fileUrl)
+                    IMAGE -> imageHandler.deleteImage(file.fileUrl)
                 }
             }
             fileRepository.deleteAllInBatch(files)

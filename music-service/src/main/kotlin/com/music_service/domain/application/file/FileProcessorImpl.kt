@@ -1,5 +1,7 @@
 package com.music_service.domain.application.file
 
+import org.springframework.core.io.InputStreamResource
+import org.springframework.core.io.Resource
 import org.springframework.web.multipart.MultipartFile
 import java.io.File
 import java.io.IOException
@@ -9,7 +11,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.UUID
 
-abstract class AbstractFileProcessor: FileProcessor {
+abstract class FileProcessorImpl: FileProcessor {
 
     companion object {
         internal val ABSOLUTE_PATH: String = File("").absolutePath
@@ -44,5 +46,27 @@ abstract class AbstractFileProcessor: FileProcessor {
         }
         else
             throw IOException("File does not exist: $fileUrl")
+    }
+}
+
+class MusicProcessorImpl: FileProcessorImpl(), MusicProcessor {
+
+    override fun download(fileUrl: String): Pair<Resource, String> {
+        val path = Paths.get(ABSOLUTE_PATH + ROOT_DIRECTORY + fileUrl)
+        val inputStream = Files.newInputStream(path)
+        val contentType = Files.probeContentType(path)
+        return Pair(InputStreamResource(inputStream), contentType)
+    }
+}
+
+class ImageProcessorImpl: FileProcessorImpl(), ImageProcessor {
+
+    override fun update(fileUrl: String, file: MultipartFile?): Triple<String, String, String> {
+        delete(fileUrl)
+        return upload(file)
+    }
+
+    override fun display(fileUrl: String) {
+        TODO("Not yet implemented")
     }
 }
