@@ -63,7 +63,10 @@ class AuthorizationHeaderFilter(
 
     private fun addSubjectOnRequest(token: String, exchange: ServerWebExchange, chain: GatewayFilterChain): Mono<Void> {
         val request = exchange.request
-        val webClient: WebClient = if (request.uri.toString() == SSE_SUBSCRIBE_URI) sseWebClient else commonWebClient
+        val webClient =
+            if (request.uri.toString() == SSE_SUBSCRIBE_URI) sseWebClient
+            else commonWebClient
+
         return webClient
             .get()
             .uri(USER_SUBJECT_INQUIRY_URI)
@@ -80,15 +83,13 @@ class AuthorizationHeaderFilter(
                         it.add("role", obj["role"] as String)
                     }
                     .build()
-
                 val exchangeMutate = exchange.mutate()
                     .request(requestMutate)
                     .build()
-
                 chain.filter(exchangeMutate)
             }
             .onErrorResume {
-                log.warn("Token Expired!!")
+                log.debug("Token Expired!!")
                 tokenRefreshRequest(exchange, chain)
             }
     }
@@ -109,16 +110,16 @@ class AuthorizationHeaderFilter(
                 response.bodyToMono(String::class.java)
                     .flatMap {
                         val obj = jacksonObjectMapper().readValue(it, Map::class.java)
-                        val accessToken = obj["accessToken"] as String
-                        cookies?.forEach { cookie ->
-                            val httpHeaders = exchange.response.headers
-                            httpHeaders.add(HttpHeaders.SET_COOKIE, cookie)
+                        obj["accessToken"]?.let { accessToken ->
+                            cookies?.forEach { cookie ->
+                                val httpHeaders = exchange.response.headers
+                                httpHeaders.add(HttpHeaders.SET_COOKIE, cookie)
+                            }
+                            addSubjectOnRequest(accessToken.toString(), exchange, chain)
+                        } ?: run {
+                            val errMsg = obj["message"] as String
+                            Mono.error(TokenRefreshFailException(errMsg))
                         }
-                        addSubjectOnRequest(accessToken, exchange, chain)
-                    }
-                    .onErrorResume {
-                        log.error("Error Message : ${it.localizedMessage}", it)
-                        Mono.error(TokenRefreshFailException(it.localizedMessage))
                     }
             }
     }
