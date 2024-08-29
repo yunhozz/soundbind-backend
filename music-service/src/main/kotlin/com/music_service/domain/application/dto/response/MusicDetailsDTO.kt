@@ -2,6 +2,7 @@ package com.music_service.domain.application.dto.response
 
 import com.music_service.domain.persistence.entity.FileEntity
 import com.music_service.domain.persistence.entity.Music
+import com.music_service.domain.persistence.es.MusicDocument
 
 data class MusicDetailsDTO private constructor(
     val id: Long?,
@@ -20,21 +21,12 @@ data class MusicDetailsDTO private constructor(
         files.map { file -> FileDetailsDTO(file, music.id!!) }
     )
 
-    data class FileDetailsDTO private constructor(
-        val id: Long?,
-        val musicId: Long,
-        val fileType: String,
-        val originalFileName: String,
-        val savedName: String,
-        val fileUrl: String
-    ) {
-        constructor(file: FileEntity, musicId: Long): this(
-            file.id,
-            musicId,
-            file.fileType.toString(),
-            file.originalFileName,
-            file.savedName,
-            file.fileUrl
-        )
-    }
+    constructor(musicDocument: MusicDocument, files: List<FileDetailsDTO>): this(
+        musicDocument.id!!,
+        musicDocument.userId,
+        musicDocument.userNickname,
+        musicDocument.title,
+        musicDocument.genres,
+        files
+    )
 }

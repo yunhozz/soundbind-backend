@@ -38,13 +38,6 @@ class MusicManagementController(private val musicService: MusicService) {
         return APIResponse.of("Music Created", musicId)
     }
 
-    @GetMapping("/{id}")
-    @ResponseStatus(HttpStatus.OK)
-    fun getMusic(@PathVariable("id") id: String): APIResponse {
-        val musicDetails = musicService.findMusicDetails(id.toLong())
-        return APIResponse.of("Music Found", musicDetails)
-    }
-
     @GetMapping("/{id}/download")
     @ResponseStatus(HttpStatus.OK)
     fun downloadMusic(@PathVariable("id") id: String): ResponseEntity<Resource> {
