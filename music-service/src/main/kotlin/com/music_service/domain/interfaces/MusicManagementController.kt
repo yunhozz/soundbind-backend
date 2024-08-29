@@ -25,7 +25,7 @@ import org.springframework.web.util.UriUtils
 import java.nio.charset.StandardCharsets
 
 @RestController
-@RequestMapping("/api/music")
+@RequestMapping("/api/musics")
 class MusicManagementController(private val musicService: MusicService) {
 
     @PostMapping(consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])

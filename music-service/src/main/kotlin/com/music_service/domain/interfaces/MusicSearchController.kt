@@ -11,10 +11,9 @@ import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/api/music/q")
-class MusicQueryController(
-    private val musicService: MusicService
-) {
+@RequestMapping("/api/musics/search")
+class MusicSearchController(private val musicService: MusicService) {
+
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     fun searchMusicsByKeyword(
