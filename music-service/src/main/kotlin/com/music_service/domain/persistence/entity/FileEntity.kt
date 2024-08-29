@@ -42,8 +42,8 @@ class FileEntity private constructor(
             field = music
             music?.updateFiles(this)
         }
+}
 
-    enum class FileType {
-        MUSIC, IMAGE
-    }
+enum class FileType {
+    MUSIC, IMAGE
 }

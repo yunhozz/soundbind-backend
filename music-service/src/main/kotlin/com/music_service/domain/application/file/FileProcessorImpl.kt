@@ -1,7 +1,8 @@
 package com.music_service.domain.application.file
 
+import com.music_service.domain.application.dto.response.FileDownloadResponseDTO
+import com.music_service.domain.application.dto.response.FileUploadResponseDTO
 import org.springframework.core.io.InputStreamResource
-import org.springframework.core.io.Resource
 import org.springframework.web.multipart.MultipartFile
 import java.io.File
 import java.io.IOException
@@ -20,7 +21,7 @@ abstract class FileProcessorImpl: FileProcessor {
         private val FILE_DIRECTORY = ABSOLUTE_PATH + ROOT_DIRECTORY + CURRENT_DATE
     }
 
-    override fun upload(file: MultipartFile?): Triple<String, String, String> {
+    override fun upload(file: MultipartFile?): FileUploadResponseDTO {
         file?.let { f ->
             val originalFilename = f.originalFilename ?: throw IOException("Original filename is null")
             val extension = originalFilename.substring(originalFilename.lastIndexOf("."))
@@ -34,7 +35,7 @@ abstract class FileProcessorImpl: FileProcessor {
             }
 
             Files.copy(f.inputStream, path)
-            return Triple(savedName, uuid, "$CURRENT_DATE/$savedName")
+            return FileUploadResponseDTO(originalFilename, savedName, "$CURRENT_DATE/$savedName")
 
         } ?: throw IOException("Unable to upload music")
     }
@@ -51,17 +52,17 @@ abstract class FileProcessorImpl: FileProcessor {
 
 class MusicProcessorImpl: FileProcessorImpl(), MusicProcessor {
 
-    override fun download(fileUrl: String): Pair<Resource, String> {
+    override fun download(fileUrl: String): FileDownloadResponseDTO {
         val path = Paths.get(ABSOLUTE_PATH + ROOT_DIRECTORY + fileUrl)
         val inputStream = Files.newInputStream(path)
         val contentType = Files.probeContentType(path)
-        return Pair(InputStreamResource(inputStream), contentType)
+        return FileDownloadResponseDTO(InputStreamResource(inputStream), contentType)
     }
 }
 
 class ImageProcessorImpl: FileProcessorImpl(), ImageProcessor {
 
-    override fun update(fileUrl: String, file: MultipartFile?): Triple<String, String, String> {
+    override fun update(fileUrl: String, file: MultipartFile?): FileUploadResponseDTO {
         delete(fileUrl)
         return upload(file)
     }

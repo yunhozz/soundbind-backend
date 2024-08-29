@@ -1,7 +1,8 @@
 package com.music_service.domain.application.file
 
+import com.music_service.domain.application.dto.response.FileDownloadResponseDTO
+import com.music_service.domain.application.dto.response.FileUploadResponseDTO
 import org.slf4j.LoggerFactory
-import org.springframework.core.io.Resource
 import org.springframework.stereotype.Component
 import org.springframework.web.multipart.MultipartFile
 
@@ -11,12 +12,12 @@ abstract class FileHandler<T: FileProcessor>(protected val processor: T)
 class MusicHandler: FileHandler<MusicProcessor>(MusicProcessorImpl()) {
     private val log = LoggerFactory.getLogger(MusicHandler::class.java)
 
-    fun uploadMusic(file: MultipartFile?): Triple<String, String, String> {
+    fun uploadMusic(file: MultipartFile?): FileUploadResponseDTO {
         log.debug("Uploading music to : ${file?.originalFilename}")
         return processor.upload(file)
     }
 
-    fun downloadMusic(fileUrl: String): Pair<Resource, String> {
+    fun downloadMusic(fileUrl: String): FileDownloadResponseDTO {
         log.debug("Downloading music from $fileUrl")
         return processor.download(fileUrl)
     }
@@ -31,7 +32,7 @@ class MusicHandler: FileHandler<MusicProcessor>(MusicProcessorImpl()) {
 class ImageHandler: FileHandler<ImageProcessor>(ImageProcessorImpl()) {
     private val log = LoggerFactory.getLogger(ImageHandler::class.java)
 
-    fun uploadImage(file: MultipartFile?): Triple<String, String, String> {
+    fun uploadImage(file: MultipartFile?): FileUploadResponseDTO {
         log.debug("Uploading image to ${file?.originalFilename}")
         return processor.upload(file)
     }
@@ -40,7 +41,7 @@ class ImageHandler: FileHandler<ImageProcessor>(ImageProcessorImpl()) {
         log.debug("Displaying image from $fileUrl")
     }
 
-    fun updateImage(fileUrl: String, file: MultipartFile?): Triple<String, String, String> {
+    fun updateImage(fileUrl: String, file: MultipartFile?): FileUploadResponseDTO {
         log.debug("Updating image from $fileUrl")
         return processor.update(fileUrl, file)
     }

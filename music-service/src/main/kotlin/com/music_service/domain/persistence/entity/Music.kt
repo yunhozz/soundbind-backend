@@ -64,26 +64,24 @@ class Music private constructor(
     fun softDelete() {
         deletedAt ?: run { deletedAt = LocalDateTime.now() }
     }
+}
 
-    enum class Genre(
-        val genreName: String
-    ) {
-        CLASSIC("클래식"),
-        JAZZ("재즈"),
-        POP("팝"),
-        BALLAD("발라드"),
-        HIPHOP("힙합"),
-        COUNTRY("컨트리"),
-        DISCO("디스코"),
-        ROCK("락"),
-        ELECTRONIC("일렉트로닉스"),
-        TROT("트로트")
-        ;
+enum class Genre(val genreName: String) {
+    CLASSIC("클래식"),
+    JAZZ("재즈"),
+    POP("팝"),
+    BALLAD("발라드"),
+    HIPHOP("힙합"),
+    COUNTRY("컨트리"),
+    DISCO("디스코"),
+    ROCK("락"),
+    ELECTRONIC("일렉트로닉스"),
+    TROT("트로트")
+    ;
 
-        companion object {
-            fun of(genreName: String): Genre = entries.find {
-                it.name == genreName
-            } ?: throw IllegalArgumentException("Unknown genre '$genreName'")
-        }
+    companion object {
+        fun of(genreName: String): Genre = entries.find {
+            it.name == genreName
+        } ?: throw IllegalArgumentException("Unknown genre '$genreName'")
     }
 }

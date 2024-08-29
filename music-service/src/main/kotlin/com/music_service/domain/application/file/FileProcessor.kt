@@ -1,18 +1,19 @@
 package com.music_service.domain.application.file
 
-import org.springframework.core.io.Resource
+import com.music_service.domain.application.dto.response.FileDownloadResponseDTO
+import com.music_service.domain.application.dto.response.FileUploadResponseDTO
 import org.springframework.web.multipart.MultipartFile
 
 interface FileProcessor {
-    fun upload(file: MultipartFile?): Triple<String, String, String>
+    fun upload(file: MultipartFile?): FileUploadResponseDTO
     fun delete(fileUrl: String)
 }
 
 interface MusicProcessor: FileProcessor {
-    fun download(fileUrl: String): Pair<Resource, String>
+    fun download(fileUrl: String): FileDownloadResponseDTO
 }
 
 interface ImageProcessor: FileProcessor {
-    fun update(fileUrl: String, file: MultipartFile?): Triple<String, String, String>
+    fun update(fileUrl: String, file: MultipartFile?): FileUploadResponseDTO
     fun display(fileUrl: String)
 }

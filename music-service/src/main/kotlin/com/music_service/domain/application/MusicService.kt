@@ -2,12 +2,16 @@ package com.music_service.domain.application
 
 import com.music_service.domain.application.dto.request.MusicCreateDTO
 import com.music_service.domain.application.dto.request.MusicUpdateDTO
+import com.music_service.domain.application.dto.response.FileUploadResponseDTO
+import com.music_service.domain.application.dto.response.MusicDetailsDTO
 import com.music_service.domain.application.dto.response.MusicFileResponseDTO
 import com.music_service.domain.application.file.ImageHandler
 import com.music_service.domain.application.file.MusicHandler
 import com.music_service.domain.persistence.entity.FileEntity
-import com.music_service.domain.persistence.entity.FileEntity.FileType.IMAGE
-import com.music_service.domain.persistence.entity.FileEntity.FileType.MUSIC
+import com.music_service.domain.persistence.entity.FileType
+import com.music_service.domain.persistence.entity.FileType.IMAGE
+import com.music_service.domain.persistence.entity.FileType.MUSIC
+import com.music_service.domain.persistence.entity.Genre
 import com.music_service.domain.persistence.entity.Music
 import com.music_service.domain.persistence.repository.FileRepository
 import com.music_service.domain.persistence.repository.MusicRepository
@@ -16,7 +20,6 @@ import com.music_service.domain.persistence.repository.dto.MusicSimpleQueryDTO
 import com.music_service.global.exception.MusicServiceException.MusicFileNotExistException
 import com.music_service.global.exception.MusicServiceException.MusicNotFoundException
 import com.music_service.global.util.RedisUtils
-import org.springframework.core.io.Resource
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Slice
 import org.springframework.stereotype.Service
@@ -32,10 +35,8 @@ class MusicService(
 ) {
     // Spring rolls back only for RuntimeException, Error by default
     @Transactional(rollbackFor = [IOException::class])
-    fun uploadMusic(userId: Long, dto: MusicCreateDTO): Long? {
-        val genres: Set<Music.Genre> = dto.genres.map {
-            Music.Genre.of(it)
-        }.toHashSet()
+    fun uploadMusic(userId: Long, dto: MusicCreateDTO): Long {
+        val genres = dto.genres.map { Genre.of(it) }.toSet()
         val userInfo = RedisUtils.getJson("user:$userId", Map::class.java)
             ?: throw IllegalArgumentException("Value is not Present by Key : user:$userId")
         val music = Music.create(
@@ -57,6 +58,7 @@ class MusicService(
 
         musicRepository.save(music)
         return music.id
+        return music.id!!
     }
 
     @Transactional(readOnly = true)
@@ -68,23 +70,23 @@ class MusicService(
         = musicRepository.findMusicSimpleListByKeyword(keyword, pageable)
 
     @Transactional
-    fun updateMusic(id: Long, dto: MusicUpdateDTO): Long? {
+    fun updateMusic(id: Long, dto: MusicUpdateDTO): Long {
         val music = findMusicById(id)
-        music.id?.let {
-            val files = fileRepository.findFilesWhereMusicId(it)
-            files.forEach { file ->
-                if (file.fileType == IMAGE) {
-                    imageHandler.updateImage(file.fileUrl, dto.imageFile)
-                    fileRepository.save(file)
-                }
+        val files = fileRepository.findFilesWhereMusicId(music.id!!)
+
+        files.forEach { file ->
+            if (file.fileType == IMAGE) {
+                imageHandler.updateImage(file.fileUrl, dto.imageFile)
+                fileRepository.save(file)
             }
         }
         music.updateInfo(
             dto.title,
-            dto.genres.map { Music.Genre.of(it) }
+            dto.genres.map { Genre.of(it) }
                 .toMutableSet()
         )
         return music.id
+        return music.id!!
     }
 
     @Transactional
@@ -92,17 +94,15 @@ class MusicService(
         val music = findMusicById(id)
         return music.id?.let {
             val files = fileRepository.findFilesWhereMusicId(it)
-            var musicInfo: Pair<Resource, String>?
             files.forEach { file ->
                 if (file.fileType == MUSIC) {
-                    musicInfo = musicHandler.downloadMusic(file.fileUrl)
-                    return musicInfo?.let { info ->
-                        MusicFileResponseDTO(
-                            musicFile = info.first,
-                            contentType = info.second,
-                            fileName = file.originalFileName
-                        )
-                    } ?: throw MusicFileNotExistException("Music file download failed for id: $id")
+                    val musicInfo = musicHandler.downloadMusic(file.fileUrl)
+                    musicHandler.downloadMusic(file.fileUrl)
+                    return MusicFileResponseDTO(
+                        musicInfo.resource,
+                        musicInfo.contentType,
+                        fileName = file.originalFileName
+                    )
                 }
             }
             throw MusicFileNotExistException("Music file not found for id: $id")
@@ -131,15 +131,15 @@ class MusicService(
     }
 
     private fun createFileEntity(
-        fileType: FileEntity.FileType,
-        fileInfo: Triple<String, String, String>,
+        fileType: FileType,
+        fileInfo: FileUploadResponseDTO,
         music: Music,
-    ): FileEntity
-        = FileEntity.create(
+    ): FileEntity =
+        FileEntity.create(
             fileType,
-            originalFileName = fileInfo.first,
-            savedName = fileInfo.second,
-            fileUrl = fileInfo.third,
+            fileInfo.originalFileName,
+            fileInfo.savedName,
+            fileInfo.fileUrl,
             music
         )
 }

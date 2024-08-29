@@ -1,6 +1,6 @@
 package com.music_service.domain.persistence.repository
 
-import com.music_service.domain.persistence.entity.FileEntity.FileType.IMAGE
+import com.music_service.domain.persistence.entity.FileType
 import com.music_service.domain.persistence.entity.QFileEntity.fileEntity
 import com.music_service.domain.persistence.entity.QMusic.music
 import com.music_service.domain.persistence.repository.dto.MusicDetailsQueryDTO
@@ -14,9 +14,7 @@ import org.springframework.data.domain.SliceImpl
 import org.springframework.stereotype.Repository
 
 @Repository
-class MusicQueryRepositoryImpl(
-    private val queryFactory: JPAQueryFactory
-): MusicQueryRepository {
+class MusicQueryRepositoryImpl(private val queryFactory: JPAQueryFactory): MusicQueryRepository {
 
     override fun findMusicDetailsById(id: Long): MusicDetailsQueryDTO? {
         val m = queryFactory
@@ -70,7 +68,7 @@ class MusicQueryRepositoryImpl(
                 music.userNickname.contains(keyword)
                     .or(music.title.contains(keyword))
             )
-            .where(fileEntity.fileType.eq(IMAGE))
+            .where(fileEntity.fileType.eq(FileType.IMAGE))
             .orderBy(music.id.desc())
             .limit(pageSize.toLong() + 1)
             .limit(100)
