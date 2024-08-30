@@ -2,10 +2,10 @@ package com.music_service.domain.application
 
 import com.music_service.domain.application.dto.response.FileDetailsDTO
 import com.music_service.domain.application.dto.response.MusicDetailsDTO
-import com.music_service.domain.persistence.es.FileDocument
-import com.music_service.domain.persistence.es.FileSearchRepository
-import com.music_service.domain.persistence.es.MusicDocument
-import com.music_service.domain.persistence.es.MusicSearchRepository
+import com.music_service.domain.persistence.es.document.FileDocument
+import com.music_service.domain.persistence.es.document.MusicDocument
+import com.music_service.domain.persistence.es.search.FileSearchRepository
+import com.music_service.domain.persistence.es.search.MusicSearchRepository
 import com.music_service.global.exception.MusicServiceException.MusicNotFoundException
 import com.music_service.global.util.DateTimeUtils
 import org.springframework.stereotype.Service

@@ -1,4 +1,4 @@
-package com.music_service.domain.persistence.es
+package com.music_service.domain.persistence.es.document
 
 import org.springframework.data.annotation.Id
 import org.springframework.data.elasticsearch.annotations.Document

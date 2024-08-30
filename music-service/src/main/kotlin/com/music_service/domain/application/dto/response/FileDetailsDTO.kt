@@ -1,7 +1,7 @@
 package com.music_service.domain.application.dto.response
 
 import com.music_service.domain.persistence.entity.FileEntity
-import com.music_service.domain.persistence.es.FileDocument
+import com.music_service.domain.persistence.es.document.FileDocument
 import com.music_service.global.util.DateTimeUtils
 import java.time.LocalDateTime
 
