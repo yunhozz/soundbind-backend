@@ -11,5 +11,9 @@ data class MusicDocument(
     val userNickname: String,
     val title: String,
     val genres: Set<String>,
-    val files: List<FileDocument>
+    val likes: Int,
+    val scoreAverage: Double,
+    val files: List<FileDocument>,
+    val createdAt: String,
+    val updatedAt: String
 )

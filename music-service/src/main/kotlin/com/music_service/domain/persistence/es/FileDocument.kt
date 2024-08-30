@@ -11,5 +11,7 @@ data class FileDocument(
     val fileType: String,
     val originalFileName: String,
     val savedName: String,
-    val fileUrl: String
+    val fileUrl: String,
+    val createdAt: String,
+    val updatedAt: String
 )

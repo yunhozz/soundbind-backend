@@ -2,6 +2,8 @@ package com.music_service.domain.application.dto.response
 
 import com.music_service.domain.persistence.entity.FileEntity
 import com.music_service.domain.persistence.es.FileDocument
+import com.music_service.global.util.DateTimeUtils
+import java.time.LocalDateTime
 
 data class FileDetailsDTO private constructor(
     val id: Long?,
@@ -9,7 +11,9 @@ data class FileDetailsDTO private constructor(
     val fileType: String,
     val originalFileName: String,
     val savedName: String,
-    val fileUrl: String
+    val fileUrl: String,
+    val createdAt: LocalDateTime,
+    val updatedAt: LocalDateTime
 ) {
     constructor(file: FileEntity, musicId: Long): this(
         file.id,
@@ -17,7 +21,9 @@ data class FileDetailsDTO private constructor(
         file.fileType.toString(),
         file.originalFileName,
         file.savedName,
-        file.fileUrl
+        file.fileUrl,
+        file.createdAt,
+        file.updatedAt
     )
 
     constructor(fileDocument: FileDocument, musicId: Long): this(
@@ -26,6 +32,8 @@ data class FileDetailsDTO private constructor(
         fileDocument.fileType,
         fileDocument.originalFileName,
         fileDocument.savedName,
-        fileDocument.fileUrl
+        fileDocument.fileUrl,
+        DateTimeUtils.convertStringToLocalDateTime(fileDocument.createdAt),
+        DateTimeUtils.convertStringToLocalDateTime(fileDocument.updatedAt)
     )
 }

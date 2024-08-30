@@ -9,7 +9,7 @@ class MusicElasticsearchListener(private val elasticsearchService: Elasticsearch
     : ElasticsearchListener {
 
     override fun onMusicUpload(dto: MusicDetailsDTO) =
-        elasticsearchService.indexMusicByElasticsearch(dto)
+        elasticsearchService.saveMusicByElasticsearch(dto)
 
     override fun onMusicDelete(musicId: Long, fileIds: List<Long>) =
         elasticsearchService.deleteMusicByElasticsearch(musicId, fileIds)

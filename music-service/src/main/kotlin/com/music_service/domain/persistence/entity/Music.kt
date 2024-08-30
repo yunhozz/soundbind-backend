@@ -29,8 +29,7 @@ class Music private constructor(
             userNickname: String,
             title: String,
             genres: Set<Genre>
-        ): Music
-            = Music(userId, userNickname, title, genres)
+        ) = Music(userId, userNickname, title, genres)
     }
 
     @Id
@@ -49,6 +48,16 @@ class Music private constructor(
     var genres: Set<Genre> = genres
         protected set
 
+    var likes = 0
+        protected set
+
+    var scoreAverage = 0.0
+        protected set
+
+    private var totalScore = 0.0
+
+    private var reviewCount = 0
+
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "music", orphanRemoval = true)
     private var files: MutableList<FileEntity> = mutableListOf()
 
@@ -58,6 +67,36 @@ class Music private constructor(
         this.title = title
         this.genres = genres
     }
+
+    fun addLikes(like: Int) {
+        likes += like
+    }
+
+    fun subtractLikes(like: Int) {
+        val subtractedLikes = likes - like
+        require(subtractedLikes >= 0) { "Likes must not be negative" }
+        likes = subtractedLikes
+    }
+
+    fun updateScoreByReviewAdd(score: Double) {
+        totalScore += score
+        reviewCount++
+        scoreAverage = calculateScoreAverage(totalScore, reviewCount)
+    }
+
+    fun updateScoreByReviewUpdate(oldScore: Double, newScore: Double) {
+        totalScore = totalScore - oldScore + newScore
+        scoreAverage = calculateScoreAverage(totalScore, reviewCount)
+    }
+
+    fun updateScoreByReviewRemove(score: Double) {
+        val updatedTotalScore = totalScore - score
+        require(updatedTotalScore > 0 && reviewCount > 0)
+        reviewCount--
+        scoreAverage = calculateScoreAverage(updatedTotalScore, reviewCount)
+    }
+
+    private fun calculateScoreAverage(totalScore: Double, reviewCount: Int) = totalScore / reviewCount
 
     fun updateFiles(file: FileEntity) = files.add(file)
 
