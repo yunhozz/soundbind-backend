@@ -8,11 +8,8 @@ import com.sound_bind.review_service.domain.persistence.es.ReviewDocument
 import com.sound_bind.review_service.domain.persistence.es.ReviewSearchRepository
 import com.sound_bind.review_service.domain.persistence.repository.ReviewRepository
 import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorDTO
-import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewQueryDTO
 import com.sound_bind.review_service.global.enums.ReviewSort
 import com.sound_bind.review_service.global.util.DateTimeUtils
-import org.springframework.data.domain.Pageable
-import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -23,8 +20,7 @@ class ElasticsearchService(
     private val commentSearchRepository: CommentSearchRepository
 ) {
 
-    @Async
-    fun indexReviewInElasticSearch(dto: ReviewDetailsDTO) {
+    fun saveReviewInElasticSearch(dto: ReviewDetailsDTO) {
         val reviewDocument = ReviewDocument(
             dto.id,
             dto.musicId,
@@ -35,14 +31,14 @@ class ElasticsearchService(
             dto.score,
             dto.commentNum,
             dto.likes,
+            isLiked = false,
             DateTimeUtils.convertLocalDateTimeToString(dto.createdAt),
             DateTimeUtils.convertLocalDateTimeToString(dto.updatedAt)
         )
         reviewSearchRepository.save(reviewDocument)
     }
 
-    @Async
-    fun indexCommentInElasticSearch(dto: CommentDetailsDTO) {
+    fun saveCommentInElasticSearch(dto: CommentDetailsDTO) {
         val commentDocument = CommentDocument(
             dto.id,
             dto.reviewId,
@@ -60,31 +56,27 @@ class ElasticsearchService(
         musicId: Long,
         userId: Long,
         reviewSort: ReviewSort,
-        dto: ReviewCursorDTO?,
-        pageable: Pageable
-    ): List<ReviewQueryDTO> {
-        val reviews = reviewSearchRepository.findReviewsOnMusicWithElasticsearch(
+        dto: ReviewCursorDTO?
+    ): List<ReviewDocument?> =
+        reviewRepository.findReviewsOnMusicWithES(
             musicId,
             userId,
             reviewSort,
-            dto,
-            pageable
-        ).map { ReviewQueryDTO(it!!) }.toMutableList()
-        return reviewRepository.addIsLikedToReviewDocuments(reviews, userId)
-    }
+            dto
+        )
 
     fun findCommentsByReviewInElasticsearch(reviewId: Long): List<CommentDocument> =
         commentSearchRepository.findByReviewIdOrderByCreatedAtAsc(reviewId)
 
-    @Async
     fun deleteReviewInElasticSearch(reviewId: Long) =
         reviewSearchRepository.deleteById(reviewId)
 
-    @Async
     fun deleteCommentInElasticSearch(commentId: Long) =
         commentSearchRepository.deleteById(commentId)
 
-    @Async
+    fun deleteCommentsInElasticSearch(commentIds: List<Long>) =
+        commentSearchRepository.deleteAllById(commentIds)
+
     fun deleteReviewsByUserIdInElasticSearch(userId: Long) =
         reviewSearchRepository.deleteAllByUserId(userId)
 }

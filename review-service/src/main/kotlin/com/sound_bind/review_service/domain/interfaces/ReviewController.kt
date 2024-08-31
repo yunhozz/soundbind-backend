@@ -1,5 +1,6 @@
 package com.sound_bind.review_service.domain.interfaces
 
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.review_service.domain.interfaces.dto.APIResponse
 import com.sound_bind.review_service.domain.application.ElasticsearchService
@@ -47,8 +48,7 @@ class ReviewController(
             val message = response.jsonObject.getString("message")
             return APIResponse.of(message)
         }
-        val reviewDetailsDTO = reviewService.createReview(musicId.toLong(), sub.toLong(), dto)
-        elasticsearchService.indexReviewInElasticSearch(reviewDetailsDTO)
+        val reviewId = reviewService.createReview(musicId.toLong(), sub.toLong(), dto)
 
         val obj = mapper.readValue(response.text, Map::class.java)
         val data = mapper.readValue(mapper.writeValueAsString(obj["data"]), Map::class.java)
@@ -58,10 +58,10 @@ class ReviewController(
             "review-added-topic",
             data["userId"].toString(),
             "${myInfo["nickname"]} 님이 당신의 음원에 리뷰를 남겼습니다.",
-            "http://localhost:8000/api/reviews/${reviewDetailsDTO.id}"
+            "http://localhost:8000/api/reviews/$reviewId"
         )
         sendMessageToKafkaProducer(record)
-        return APIResponse.of("Review created", reviewDetailsDTO.id)
+        return APIResponse.of("Review created", reviewId)
     }
 
     @GetMapping("/{id}")
@@ -73,17 +73,12 @@ class ReviewController(
 
     @GetMapping("/found")
     @ResponseStatus(HttpStatus.OK)
-    fun lookUpReviewsInMusicByDefault(
-        @HeaderSubject sub: String,
-        @RequestParam musicId: String,
-        @RequestParam(required = false, defaultValue = "0") page: String
-    ): APIResponse {
+    fun lookUpReviewsInMusicByDefault(@HeaderSubject sub: String, @RequestParam musicId: String): APIResponse {
         val result = elasticsearchService.findReviewListByMusicIdV2(
             musicId.toLong(),
             sub.toLong(),
             ReviewSort.LIKES,
-            null,
-            PageRequest.of(page.toInt(), 20)
+            dto = null
         )
         return APIResponse.of("Reviews found", result)
     }
@@ -113,15 +108,13 @@ class ReviewController(
         @HeaderSubject sub: String,
         @RequestParam musicId: String,
         @RequestParam(required = false, defaultValue = "likes") sort: String,
-        @RequestParam(required = false, defaultValue = "0") page: String,
         @RequestBody(required = false) dto: ReviewCursorDTO,
     ): APIResponse {
         val result = elasticsearchService.findReviewListByMusicIdV2(
             musicId.toLong(),
             sub.toLong(),
             ReviewSort.of(sort),
-            dto,
-            PageRequest.of(page.toInt(), 20)
+            dto
         )
         return APIResponse.of("Reviews found", result)
     }
@@ -133,9 +126,8 @@ class ReviewController(
         @PathVariable("id") id: String,
         @Valid @RequestBody dto: ReviewUpdateDTO
     ): APIResponse {
-        val reviewDetailsDTO = reviewService.updateReviewMessageAndScore(id.toLong(), sub.toLong(), dto)
-        elasticsearchService.indexReviewInElasticSearch(reviewDetailsDTO)
-        return APIResponse.of("Review updated", reviewDetailsDTO.id)
+        val result = reviewService.updateReviewMessageAndScore(id.toLong(), sub.toLong(), dto)
+        return APIResponse.of("Review updated", result)
     }
 
     @PostMapping("/{id}/likes")
@@ -147,7 +139,7 @@ class ReviewController(
                 "review-like-topic",
                 it.toString(),
                 "${myInfo["nickname"] as String} 님이 당신의 리뷰에 좋아요를 눌렀습니다.",
-                null
+                link = null
             )
             sendMessageToKafkaProducer(record)
         }
@@ -157,8 +149,7 @@ class ReviewController(
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteReview(@HeaderSubject sub: String, @PathVariable("id") id: String): APIResponse {
-        val reviewId = reviewService.deleteReview(id.toLong(), sub.toLong())
-        elasticsearchService.deleteReviewInElasticSearch(reviewId)
+        reviewService.deleteReview(id.toLong(), sub.toLong())
         return APIResponse.of("Review deleted")
     }
 
@@ -166,7 +157,7 @@ class ReviewController(
     fun deleteReviewsByUserWithdraw(@Payload message: String) {
         val obj = mapper.readValue(message, Map::class.java)
         val userId = obj["userId"].toString()
-        reviewService.deleteReviewsByUserWithdraw(userId)
+        reviewService.deleteReviewsByUserWithdraw(userId.toLong())
         elasticsearchService.deleteReviewsByUserIdInElasticSearch(userId.toLong())
     }
 
@@ -179,5 +170,6 @@ class ReviewController(
 
     companion object {
         private val mapper = jacksonObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
     }
 }

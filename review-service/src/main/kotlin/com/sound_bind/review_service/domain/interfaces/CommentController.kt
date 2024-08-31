@@ -1,5 +1,6 @@
 package com.sound_bind.review_service.domain.interfaces
 
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.review_service.domain.interfaces.dto.APIResponse
 import com.sound_bind.review_service.domain.application.CommentService
@@ -31,23 +32,21 @@ class CommentController(
         @RequestParam reviewId: String,
         @RequestParam message: String,
     ): APIResponse {
-        val commentDetailsDTO = commentService.createComment(reviewId.toLong(), sub.toLong(), message)
-        elasticsearchService.indexCommentInElasticSearch(commentDetailsDTO)
-
+        val result = commentService.createComment(reviewId.toLong(), sub.toLong(), message)
         val myInfo = commentService.getUserInformationOnRedis(sub.toLong())
         val record = KafkaRecordDTO(
             "comment-added-topic",
-            commentDetailsDTO.reviewerId.toString(),
+            result.reviewerId.toString(),
             "${myInfo["nickname"] as String} 님이 당신의 리뷰에 댓글을 남겼습니다.",
             null
         )
         post(
             url = "http://localhost:9000/api/kafka",
             headers = mapOf("Content-Type" to "application/json"),
-            data = jacksonObjectMapper().writeValueAsString(record)
+            data = mapper.writeValueAsString(record)
         )
 
-        return APIResponse.of("Comment Created", commentDetailsDTO.id)
+        return APIResponse.of("Comment Created", result.commentId)
     }
 
     @GetMapping
@@ -61,7 +60,11 @@ class CommentController(
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteCommentOnReview(@HeaderSubject sub: String, @PathVariable("id") id: String): APIResponse {
         commentService.deleteComment(id.toLong(), sub.toLong())
-        elasticsearchService.deleteCommentInElasticSearch(id.toLong())
         return APIResponse.of("Comment Deleted")
+    }
+
+    companion object {
+        private val mapper = jacksonObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
     }
 }
