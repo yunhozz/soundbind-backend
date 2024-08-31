@@ -15,9 +15,7 @@ class Review private constructor(
     userNickname: String,
     userImageUrl: String?,
     message: String,
-    score: Double,
-    commentNum: Int = 0,
-    likes: Int = 0
+    score: Double
 ): BaseEntity() {
 
     companion object {
@@ -47,10 +45,10 @@ class Review private constructor(
     var score = score
         protected set
 
-    var commentNum = commentNum
+    var commentNum = 0
         protected set
 
-    var likes = likes
+    var likes = 0
         protected set
 
     private var deletedAt: LocalDateTime? = null

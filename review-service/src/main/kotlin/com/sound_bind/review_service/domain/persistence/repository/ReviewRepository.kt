@@ -12,6 +12,8 @@ interface ReviewRepository: JpaRepository<Review, Long>, ReviewQueryRepository {
 
     fun findReviewByIdAndUserId(reviewId: Long, userId: Long): Review?
 
+    fun findReviewsByUserId(userId: Long): List<Review>
+
     @Modifying(clearAutomatically = true)
     @Query("update Review r set r.deletedAt = :now where r.userId = :userId")
     fun deleteReviewsByUserId(now: LocalDateTime, userId: Long)

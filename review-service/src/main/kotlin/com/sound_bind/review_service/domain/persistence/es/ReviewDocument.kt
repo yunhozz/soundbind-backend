@@ -13,8 +13,18 @@ data class ReviewDocument(
     val userImageUrl: String?,
     val message: String,
     val score: Double,
-    val commentNum: Int = 0,
-    val likes: Int = 0,
+    var commentNum: Int,
+    var likes: Int,
+    var isLiked: Boolean,
     val createdAt: String,
     val updatedAt: String
-)
+) {
+    fun updateCommentNumAndLikes(commentNum: Int, likes: Int) {
+        this.commentNum = commentNum
+        this.likes = likes
+    }
+
+    fun updateIsLiked(flag: Boolean) {
+        isLiked = flag
+    }
+}
