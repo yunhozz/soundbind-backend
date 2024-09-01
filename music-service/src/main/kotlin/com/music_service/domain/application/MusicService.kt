@@ -12,12 +12,14 @@ import com.music_service.domain.persistence.entity.FileType.IMAGE
 import com.music_service.domain.persistence.entity.FileType.MUSIC
 import com.music_service.domain.persistence.entity.Genre
 import com.music_service.domain.persistence.entity.Music
+import com.music_service.domain.persistence.entity.MusicLikes
 import com.music_service.domain.persistence.repository.FileRepository
 import com.music_service.domain.persistence.repository.MusicLikesRepository
 import com.music_service.domain.persistence.repository.MusicRepository
 import com.music_service.domain.persistence.repository.dto.MusicSimpleQueryDTO
 import com.music_service.global.exception.MusicServiceException.MusicNotFoundException
 import com.music_service.global.exception.MusicServiceException.MusicNotUpdatableException
+import com.music_service.global.exception.MusicServiceException.NegativeValueException
 import com.music_service.global.util.RedisUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.Pageable
@@ -105,6 +107,26 @@ class MusicService(
         asyncListener.onMusicUpdate(fileUrl, imageFileInfo, music, fileEntities)
 
         return music.id!!
+    }
+
+    @Transactional
+    fun changeLikesFlag(musicId: Long, userId: Long): Long? {
+        musicLikesRepository.findMusicLikesWithMusicByMusicId(musicId)?.let { ml ->
+            try {
+                ml.changeFlag()
+                if (ml.flag) return ml.music.userId
+            } catch (e: IllegalArgumentException) {
+                throw NegativeValueException(e.localizedMessage)
+            }
+            return null
+        } ?: run {
+            val music = findMusicById(musicId).also { music ->
+                val musicLikes = MusicLikes(music, userId)
+                musicLikesRepository.save(musicLikes)
+                music.addLikes(1)
+            }
+            return music.userId
+        }
     }
 
     @Transactional
