@@ -11,9 +11,19 @@ data class MusicDocument(
     val userNickname: String,
     val title: String,
     val genres: Set<String>,
-    val likes: Int,
-    val scoreAverage: Double,
+    var likes: Int,
+    var scoreAverage: Double,
+    var isLiked: Boolean,
     val files: List<FileDocument>,
     val createdAt: String,
     val updatedAt: String
-)
+) {
+    fun updateLikesAndScoreAverage(likes: Int, scoreAverage: Double) {
+        this.likes = likes
+        this.scoreAverage = scoreAverage
+    }
+
+    fun updateIsLiked(flag: Boolean) {
+        this.isLiked = flag
+    }
+}

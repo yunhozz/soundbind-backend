@@ -3,11 +3,9 @@ package com.music_service.domain.application
 import com.music_service.domain.application.dto.request.MusicCreateDTO
 import com.music_service.domain.application.dto.request.MusicUpdateDTO
 import com.music_service.domain.application.dto.response.FileUploadResponseDTO
-import com.music_service.domain.application.dto.response.MusicDetailsDTO
 import com.music_service.domain.application.dto.response.MusicFileResponseDTO
-import com.music_service.domain.application.file.ImageHandler
-import com.music_service.domain.application.file.MusicHandler
-import com.music_service.domain.application.listener.ElasticsearchListener
+import com.music_service.domain.application.file.FileHandler
+import com.music_service.domain.application.listener.AsyncListener
 import com.music_service.domain.persistence.entity.FileEntity
 import com.music_service.domain.persistence.entity.FileType
 import com.music_service.domain.persistence.entity.FileType.IMAGE
@@ -15,31 +13,33 @@ import com.music_service.domain.persistence.entity.FileType.MUSIC
 import com.music_service.domain.persistence.entity.Genre
 import com.music_service.domain.persistence.entity.Music
 import com.music_service.domain.persistence.repository.FileRepository
+import com.music_service.domain.persistence.repository.MusicLikesRepository
 import com.music_service.domain.persistence.repository.MusicRepository
-import com.music_service.domain.persistence.repository.dto.MusicDetailsQueryDTO
 import com.music_service.domain.persistence.repository.dto.MusicSimpleQueryDTO
 import com.music_service.global.exception.MusicServiceException.MusicNotFoundException
+import com.music_service.global.exception.MusicServiceException.MusicNotUpdatableException
 import com.music_service.global.util.RedisUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Slice
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.io.IOException
+import java.time.LocalDateTime
 
 @Service
 class MusicService(
     private val musicRepository: MusicRepository,
     private val fileRepository: FileRepository,
-    private val musicHandler: MusicHandler,
-    private val imageHandler: ImageHandler
+    private val musicLikesRepository: MusicLikesRepository
 ) {
 
     @Autowired
-    private lateinit var elasticsearchListener: ElasticsearchListener
+    private lateinit var fileHandler: FileHandler
 
-    // Spring rolls back only for RuntimeException, Error by default
-    @Transactional(rollbackFor = [IOException::class])
+    @Autowired
+    private lateinit var asyncListener: AsyncListener
+
+    @Transactional
     fun uploadMusic(userId: Long, dto: MusicCreateDTO): Long {
         val genres = dto.genres.map { Genre.of(it) }.toSet()
         val userInfo = RedisUtils.getJson("user:$userId", Map::class.java)
@@ -50,51 +50,59 @@ class MusicService(
             dto.title,
             genres
         )
+        musicRepository.save(music)
 
-        val files = arrayListOf<FileEntity>()
+        val fileMap = hashMapOf<FileEntity, FileUploadResponseDTO>()
 
-        val musicFileInfo = musicHandler.uploadMusic(dto.musicFile)
+        val musicFileInfo = fileHandler.generateFileInfo(dto.musicFile)
         val musicFileEntity = createFileEntity(MUSIC, musicFileInfo, music)
-        fileRepository.save(musicFileEntity)
-        files.add(musicFileEntity)
+        fileMap[musicFileEntity] = musicFileInfo
 
         dto.imageFile?.let {
-            val imageFileInfo = imageHandler.uploadImage(it)
+            val imageFileInfo = fileHandler.generateFileInfo(it)
             val imageFileEntity = createFileEntity(IMAGE, imageFileInfo, music)
-            fileRepository.save(imageFileEntity)
-            files.add(imageFileEntity)
+            fileMap[imageFileEntity] = imageFileInfo
         }
 
-        musicRepository.save(music)
-        elasticsearchListener.onMusicUpload(MusicDetailsDTO(music, files))
+        asyncListener.onMusicUpload(fileMap, music)
+        fileRepository.saveAll(fileMap.keys)
 
         return music.id!!
     }
-
-    @Transactional(readOnly = true)
-    fun findMusicDetails(id: Long): MusicDetailsQueryDTO = musicRepository.findMusicDetailsById(id)
-        ?: throw MusicNotFoundException("Music not found with id: $id")
 
     @Transactional(readOnly = true)
     fun findMusicsByKeyword(keyword: String, pageable: Pageable): Slice<MusicSimpleQueryDTO>
         = musicRepository.findMusicSimpleListByKeyword(keyword, pageable)
 
     @Transactional
-    fun updateMusic(id: Long, dto: MusicUpdateDTO): Long {
-        val music = findMusicById(id)
-        val files = fileRepository.findFilesWhereMusicId(music.id!!)
+    fun updateMusicInformation(id: Long, dto: MusicUpdateDTO): Long {
+        val before30Days = LocalDateTime.now().minusDays(30)
+        val music = musicRepository.findMusicEligibleForUpdateById(id, before30Days)
+            ?: throw MusicNotUpdatableException("It can be modified after 30 days of final modification.")
+        val fileEntities = fileRepository.findFilesWhereMusicId(music.id!!)
 
-        files.forEach { file ->
-            if (file.fileType == IMAGE) {
-                imageHandler.updateImage(file.fileUrl, dto.imageFile)
-                fileRepository.save(file)
-            }
+        var imageFileInfo: FileUploadResponseDTO? = null
+        var fileUrl: String? = null
+
+        dto.imageFile?.let { imageFile ->
+            fileEntities.firstOrNull { fileEntity -> fileEntity.fileType == IMAGE }
+                ?.let { imageFileEntity ->
+                    fileUrl = imageFileEntity.fileUrl
+                    fileHandler.generateFileInfo(imageFile).let { info ->
+                        imageFileInfo = info
+                        imageFileEntity.updateImage(
+                            info.originalFileName,
+                            info.savedName,
+                            info.fileUrl
+                        )
+                    }
+                }
         }
         music.updateInfo(
             dto.title,
             dto.genres.map { Genre.of(it) }.toSet()
         )
-        elasticsearchListener.onMusicUpload(MusicDetailsDTO(music, files))
+        asyncListener.onMusicUpdate(fileUrl, imageFileInfo, music, fileEntities)
 
         return music.id!!
     }
@@ -103,18 +111,16 @@ class MusicService(
     fun downloadMusic(id: Long): MusicFileResponseDTO {
         val music = findMusicById(id)
         val files = fileRepository.findFilesWhereMusicId(music.id!!)
-        files.forEach { file ->
-            if (file.fileType == MUSIC) {
-                val musicInfo = musicHandler.downloadMusic(file.fileUrl)
-                musicHandler.downloadMusic(file.fileUrl)
+
+        files.firstOrNull { fileEntity -> fileEntity.fileType == MUSIC }
+            ?.let { musicFileEntity ->
+                val musicInfo = fileHandler.downloadMusic(musicFileEntity.fileUrl)
                 return MusicFileResponseDTO(
                     musicInfo.resource,
                     musicInfo.contentType,
-                    fileName = file.originalFileName
+                    fileName = musicFileEntity.originalFileName
                 )
-            }
-        }
-        throw MusicNotFoundException("Music not found with id: $id")
+            } ?: throw MusicNotFoundException("Music not found with id: $id")
     }
 
     @Transactional
@@ -122,16 +128,9 @@ class MusicService(
         val music = findMusicById(id)
         val files = fileRepository.findFilesWhereMusicId(music.id!!)
 
-        val fileIds = files.map { file ->
-            when (file.fileType) {
-                MUSIC -> musicHandler.deleteMusic(file.fileUrl)
-                IMAGE -> imageHandler.deleteImage(file.fileUrl)
-            }
-            file.id!!
-        }
+        asyncListener.onMusicDelete(music.id!!, files)
         fileRepository.deleteAllInBatch(files)
         music.softDelete()
-        elasticsearchListener.onMusicDelete(music.id!!, fileIds)
     }
 
     private fun findMusicById(id: Long): Music =

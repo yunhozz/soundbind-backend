@@ -45,10 +45,10 @@ class MusicManagementController(private val musicService: MusicService) {
         val disposition = ContentDisposition.builder("attachment")
             .filename(UriUtils.encode(music.fileName, StandardCharsets.UTF_8))
             .build()
-
-        val headers = HttpHeaders()
-        headers.contentDisposition = disposition
-        headers.contentType = MediaType.valueOf(music.contentType)
+        val headers = HttpHeaders().apply {
+            contentDisposition = disposition
+            contentType = MediaType.valueOf(music.contentType)
+        }
 
         return ResponseEntity(music.musicFile, headers, HttpStatus.OK)
     }
@@ -56,16 +56,17 @@ class MusicManagementController(private val musicService: MusicService) {
     @PatchMapping("/{id}")
     @ResponseStatus(HttpStatus.CREATED)
     fun updateMusicInformation(
+        @HeaderSubject sub: String,
         @PathVariable("id") id: String,
         @Valid @ModelAttribute dto: MusicUpdateDTO
     ): APIResponse {
-        val musicId = musicService.updateMusic(id.toLong(), dto)
+        val musicId = musicService.updateMusicInformation(id.toLong(), dto)
         return APIResponse.of("Music Updated", musicId)
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun deleteMusic(@PathVariable("id") id: String): APIResponse {
+    fun deleteMusic(@HeaderSubject sub: String, @PathVariable("id") id: String): APIResponse {
         musicService.deleteMusic(id.toLong())
         return APIResponse.of("Music Deleted")
     }

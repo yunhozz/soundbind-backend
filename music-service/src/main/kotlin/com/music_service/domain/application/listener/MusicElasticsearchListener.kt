@@ -5,8 +5,7 @@ import com.music_service.domain.application.dto.response.MusicDetailsDTO
 import org.springframework.stereotype.Component
 
 @Component
-class MusicElasticsearchListener(private val elasticsearchService: ElasticsearchService)
-    : ElasticsearchListener {
+class MusicElasticsearchListener(private val elasticsearchService: ElasticsearchService): ElasticsearchListener {
 
     override fun onMusicUpload(dto: MusicDetailsDTO) =
         elasticsearchService.saveMusicByElasticsearch(dto)
