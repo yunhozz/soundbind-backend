@@ -25,14 +25,19 @@ class GlobalExceptionHandler: ErrorWebExceptionHandler {
         response.headers.contentType = MediaType.APPLICATION_JSON
 
         val errorResponse = when (ex) {
-            is ResponseStatusException -> ErrorResponse.of(ErrorCode.FRAME_WORK_INTERNAL_ERROR, ex.localizedMessage)
+            is ResponseStatusException -> {
+                val errorCode = ErrorCode.FRAME_WORK_INTERNAL_ERROR
+                response.statusCode = HttpStatus.valueOf(errorCode.status)
+                ErrorResponse.of(errorCode, ex.localizedMessage)
+            }
             is BusinessException -> {
                 response.statusCode = HttpStatus.valueOf(ex.errorCode.status)
                 ErrorResponse.of(ex.errorCode, ex.localizedMessage)
             }
             else -> {
-                response.statusCode = HttpStatus.valueOf(ErrorCode.UNDEFINED_ERROR.status)
-                ErrorResponse.of(ErrorCode.UNDEFINED_ERROR, ex.localizedMessage)
+                val errorCode = ErrorCode.UNDEFINED_ERROR
+                response.statusCode = HttpStatus.valueOf(errorCode.status)
+                ErrorResponse.of(errorCode, ex.localizedMessage)
             }
         }
 
