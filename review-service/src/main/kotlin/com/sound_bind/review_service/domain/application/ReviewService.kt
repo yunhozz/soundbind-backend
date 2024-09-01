@@ -59,15 +59,14 @@ class ReviewService(
     fun updateReviewMessageAndScore(reviewId: Long, userId: Long, dto: ReviewUpdateDTO): Long {
         val review = reviewRepository.findReviewByIdAndUserId(reviewId, userId)
             ?: throw ReviewUpdateNotAuthorizedException("Not Authorized for Update")
-        review.id?.let {
-            val before30Days = LocalDateTime.now().minusDays(30)
-            if (reviewRepository.isReviewEligibleForUpdate(it, before30Days)) {
-                review.updateMessageAndScore(dto.message, dto.score)
-                elasticsearchListener.onReviewCreate(ReviewDetailsDTO(review))
-                return review.id!!
-            }
+        val before30Days = LocalDateTime.now().minusDays(30)
+        if (reviewRepository.isReviewEligibleForUpdate(review.id!!, before30Days)) {
+            review.updateMessageAndScore(dto.message, dto.score)
+            elasticsearchListener.onReviewCreate(ReviewDetailsDTO(review))
+            return review.id!!
+        } else {
+            throw ReviewNotUpdatableException("It can be modified after 30 days of final modification.")
         }
-        throw ReviewNotUpdatableException("It can be modified 30 days after the initial creation.")
     }
 
     @Transactional(readOnly = true)
