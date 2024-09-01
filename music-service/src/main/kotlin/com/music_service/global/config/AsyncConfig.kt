@@ -1,4 +1,4 @@
-package com.sound_bind.review_service.global.config
+package com.music_service.global.config
 
 import org.springframework.context.annotation.Configuration
 import org.springframework.scheduling.annotation.AsyncConfigurer
@@ -17,7 +17,7 @@ class AsyncConfig: AsyncConfigurer {
             maxPoolSize = 10
             queueCapacity = 20
             setRejectedExecutionHandler(ThreadPoolExecutor.CallerRunsPolicy())
-            setThreadNamePrefix("review-service-async-")
+            setThreadNamePrefix("music-service-async-")
         }
         executor.initialize()
         return executor
