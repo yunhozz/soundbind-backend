@@ -7,10 +7,10 @@ import com.music_service.domain.persistence.entity.Music
 import org.springframework.stereotype.Component
 
 @Component
-class MusicAsyncListener(private val fileService: FileService): AsyncListener {
+class MusicFileListener(private val fileService: FileService): FileListener {
 
-    override fun onMusicUpload(fileMap: Map<FileEntity, FileUploadResponseDTO>, music: Music) =
-        fileService.upload(fileMap, music)
+    override fun onMusicUpload(fileInfoList: List<FileUploadResponseDTO>) =
+        fileService.upload(fileInfoList)
 
     override fun onMusicUpdate(fileUrl: String?, dto: FileUploadResponseDTO?, music: Music, files: List<FileEntity>) =
         fileService.update(fileUrl, dto, music, files)
