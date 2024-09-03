@@ -7,16 +7,22 @@ import com.music_service.domain.persistence.es.document.FileDocument
 import com.music_service.domain.persistence.es.document.MusicDocument
 import com.music_service.domain.persistence.es.search.FileSearchRepository
 import com.music_service.domain.persistence.es.search.MusicSearchRepository
+import com.music_service.domain.persistence.repository.MusicRepository
+import com.music_service.domain.persistence.repository.MusicSort
+import com.music_service.domain.persistence.repository.dto.MusicCursorDTO
 import com.music_service.global.exception.MusicServiceException.MusicNotFoundException
 import com.music_service.global.util.DateTimeUtils
+import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 
 @Service
 class ElasticsearchService(
+    private val musicRepository: MusicRepository,
     private val musicSearchRepository: MusicSearchRepository,
     private val fileSearchRepository: FileSearchRepository
 ) {
 
+    @Async
     fun saveMusicByElasticsearch(dto: MusicDetailsDTO) {
         val fileDocumentList = dto.files.map {
             FileDocument(
@@ -47,7 +53,16 @@ class ElasticsearchService(
         musicSearchRepository.save(musicDocument)
     }
 
-    fun findMusicDetailsByElasticsearch(musicId: Long): MusicDetailsDTO {
+    fun findMusicSimpleListByKeywordAndCondition(
+        keyword: String,
+        sort: MusicSort,
+        cursor: MusicCursorDTO?,
+        userId: Long
+    ) = musicRepository.findMusicSimpleListByKeywordAndCondition(keyword, sort, cursor, userId)
+
+    // TODO
+    fun findMusicAndArtistListInAccuracyTop10() {}
+
     fun findMusicDetailsByElasticsearch(musicId: Long): MusicDocumentResponseDTO {
         val musicDocument = musicSearchRepository.findById(musicId)
             .orElseThrow { MusicNotFoundException("Music not found with id: $musicId") }
@@ -57,6 +72,7 @@ class ElasticsearchService(
         return MusicDocumentResponseDTO(musicDocument, files)
     }
 
+    @Async
     fun deleteMusicByElasticsearch(musicId: Long, fileIds: List<Long>) {
         musicSearchRepository.deleteById(musicId)
         fileSearchRepository.deleteAllById(fileIds)

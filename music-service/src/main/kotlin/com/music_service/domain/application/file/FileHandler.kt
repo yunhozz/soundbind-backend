@@ -3,6 +3,8 @@ package com.music_service.domain.application.file
 import com.music_service.domain.application.dto.response.FileDownloadResponseDTO
 import com.music_service.domain.application.dto.response.FileUploadResponseDTO
 import com.music_service.global.exception.MusicServiceException.MusicFileUploadFailException
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.core.io.Resource
 import org.springframework.stereotype.Component
 import org.springframework.web.multipart.MultipartFile
@@ -18,6 +20,7 @@ import java.util.UUID
 class FileHandler: FileHandlerFactory {
     private val musicHandler = createMusicHandler()
     private val imageHandler = createImageHandler()
+    private val log: Logger = LoggerFactory.getLogger(FileHandlerFactory::class.java)
 
     final override fun createMusicHandler(): MusicHandler = MusicHandlerImpl()
 
@@ -29,6 +32,8 @@ class FileHandler: FileHandlerFactory {
         val extension = originalFilename.substring(originalFilename.lastIndexOf("."))
         val uuid = UUID.randomUUID().toString()
         val savedName = "$uuid$extension"
+
+        log.info("File Upload Success : $savedName")
 
         return FileUploadResponseDTO(
             file,
@@ -45,6 +50,7 @@ class FileHandler: FileHandlerFactory {
             Files.notExists(dirPath).run { Files.createDirectories(dirPath) }
             Files.copy(file.inputStream, path)
         } catch (e: IOException) {
+            log.error(e.localizedMessage)
             throw MusicFileUploadFailException("File upload failed: ${file.originalFilename}")
         }
     }
