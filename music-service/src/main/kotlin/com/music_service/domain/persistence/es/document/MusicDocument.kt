@@ -1,9 +1,11 @@
 package com.music_service.domain.persistence.es.document
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import org.springframework.data.annotation.Id
 import org.springframework.data.elasticsearch.annotations.Document
 
 @Document(indexName = "music")
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class MusicDocument(
     @Id
     val id: Long?,
