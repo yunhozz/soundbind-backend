@@ -25,8 +25,8 @@ class MusicSearchController(
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    fun lookUpMusicDetails(@PathVariable id: String): APIResponse {
-        val result = elasticsearchService.findMusicDetailsByElasticsearch(id.toLong())
+    fun lookUpMusicDetails(@HeaderSubject sub: String, @PathVariable id: String): APIResponse {
+        val result = elasticsearchService.findMusicDetailsByElasticsearch(id.toLong(), sub.toLong())
         return APIResponse.of("Music Details Found", result)
     }
 

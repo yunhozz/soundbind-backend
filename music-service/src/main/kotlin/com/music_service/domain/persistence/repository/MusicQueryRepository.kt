@@ -9,6 +9,7 @@ import org.springframework.data.domain.Slice
 interface MusicQueryRepository {
     fun findMusicSimpleListByKeyword(keyword: String, pageable: Pageable): Slice<MusicSimpleQueryDTO>
     fun findMusicSimpleListByKeywordAndCondition(keyword: String, sort: MusicSort, cursor: MusicCursorDTO?, userId: Long): List<MusicDocument?>
+    fun addMusicDetailsByDocumentAndUserId(musicDocument: MusicDocument, userId: Long): MusicDocument
 }
 
 enum class MusicSort(val key: String, val value: String, val target: String) {

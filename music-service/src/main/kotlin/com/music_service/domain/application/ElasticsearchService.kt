@@ -63,9 +63,9 @@ class ElasticsearchService(
     // TODO
     fun findMusicAndArtistListInAccuracyTop10() {}
 
-    fun findMusicDetailsByElasticsearch(musicId: Long): MusicDocumentResponseDTO {
-        val musicDocument = musicSearchRepository.findById(musicId)
-            .orElseThrow { MusicNotFoundException("Music not found with id: $musicId") }
+    fun findMusicDetailsByElasticsearch(musicId: Long, userId: Long): MusicDocumentResponseDTO {
+        var musicDocument = findMusicDocumentById(musicId)
+        musicDocument = musicRepository.addMusicDetailsByDocumentAndUserId(musicDocument, userId)
         val files = musicDocument.files.map { fileDocument ->
             FileDetailsDTO(fileDocument, musicDocument.id!!)
         }
@@ -77,4 +77,8 @@ class ElasticsearchService(
         musicSearchRepository.deleteById(musicId)
         fileSearchRepository.deleteAllById(fileIds)
     }
+
+    private fun findMusicDocumentById(musicId: Long) =
+        musicSearchRepository.findById(musicId)
+            .orElseThrow { MusicNotFoundException("Music not found with id: $musicId") }
 }

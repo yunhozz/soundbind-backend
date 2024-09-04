@@ -12,8 +12,10 @@ import com.music_service.domain.persistence.entity.QMusicLikes.musicLikes
 import com.music_service.domain.persistence.es.document.MusicDocument
 import com.music_service.domain.persistence.repository.dto.MusicCursorDTO
 import com.music_service.domain.persistence.repository.dto.MusicLikesQueryDTO
+import com.music_service.domain.persistence.repository.dto.MusicPartialQueryDTO
 import com.music_service.domain.persistence.repository.dto.MusicSimpleQueryDTO
 import com.music_service.domain.persistence.repository.dto.QMusicLikesQueryDTO
+import com.music_service.domain.persistence.repository.dto.QMusicPartialQueryDTO
 import com.music_service.domain.persistence.repository.dto.QMusicSimpleQueryDTO
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Pageable
@@ -103,22 +105,54 @@ class MusicQueryRepositoryImpl(
             searchRequestBuilder.searchAfter(searchAfterValues)
         }
 
-        val musics = elasticsearch.search(
+        val musicDocumentList = elasticsearch.search(
             searchRequestBuilder.build(),
             MusicDocument::class.java
         ).hits().hits().map { it.source() }
-        val musicIds = musics.map { it?.id!! }
+
+        val musicIds = musicDocumentList.map { it?.id!! }
+        val musicPartials = findMusicPartials(musicIds)
         val musicLikesList = findMusicLikesList(userId, musicIds)
+
+        val musicPartialsMap = musicPartials.groupBy { it.id }
         val musicLikesListMap = musicLikesList.groupBy { it.musicId }
 
-        musics.forEach { music ->
+        musicDocumentList.forEach { music ->
+            musicPartialsMap[music?.id]?.first()?.let { mp ->
+                music?.updateLikesAndScoreAverage(mp.likes, mp.scoreAverage)
+            }
             musicLikesListMap[music?.id]?.first()?.let { ml ->
                 music?.updateIsLiked(ml.flag)
             } ?: run { music?.updateIsLiked(false) }
         }
 
-        return musics
+        return musicDocumentList
     }
+
+    override fun addMusicDetailsByDocumentAndUserId(musicDocument: MusicDocument, userId: Long): MusicDocument {
+        val musicId = musicDocument.id!!
+        val musicPartial = findMusicPartials(listOf(musicId)).first()
+        musicDocument.updateLikesAndScoreAverage(musicPartial.likes, musicPartial.scoreAverage)
+
+        val musicLikes = findMusicLikesList(userId, listOf(musicId))
+        val isLiked = musicLikes.firstOrNull()?.flag ?: false
+        musicDocument.updateIsLiked(isLiked)
+
+        return musicDocument
+    }
+
+    private fun findMusicPartials(musicIds: List<Long>): List<MusicPartialQueryDTO> =
+        queryFactory
+            .select(
+                QMusicPartialQueryDTO(
+                    music.id,
+                    music.likes,
+                    music.scoreAverage
+                )
+            )
+            .from(music)
+            .where(music.id.`in`(musicIds))
+            .fetch()
 
     private fun findMusicLikesList(userId: Long, musicIds: List<Long>): List<MusicLikesQueryDTO> =
         queryFactory
