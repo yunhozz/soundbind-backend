@@ -1,5 +1,6 @@
 package com.sound_bind.notification_service.domain.application
 
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.sound_bind.notification_service.domain.persistence.entity.Notification
 import com.sound_bind.notification_service.domain.persistence.repository.NotificationRepository
@@ -26,6 +27,8 @@ class NotificationService(
 ) {
 
     companion object {
+        private val mapper = jacksonObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
         private val log = LoggerFactory.getLogger(NotificationService::class.java)
         private const val EMITTER_TIMEOUT = 60 * 60 * 1000L // 1 hour
     }
@@ -54,11 +57,11 @@ class NotificationService(
         groupId = "notification-service-group",
         topics = ["music-like-topic", "review-like-topic", "review-added-topic", "comment-added-topic"],
     )
-    fun sendMessage(@Payload message: String): String {
-        val obj = jacksonObjectMapper().readValue(message, Map::class.java)
-        val userId = obj["userId"] as String
-        val content = obj["content"] as String
-        val link = obj["link"] as? String
+    fun sendMessage(@Payload payload: String): String {
+        val payloadObj = mapper.readValue(payload, Map::class.java)
+        val userId = payloadObj["userId"] as String
+        val content = payloadObj["content"] as String
+        val link = payloadObj["link"] as? String
 
         val notification = Notification.create(userId, content, link)
         emitterRepository.findEmittersByUserId(userId)
