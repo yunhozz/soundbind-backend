@@ -18,14 +18,11 @@ import com.music_service.domain.persistence.entity.MusicLikes
 import com.music_service.domain.persistence.repository.FileRepository
 import com.music_service.domain.persistence.repository.MusicLikesRepository
 import com.music_service.domain.persistence.repository.MusicRepository
-import com.music_service.domain.persistence.repository.dto.MusicSimpleQueryDTO
 import com.music_service.global.exception.MusicServiceException.MusicNotFoundException
 import com.music_service.global.exception.MusicServiceException.MusicNotUpdatableException
 import com.music_service.global.exception.MusicServiceException.NegativeValueException
 import com.music_service.global.util.RedisUtils
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.domain.Pageable
-import org.springframework.data.domain.Slice
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -80,10 +77,6 @@ class MusicService(
 
         return music.id!!
     }
-
-    @Transactional(readOnly = true)
-    fun findMusicsByKeyword(keyword: String, pageable: Pageable): Slice<MusicSimpleQueryDTO>
-        = musicRepository.findMusicSimpleListByKeyword(keyword, pageable)
 
     @Transactional
     fun updateMusicInformation(id: Long, dto: MusicUpdateDTO): Long {

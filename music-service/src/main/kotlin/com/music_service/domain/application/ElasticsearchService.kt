@@ -3,6 +3,7 @@ package com.music_service.domain.application
 import com.music_service.domain.application.dto.response.FileDetailsDTO
 import com.music_service.domain.application.dto.response.MusicDetailsDTO
 import com.music_service.domain.application.dto.response.MusicDocumentResponseDTO
+import com.music_service.domain.application.dto.response.MusicSimpleResponseDTO
 import com.music_service.domain.persistence.es.document.FileDocument
 import com.music_service.domain.persistence.es.document.MusicDocument
 import com.music_service.domain.persistence.es.search.FileSearchRepository
@@ -58,7 +59,11 @@ class ElasticsearchService(
         sort: MusicSort,
         cursor: MusicCursorDTO?,
         userId: Long
-    ) = musicRepository.findMusicSimpleListByKeywordAndCondition(keyword, sort, cursor, userId)
+    ): List<MusicSimpleResponseDTO> {
+        val musicDocuments =
+            musicRepository.findMusicSimpleListByKeywordAndCondition(keyword, sort, cursor, userId)
+        return musicDocuments.map { md -> MusicSimpleResponseDTO(md) }
+    }
 
     // TODO
     fun findMusicAndArtistListInAccuracyTop10() {}

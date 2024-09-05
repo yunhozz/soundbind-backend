@@ -3,24 +3,19 @@ package com.music_service.domain.persistence.repository
 import co.elastic.clients.elasticsearch.ElasticsearchClient
 import co.elastic.clients.elasticsearch._types.FieldValue
 import co.elastic.clients.elasticsearch._types.SortOrder
-import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders
+import co.elastic.clients.elasticsearch._types.query_dsl.FunctionScore
+import co.elastic.clients.elasticsearch._types.query_dsl.Query
 import co.elastic.clients.elasticsearch.core.SearchRequest
-import com.music_service.domain.persistence.entity.FileType
-import com.music_service.domain.persistence.entity.QFileEntity.fileEntity
+import co.elastic.clients.util.ObjectBuilder
 import com.music_service.domain.persistence.entity.QMusic.music
 import com.music_service.domain.persistence.entity.QMusicLikes.musicLikes
 import com.music_service.domain.persistence.es.document.MusicDocument
 import com.music_service.domain.persistence.repository.dto.MusicCursorDTO
 import com.music_service.domain.persistence.repository.dto.MusicLikesQueryDTO
 import com.music_service.domain.persistence.repository.dto.MusicPartialQueryDTO
-import com.music_service.domain.persistence.repository.dto.MusicSimpleQueryDTO
 import com.music_service.domain.persistence.repository.dto.QMusicLikesQueryDTO
 import com.music_service.domain.persistence.repository.dto.QMusicPartialQueryDTO
-import com.music_service.domain.persistence.repository.dto.QMusicSimpleQueryDTO
 import com.querydsl.jpa.impl.JPAQueryFactory
-import org.springframework.data.domain.Pageable
-import org.springframework.data.domain.Slice
-import org.springframework.data.domain.SliceImpl
 import org.springframework.stereotype.Repository
 
 @Repository
@@ -29,71 +24,37 @@ class MusicQueryRepositoryImpl(
     private val elasticsearch: ElasticsearchClient
 ): MusicQueryRepository {
 
-    override fun findMusicSimpleListByKeyword(keyword: String, pageable: Pageable): Slice<MusicSimpleQueryDTO> {
-        val pageSize = pageable.pageSize
-        val musics = queryFactory
-            .select(
-                QMusicSimpleQueryDTO(
-                    music.id,
-                    music.userNickname,
-                    music.title,
-                    fileEntity.fileUrl
-                )
-            )
-            .from(fileEntity)
-            .join(fileEntity.music, music)
-            .where(
-                music.userNickname.contains(keyword)
-                    .or(music.title.contains(keyword))
-            )
-            .where(fileEntity.fileType.eq(FileType.IMAGE))
-            .orderBy(music.id.desc())
-            .limit(pageSize.toLong() + 1)
-            .limit(100)
-            .fetch()
-
-        var hasNext = false
-        if (musics.size > pageSize) {
-            musics.removeAt(pageSize)
-            hasNext = true
-        }
-
-        return SliceImpl(musics, pageable, hasNext)
-    }
-
     override fun findMusicSimpleListByKeywordAndCondition(
         keyword: String,
         sort: MusicSort,
         cursor: MusicCursorDTO?,
         userId: Long
     ): List<MusicDocument?> {
-        val boolQuery = QueryBuilders.bool()
-            .should {
-                it.match { m ->
-                    m.field("title").query(keyword)
-                }
-            }
-            .should {
-                it.match { m ->
-                    m.field("userNickname").query(keyword)
-                }
-            }
-        val pit = elasticsearch.openPointInTime {
-            it.index("music")
-                .keepAlive { a -> a.time("1m") }
-        }
         val searchRequestBuilder = SearchRequest.Builder()
-            .query { it.bool(boolQuery.build()) }
-            .sort { s -> s.field { f -> f.field("id").order(SortOrder.Desc) } }
-            .pit { p -> p.id(pit.id()) }
+            .pit { p ->
+                val pit = elasticsearch.openPointInTime {
+                    it.index("music")
+                        .keepAlive { a -> a.time("1m") }
+                }
+                p.id(pit.id())
+            }
             .size(20)
         if (sort == MusicSort.ACCURACY) {
-            searchRequestBuilder.sort { s -> s.field { f -> f.field("_score").order(SortOrder.Desc) } }
+            searchRequestBuilder.query { q ->
+                q.functionScore { fs ->
+                    fs.query { q -> createWildcardWithKeyword(q, keyword) }
+                    fs.functions { f -> createScriptScore(f) }
+                }
+            }
         } else {
-            searchRequestBuilder.sort { s -> s.field { f -> f.field(sort.target).order(SortOrder.Desc) } }
+            searchRequestBuilder
+                .query { q -> createWildcardWithKeyword(q, keyword) }
+                .sort { s ->
+                    s.field { f -> f.field(sort.target).order(SortOrder.Desc) }
+                }
         }
 
-        val searchAfterValues = mutableListOf<FieldValue?>()
+        val searchAfterValues = arrayListOf<FieldValue?>()
         cursor?.let {
             when(sort) {
                 MusicSort.ACCURACY -> searchAfterValues.add(FieldValue.of(it.accuracyCursor))
@@ -139,6 +100,28 @@ class MusicQueryRepositoryImpl(
         musicDocument.updateIsLiked(isLiked)
 
         return musicDocument
+    }
+
+    private fun createWildcardWithKeyword(qb: Query.Builder, keyword: String): ObjectBuilder<Query>? =
+        qb.bool { b ->
+            b.should { s ->
+                s.wildcard { w -> w.field("title").value("*$keyword*") }
+            }
+            b.should { s ->
+                s.wildcard { w -> w.field("userNickname").value("*$keyword*") }
+            }
+        }
+
+    private fun createScriptScore(fb: FunctionScore.Builder): FunctionScore.Builder.ContainerBuilder? {
+        val script = """
+            Math.log(2 + (doc['title.keyword'].size() > 0 ? doc['title.keyword'].value.length() : 0))
+             + Math.log(2 + (doc['userNickname.keyword'].size() > 0 ? doc['userNickname.keyword'].value.length() : 0))
+        """.trimIndent()
+        return fb.scriptScore { ss ->
+            ss.script { s ->
+                s.inline { i -> i.source(script) }
+            }
+        }
     }
 
     private fun findMusicPartials(musicIds: List<Long>): List<MusicPartialQueryDTO> =
