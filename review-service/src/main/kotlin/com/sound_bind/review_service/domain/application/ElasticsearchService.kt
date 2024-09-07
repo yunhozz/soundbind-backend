@@ -10,6 +10,7 @@ import com.sound_bind.review_service.domain.persistence.repository.ReviewReposit
 import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorDTO
 import com.sound_bind.review_service.global.enums.ReviewSort
 import com.sound_bind.review_service.global.util.DateTimeUtils
+import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -20,6 +21,7 @@ class ElasticsearchService(
     private val commentSearchRepository: CommentSearchRepository
 ) {
 
+    @Async
     fun saveReviewInElasticSearch(dto: ReviewDetailsDTO) {
         val reviewDocument = ReviewDocument(
             dto.id,
@@ -38,6 +40,7 @@ class ElasticsearchService(
         reviewSearchRepository.save(reviewDocument)
     }
 
+    @Async
     fun saveCommentInElasticSearch(dto: CommentDetailsDTO) {
         val commentDocument = CommentDocument(
             dto.id,
@@ -68,15 +71,19 @@ class ElasticsearchService(
     fun findCommentsByReviewInElasticsearch(reviewId: Long): List<CommentDocument> =
         commentSearchRepository.findByReviewIdOrderByCreatedAtAsc(reviewId)
 
+    @Async
     fun deleteReviewInElasticSearch(reviewId: Long) =
         reviewSearchRepository.deleteById(reviewId)
 
+    @Async
     fun deleteCommentInElasticSearch(commentId: Long) =
         commentSearchRepository.deleteById(commentId)
 
+    @Async
     fun deleteCommentsInElasticSearch(commentIds: List<Long>) =
         commentSearchRepository.deleteAllById(commentIds)
 
+    @Async
     fun deleteReviewsByUserIdInElasticSearch(userId: Long) =
         reviewSearchRepository.deleteAllByUserId(userId)
 }

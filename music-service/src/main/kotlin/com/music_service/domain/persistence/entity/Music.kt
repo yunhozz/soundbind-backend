@@ -90,19 +90,21 @@ class Music private constructor(
     }
 
     fun updateScoreByReviewRemove(score: Double) {
-        val updatedTotalScore = totalScore - score
-        require(updatedTotalScore > 0 && reviewCount > 0)
+        val updatedTotalScore = totalScore + score
+        require(updatedTotalScore >= 0 && reviewCount > 0) { "Score or Count Cannot be Negative." }
         reviewCount--
+        totalScore = updatedTotalScore
         scoreAverage = calculateScoreAverage(updatedTotalScore, reviewCount)
     }
-
-    private fun calculateScoreAverage(totalScore: Double, reviewCount: Int) = totalScore / reviewCount
 
     fun updateFiles(file: FileEntity) = files.add(file)
 
     fun softDelete() {
         deletedAt ?: run { deletedAt = LocalDateTime.now() }
     }
+
+    private fun calculateScoreAverage(totalScore: Double, reviewCount: Int) =
+        if (reviewCount <= 0) 0.0 else totalScore / reviewCount
 }
 
 enum class Genre(val genreName: String) {

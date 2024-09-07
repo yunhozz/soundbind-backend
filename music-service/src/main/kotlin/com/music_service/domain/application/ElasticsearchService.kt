@@ -15,6 +15,7 @@ import com.music_service.global.exception.MusicServiceException.MusicNotFoundExc
 import com.music_service.global.util.DateTimeUtils
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class ElasticsearchService(
@@ -54,20 +55,22 @@ class ElasticsearchService(
         musicSearchRepository.save(musicDocument)
     }
 
+    @Transactional(readOnly = true)
     fun findMusicSimpleListByKeywordAndCondition(
         keyword: String,
         sort: MusicSort,
         cursor: MusicCursorDTO?,
         userId: Long
     ): List<MusicSimpleResponseDTO> {
-        val musicDocuments =
-            musicRepository.findMusicSimpleListByKeywordAndCondition(keyword, sort, cursor, userId)
-        return musicDocuments.map { md -> MusicSimpleResponseDTO(md) }
+        val musicDocuments = musicRepository
+            .findMusicSimpleListByKeywordAndCondition(keyword, sort, cursor, userId)
+        return musicDocuments.map { MusicSimpleResponseDTO(it) }
     }
 
     // TODO
     fun findMusicAndArtistListInAccuracyTop10() {}
 
+    @Transactional(readOnly = true)
     fun findMusicDetailsByElasticsearch(musicId: Long, userId: Long): MusicDocumentResponseDTO {
         var musicDocument = findMusicDocumentById(musicId)
         musicDocument = musicRepository.addMusicDetailsByDocumentAndUserId(musicDocument, userId)

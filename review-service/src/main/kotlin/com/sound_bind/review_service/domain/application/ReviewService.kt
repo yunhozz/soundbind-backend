@@ -3,6 +3,7 @@ package com.sound_bind.review_service.domain.application
 import com.sound_bind.review_service.domain.application.dto.request.ReviewCreateDTO
 import com.sound_bind.review_service.domain.application.dto.request.ReviewUpdateDTO
 import com.sound_bind.review_service.domain.application.dto.response.ReviewDetailsDTO
+import com.sound_bind.review_service.domain.application.dto.response.ReviewScoreDTO
 import com.sound_bind.review_service.domain.application.listener.ReviewElasticsearchListener
 import com.sound_bind.review_service.domain.persistence.entity.Review
 import com.sound_bind.review_service.domain.persistence.entity.ReviewLikes
@@ -56,14 +57,19 @@ class ReviewService(
     }
 
     @Transactional
-    fun updateReviewMessageAndScore(reviewId: Long, userId: Long, dto: ReviewUpdateDTO): Long {
+    fun updateReviewMessageAndScore(reviewId: Long, userId: Long, dto: ReviewUpdateDTO): ReviewScoreDTO {
         val review = reviewRepository.findReviewByIdAndUserId(reviewId, userId)
             ?: throw ReviewUpdateNotAuthorizedException("Not Authorized for Update")
+        val oldScore = review.score
         val before30Days = LocalDateTime.now().minusDays(30)
+
         if (reviewRepository.isReviewEligibleForUpdate(review.id!!, before30Days)) {
-            review.updateMessageAndScore(dto.message, dto.score)
+            val newScore = dto.score
+            review.updateMessageAndScore(dto.message, newScore)
             elasticsearchListener.onReviewCreate(ReviewDetailsDTO(review))
-            return review.id!!
+
+            return ReviewScoreDTO(review.id!!, review.musicId, oldScore, newScore)
+
         } else {
             throw ReviewNotUpdatableException("It can be modified after 30 days of final modification.")
         }
@@ -112,7 +118,7 @@ class ReviewService(
     }
 
     @Transactional
-    fun deleteReview(reviewId: Long, userId: Long) {
+    fun deleteReview(reviewId: Long, userId: Long): ReviewScoreDTO {
         val review = reviewRepository.findReviewByIdAndUserId(reviewId, userId)
             ?: throw ReviewUpdateNotAuthorizedException("Not Authorized for Delete")
         val comments = commentRepository.findCommentsByReview(review)
@@ -124,6 +130,8 @@ class ReviewService(
 
         val commentIds = comments.map { it.id!! }
         elasticsearchListener.onReviewDelete(review.id!!, commentIds)
+
+        return ReviewScoreDTO(review.id!!, review.musicId, null, review.score.unaryMinus())
     }
 
     @Transactional

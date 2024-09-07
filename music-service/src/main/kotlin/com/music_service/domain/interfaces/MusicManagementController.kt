@@ -6,7 +6,7 @@ import com.music_service.domain.application.MusicService
 import com.music_service.domain.application.dto.request.MusicCreateDTO
 import com.music_service.domain.application.dto.request.MusicUpdateDTO
 import com.music_service.domain.interfaces.dto.APIResponse
-import com.music_service.domain.interfaces.dto.KafkaRecordDTO
+import com.music_service.domain.interfaces.dto.KafkaRequestDTO
 import com.music_service.global.util.RedisUtils
 import com.sound_bind.music_service.global.annotation.HeaderSubject
 import jakarta.validation.Valid
@@ -43,6 +43,13 @@ class MusicManagementController(private val musicService: MusicService) {
         return APIResponse.of("Music Created", musicId)
     }
 
+    @GetMapping("/{id}/musician")
+    @ResponseStatus(HttpStatus.OK)
+    fun lookUpMusicianId(@PathVariable id: String): APIResponse {
+        val musicianId = musicService.findMusicianIdByMusicId(id.toLong())
+        return APIResponse.of("Musician ID Found", musicianId)
+    }
+
     @GetMapping("/{id}/download")
     @ResponseStatus(HttpStatus.OK)
     fun downloadMusic(@PathVariable("id") id: String): ResponseEntity<Resource> {
@@ -75,11 +82,13 @@ class MusicManagementController(private val musicService: MusicService) {
         musicService.changeLikesFlag(id.toLong(), sub.toLong())?.let {
             val myInfo = RedisUtils.getJson("user:$sub", Map::class.java)
                 ?: throw IllegalArgumentException("Value is not Present by Key : user:$sub")
-            val record = KafkaRecordDTO(
+            val record = KafkaRequestDTO(
                 topic = "music-like-topic",
-                it.toString(),
-                content = "${myInfo["nickname"] as String} 님이 당신의 음원에 좋아요를 눌렀습니다.",
-                link = null
+                message = KafkaRequestDTO.KafkaNotificationDTO(
+                    userId = it,
+                    content = "${myInfo["nickname"] as String} 님이 당신의 음원에 좋아요를 눌렀습니다.",
+                    link = null
+                )
             )
             sendMessageToKafkaProducer(record)
         }
@@ -93,7 +102,7 @@ class MusicManagementController(private val musicService: MusicService) {
         return APIResponse.of("Music Deleted")
     }
 
-    private fun sendMessageToKafkaProducer(record: KafkaRecordDTO) =
+    private fun sendMessageToKafkaProducer(record: KafkaRequestDTO) =
         post(
             url = "http://localhost:9000/api/kafka",
             headers = mapOf("Content-Type" to "application/json"),

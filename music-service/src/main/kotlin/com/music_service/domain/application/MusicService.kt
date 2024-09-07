@@ -129,6 +129,25 @@ class MusicService(
     }
 
     @Transactional
+    @KafkaListener(groupId = "music-service-group", topics = ["review-score-topic"])
+    fun changeMusicScoreAverageByReviewTopic(@Payload payload: String) {
+        val obj = mapper.readValue(payload, Map::class.java)
+        val musicId = obj["musicId"] as Number
+        val score = obj["score"] as Double
+        val oldScore = obj["oldScore"] as Double?
+
+        val music = findMusicById(musicId.toLong())
+        oldScore?.let {
+            music.updateScoreByReviewUpdate(it, score)
+        } ?: run {
+            when {
+                score > 0 -> music.updateScoreByReviewAdd(score)
+                score < 0 -> music.updateScoreByReviewRemove(score)
+            }
+        }
+    }
+
+    @Transactional
     fun downloadMusic(id: Long): MusicFileResponseDTO {
         val music = findMusicById(id)
         val files = fileRepository.findFilesWhereMusicId(music.id!!)
