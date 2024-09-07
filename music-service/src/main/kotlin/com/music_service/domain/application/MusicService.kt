@@ -1,11 +1,12 @@
 package com.music_service.domain.application
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.music_service.domain.application.dto.request.MusicCreateDTO
 import com.music_service.domain.application.dto.request.MusicUpdateDTO
 import com.music_service.domain.application.dto.response.FileUploadResponseDTO
 import com.music_service.domain.application.dto.response.MusicDetailsDTO
 import com.music_service.domain.application.dto.response.MusicFileResponseDTO
-import com.music_service.domain.application.file.FileHandler
 import com.music_service.domain.application.listener.ElasticsearchListener
 import com.music_service.domain.application.listener.FileListener
 import com.music_service.domain.persistence.entity.FileEntity
@@ -22,7 +23,8 @@ import com.music_service.global.exception.MusicServiceException.MusicNotFoundExc
 import com.music_service.global.exception.MusicServiceException.MusicNotUpdatableException
 import com.music_service.global.exception.MusicServiceException.NegativeValueException
 import com.music_service.global.util.RedisUtils
-import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.kafka.annotation.KafkaListener
+import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -31,17 +33,10 @@ import java.time.LocalDateTime
 class MusicService(
     private val musicRepository: MusicRepository,
     private val fileRepository: FileRepository,
-    private val musicLikesRepository: MusicLikesRepository
+    private val musicLikesRepository: MusicLikesRepository,
+    private val fileListener: FileListener,
+    private val elasticsearchListener: ElasticsearchListener
 ) {
-
-    @Autowired
-    private lateinit var fileHandler: FileHandler
-
-    @Autowired
-    private lateinit var fileListener: FileListener
-
-    @Autowired
-    private lateinit var elasticsearchListener: ElasticsearchListener
 
     @Transactional
     fun uploadMusic(userId: Long, dto: MusicCreateDTO): Long {
@@ -59,13 +54,13 @@ class MusicService(
         val fileInfoList = arrayListOf<FileUploadResponseDTO>()
         val fileEntities = arrayListOf<FileEntity>()
 
-        val musicFileInfo = fileHandler.generateFileInfo(dto.musicFile)
+        val musicFileInfo = fileListener.generateFileInfo(dto.musicFile)
         val musicFileEntity = createFileEntity(MUSIC, musicFileInfo, music)
         fileInfoList.add(musicFileInfo)
         fileEntities.add(musicFileEntity)
 
         dto.imageFile?.let {
-            val imageFileInfo = fileHandler.generateFileInfo(it)
+            val imageFileInfo = fileListener.generateFileInfo(it)
             val imageFileEntity = createFileEntity(IMAGE, imageFileInfo, music)
             fileInfoList.add(imageFileInfo)
             fileEntities.add(imageFileEntity)
@@ -92,7 +87,7 @@ class MusicService(
             fileEntities.firstOrNull { fileEntity -> fileEntity.fileType == IMAGE }
                 ?.let { imageFileEntity ->
                     fileUrl = imageFileEntity.fileUrl
-                    fileHandler.generateFileInfo(imageFile).let { info ->
+                    fileListener.generateFileInfo(imageFile).let { info ->
                         imageFileInfo = info
                         imageFileEntity.updateImage(
                             info.originalFileName,
@@ -140,7 +135,7 @@ class MusicService(
 
         files.firstOrNull { fileEntity -> fileEntity.fileType == MUSIC }
             ?.let { musicFileEntity ->
-                val musicInfo = fileHandler.downloadMusic(musicFileEntity.fileUrl)
+                val musicInfo = fileListener.downloadMusic(musicFileEntity.fileUrl)
                 return MusicFileResponseDTO(
                     musicInfo.resource,
                     musicInfo.contentType,
@@ -161,6 +156,11 @@ class MusicService(
         music.softDelete()
     }
 
+    @Transactional(readOnly = true)
+    fun findMusicianIdByMusicId(musicId: Long): Long =
+        musicRepository.findMusicianIdById(musicId)
+            ?: throw MusicNotFoundException("Music not found with id: $musicId")
+
     private fun findMusicById(id: Long): Music =
         musicRepository.findById(id)
             .orElseThrow { MusicNotFoundException("Music not found with id: $id") }
@@ -176,4 +176,9 @@ class MusicService(
             fileInfo.fileUrl,
             music
         )
+
+    companion object {
+        private val mapper = jacksonObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    }
 }

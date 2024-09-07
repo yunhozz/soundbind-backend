@@ -1,7 +1,8 @@
-package com.music_service.domain.application.file
+package com.music_service.domain.application.file.impl
 
-import com.music_service.domain.application.file.FileHandler.Companion.ABSOLUTE_PATH
-import com.music_service.domain.application.file.FileHandler.Companion.ROOT_DIRECTORY
+import com.music_service.domain.application.file.ImageHandler
+import com.music_service.domain.application.file.impl.FileHandlerImpl.Companion.ABSOLUTE_PATH
+import com.music_service.domain.application.file.impl.FileHandlerImpl.Companion.ROOT_DIRECTORY
 import org.springframework.core.io.InputStreamResource
 import org.springframework.core.io.Resource
 import java.nio.file.Files
