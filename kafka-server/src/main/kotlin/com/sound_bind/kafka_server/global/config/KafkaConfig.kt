@@ -30,12 +30,12 @@ class KafkaConfig {
     }
 
     @Bean(KAFKA_TEMPLATE)
-    fun kafkaTemplate(@Qualifier(PRODUCER_FACTORY) factory: ProducerFactory<String, Map<String, String>>) = KafkaTemplate(factory)
+    fun kafkaTemplate(@Qualifier(PRODUCER_FACTORY) factory: ProducerFactory<String, Map<String, Any>>) = KafkaTemplate(factory)
 
     @Configuration
     class KafkaProducerConfig {
         @Bean(PRODUCER_FACTORY)
-        fun producerFactory(): ProducerFactory<String, Map<String, String>> {
+        fun producerFactory(): ProducerFactory<String, Map<String, Any>> {
             val config = mapOf(
                 ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to BOOTSTRAP_SERVERS,
                 ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java,
@@ -48,7 +48,7 @@ class KafkaConfig {
     @Configuration
     class KafkaConsumerConfig {
         @Bean(CONSUMER_FACTORY)
-        fun consumerFactory(): ConsumerFactory<String, Map<String, String>> {
+        fun consumerFactory(): ConsumerFactory<String, Map<String, Any>> {
             val config = mapOf(
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to BOOTSTRAP_SERVERS,
                 ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
@@ -59,8 +59,8 @@ class KafkaConfig {
         }
 
         @Bean(LISTENER_CONTAINER_FACTORY)
-        fun listenerContainerFactory(@Qualifier(CONSUMER_FACTORY) factory: ConsumerFactory<String, Map<String, String>>) =
-            object: ConcurrentKafkaListenerContainerFactory<String, Map<String, String>>() {
+        fun listenerContainerFactory(@Qualifier(CONSUMER_FACTORY) factory: ConsumerFactory<String, Map<String, Any>>) =
+            object: ConcurrentKafkaListenerContainerFactory<String, Map<String, Any>>() {
                 init {
                     consumerFactory = factory
                 }

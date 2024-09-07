@@ -58,13 +58,13 @@ class NotificationService(
         topics = ["music-like-topic", "review-like-topic", "review-added-topic", "comment-added-topic"],
     )
     fun sendMessage(@Payload payload: String): String {
-        val payloadObj = mapper.readValue(payload, Map::class.java)
-        val userId = payloadObj["userId"] as String
-        val content = payloadObj["content"] as String
-        val link = payloadObj["link"] as? String
+        val obj = mapper.readValue(payload, Map::class.java)
+        val userId = obj["userId"] as Number
+        val content = obj["content"] as String
+        val link = obj["link"] as? String
 
-        val notification = Notification.create(userId, content, link)
-        emitterRepository.findEmittersByUserId(userId)
+        val notification = Notification.create(userId.toString(), content, link)
+        emitterRepository.findEmittersByUserId(userId.toString())
             .forEach { (emitterId, emitter) ->
                 emitterRepository.saveNotification(emitterId, notification)
                 sendToClient(emitter, emitterId, notification.message)

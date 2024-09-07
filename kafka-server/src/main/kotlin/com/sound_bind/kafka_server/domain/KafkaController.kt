@@ -14,7 +14,7 @@ import java.util.concurrent.Executors
 
 @RestController
 @RequestMapping("/api/kafka")
-class KafkaController(private val kafkaTemplate: KafkaTemplate<String, Map<String, String>>) {
+class KafkaController(private val kafkaTemplate: KafkaTemplate<String, Map<String, Any>>) {
 
     companion object {
         private val mapper = jacksonObjectMapper()
@@ -41,7 +41,7 @@ class KafkaController(private val kafkaTemplate: KafkaTemplate<String, Map<Strin
 
                 val kafkaMessage = mapper.readValue(
                     mapper.writeValueAsString(message),
-                    object: TypeReference<Map<String, String>>() {}
+                    object: TypeReference<Map<String, Any>>() {}
                 )
                 kafkaTemplate.send(topic, kafkaMessage)
                 latch.countDown()
