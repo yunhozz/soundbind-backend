@@ -3,6 +3,8 @@ package com.sound_bind.api_gateway.filter
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.sound_bind.api_gateway.config.WebClientConfig.Companion.COMMON_WEB_CLIENT
 import com.sound_bind.api_gateway.config.WebClientConfig.Companion.SSE_WEB_CLIENT
+import com.sound_bind.api_gateway.handler.exception.BusinessException.TokenNotFoundOnCookieException
+import com.sound_bind.api_gateway.handler.exception.BusinessException.TokenRefreshFailException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.cloud.gateway.filter.GatewayFilterChain
@@ -43,7 +45,7 @@ class AuthorizationHeaderFilter(
 
                 val cookie = request.cookies.getFirst("atk")
                 val cookieValue = cookie?.value
-                    ?: throw RuntimeException("Token is Missing!!")
+                    ?: throw TokenNotFoundOnCookieException("Token is missing!! Need login.")
 
                 val bytes = Base64.getUrlDecoder().decode(cookieValue)
                 val token = ByteArrayInputStream(bytes).use { bais ->
@@ -61,7 +63,10 @@ class AuthorizationHeaderFilter(
 
     private fun addSubjectOnRequest(token: String, exchange: ServerWebExchange, chain: GatewayFilterChain): Mono<Void> {
         val request = exchange.request
-        val webClient: WebClient = if (request.uri.toString() == SSE_SUBSCRIBE_URI) sseWebClient else commonWebClient
+        val webClient =
+            if (request.uri.toString() == SSE_SUBSCRIBE_URI) sseWebClient
+            else commonWebClient
+
         return webClient
             .get()
             .uri(USER_SUBJECT_INQUIRY_URI)
@@ -78,15 +83,13 @@ class AuthorizationHeaderFilter(
                         it.add("role", obj["role"] as String)
                     }
                     .build()
-
                 val exchangeMutate = exchange.mutate()
                     .request(requestMutate)
                     .build()
-
                 chain.filter(exchangeMutate)
             }
             .onErrorResume {
-                log.warn("Token Expired!!")
+                log.debug("Token Expired!!")
                 tokenRefreshRequest(exchange, chain)
             }
     }
@@ -94,7 +97,7 @@ class AuthorizationHeaderFilter(
     private fun tokenRefreshRequest(exchange: ServerWebExchange, chain: GatewayFilterChain): Mono<Void> {
         val request = exchange.request
         val cookie = request.cookies.getFirst("atk")
-            ?: return Mono.error(RuntimeException("Token is missing!! Need login."))
+            ?: return Mono.error(TokenNotFoundOnCookieException("Token is missing!! Need login."))
 
         return commonWebClient
             .get()
@@ -107,16 +110,16 @@ class AuthorizationHeaderFilter(
                 response.bodyToMono(String::class.java)
                     .flatMap {
                         val obj = jacksonObjectMapper().readValue(it, Map::class.java)
-                        val accessToken = obj["accessToken"] as String
-                        cookies?.forEach { cookie ->
-                            val httpHeaders = exchange.response.headers
-                            httpHeaders.add(HttpHeaders.SET_COOKIE, cookie)
+                        obj["accessToken"]?.let { accessToken ->
+                            cookies?.forEach { cookie ->
+                                val httpHeaders = exchange.response.headers
+                                httpHeaders.add(HttpHeaders.SET_COOKIE, cookie)
+                            }
+                            addSubjectOnRequest(accessToken.toString(), exchange, chain)
+                        } ?: run {
+                            val errMsg = obj["message"] as String
+                            Mono.error(TokenRefreshFailException(errMsg))
                         }
-                        addSubjectOnRequest(accessToken, exchange, chain)
-                    }
-                    .onErrorResume {
-                        log.error("Error Message : ${it.localizedMessage}", it)
-                        Mono.error(RuntimeException(it.localizedMessage))
                     }
             }
     }

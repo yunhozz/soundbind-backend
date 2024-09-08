@@ -1,41 +1,46 @@
 package com.music_service.domain.application
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.music_service.domain.application.dto.request.MusicCreateDTO
 import com.music_service.domain.application.dto.request.MusicUpdateDTO
+import com.music_service.domain.application.dto.response.FileUploadResponseDTO
+import com.music_service.domain.application.dto.response.MusicDetailsDTO
 import com.music_service.domain.application.dto.response.MusicFileResponseDTO
-import com.music_service.domain.application.file.ImageFileProcessor
-import com.music_service.domain.application.file.MusicFileProcessor
+import com.music_service.domain.application.listener.ElasticsearchListener
+import com.music_service.domain.application.listener.FileListener
 import com.music_service.domain.persistence.entity.FileEntity
-import com.music_service.domain.persistence.entity.FileEntity.FileType.IMAGE
-import com.music_service.domain.persistence.entity.FileEntity.FileType.MUSIC
+import com.music_service.domain.persistence.entity.FileType
+import com.music_service.domain.persistence.entity.FileType.IMAGE
+import com.music_service.domain.persistence.entity.FileType.MUSIC
+import com.music_service.domain.persistence.entity.Genre
 import com.music_service.domain.persistence.entity.Music
+import com.music_service.domain.persistence.entity.MusicLikes
 import com.music_service.domain.persistence.repository.FileRepository
+import com.music_service.domain.persistence.repository.MusicLikesRepository
 import com.music_service.domain.persistence.repository.MusicRepository
-import com.music_service.domain.persistence.repository.dto.MusicDetailsQueryDTO
-import com.music_service.domain.persistence.repository.dto.MusicSimpleQueryDTO
-import com.music_service.global.exception.MusicServiceException.MusicFileNotExistException
 import com.music_service.global.exception.MusicServiceException.MusicNotFoundException
+import com.music_service.global.exception.MusicServiceException.MusicNotUpdatableException
+import com.music_service.global.exception.MusicServiceException.NegativeValueException
 import com.music_service.global.util.RedisUtils
-import org.springframework.core.io.Resource
-import org.springframework.data.domain.Pageable
-import org.springframework.data.domain.Slice
+import org.springframework.kafka.annotation.KafkaListener
+import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.io.IOException
+import java.time.LocalDateTime
 
 @Service
 class MusicService(
     private val musicRepository: MusicRepository,
     private val fileRepository: FileRepository,
-    private val musicHandler: MusicFileProcessor,
-    private val imageHandler: ImageFileProcessor
+    private val musicLikesRepository: MusicLikesRepository,
+    private val fileListener: FileListener,
+    private val elasticsearchListener: ElasticsearchListener
 ) {
-    // Spring rolls back only for RuntimeException, Error by default
-    @Transactional(rollbackFor = [IOException::class])
-    fun uploadMusic(userId: Long, dto: MusicCreateDTO): Long? {
-        val genres: Set<Music.Genre> = dto.genres.map {
-            Music.Genre.of(it)
-        }.toHashSet()
+
+    @Transactional
+    fun uploadMusic(userId: Long, dto: MusicCreateDTO): Long {
+        val genres = dto.genres.map { Genre.of(it) }.toSet()
         val userInfo = RedisUtils.getJson("user:$userId", Map::class.java)
             ?: throw IllegalArgumentException("Value is not Present by Key : user:$userId")
         val music = Music.create(
@@ -44,102 +49,177 @@ class MusicService(
             dto.title,
             genres
         )
+        musicRepository.save(music)
 
-        val musicFileInfo = musicHandler.upload(dto.musicFile)
+        val fileInfoList = arrayListOf<FileUploadResponseDTO>()
+        val fileEntities = arrayListOf<FileEntity>()
+
+        val musicFileInfo = fileListener.generateFileInfo(dto.musicFile)
         val musicFileEntity = createFileEntity(MUSIC, musicFileInfo, music)
-        fileRepository.save(musicFileEntity)
+        fileInfoList.add(musicFileInfo)
+        fileEntities.add(musicFileEntity)
 
         dto.imageFile?.let {
-            val imageFileInfo = imageHandler.upload(it)
+            val imageFileInfo = fileListener.generateFileInfo(it)
             val imageFileEntity = createFileEntity(IMAGE, imageFileInfo, music)
-            fileRepository.save(imageFileEntity)
+            fileInfoList.add(imageFileInfo)
+            fileEntities.add(imageFileEntity)
         }
 
-        musicRepository.save(music)
-        return music.id
+        fileListener.onMusicUpload(fileInfoList)
+        fileRepository.saveAll(fileEntities)
+        elasticsearchListener.onMusicUpload(MusicDetailsDTO(music, fileEntities))
+
+        return music.id!!
     }
 
-    @Transactional(readOnly = true)
-    fun findMusicDetails(id: Long): MusicDetailsQueryDTO = musicRepository.findMusicDetailsById(id)
-        ?: throw MusicNotFoundException("Music not found with id: $id")
-
-    @Transactional(readOnly = true)
-    fun findMusicsByKeyword(keyword: String, pageable: Pageable): Slice<MusicSimpleQueryDTO>
-        = musicRepository.findMusicSimpleListByKeyword(keyword, pageable)
-
     @Transactional
-    fun updateMusic(id: Long, dto: MusicUpdateDTO): Long? {
-        val music = findMusicById(id)
-        music.id?.let {
-            val files = fileRepository.findFilesWhereMusicId(it)
-            files.forEach { file ->
-                if (file.fileType == IMAGE) {
-                    imageHandler.update(file.fileUrl, dto.imageFile)
-                    fileRepository.save(file)
+    fun updateMusicInformation(id: Long, dto: MusicUpdateDTO): Long {
+        val before30Days = LocalDateTime.now().minusDays(30)
+        val music = musicRepository.findMusicEligibleForUpdateById(id, before30Days)
+            ?: throw MusicNotUpdatableException("It can be modified after 30 days of final modification.")
+        val fileEntities = fileRepository.findFilesWhereMusicId(music.id!!)
+
+        var imageFileInfo: FileUploadResponseDTO? = null
+        var fileUrl: String? = null
+
+        dto.imageFile?.let { imageFile ->
+            fileEntities.firstOrNull { fileEntity -> fileEntity.fileType == IMAGE }
+                ?.let { imageFileEntity ->
+                    fileUrl = imageFileEntity.fileUrl
+                    fileListener.generateFileInfo(imageFile).let { info ->
+                        imageFileInfo = info
+                        imageFileEntity.updateImage(
+                            info.originalFileName,
+                            info.savedName,
+                            info.fileUrl
+                        )
+                    }
                 }
-            }
         }
+
+        fileListener.onMusicUpdate(fileUrl, imageFileInfo)
         music.updateInfo(
             dto.title,
-            dto.genres.map { Music.Genre.of(it) }
-                .toMutableSet()
+            dto.genres.map { Genre.of(it) }.toSet()
         )
-        return music.id
+        elasticsearchListener.onMusicUpload(MusicDetailsDTO(music, fileEntities))
+
+        return music.id!!
+    }
+
+    @Transactional
+    fun changeLikesFlag(musicId: Long, userId: Long): Long? {
+        musicLikesRepository.findMusicLikesWithMusicByMusicId(musicId)?.let { ml ->
+            try {
+                ml.changeFlag()
+                if (ml.flag) return ml.music.userId
+            } catch (e: IllegalArgumentException) {
+                throw NegativeValueException(e.localizedMessage)
+            }
+            return null
+        } ?: run {
+            val music = findMusicById(musicId).also { music ->
+                val musicLikes = MusicLikes(music, userId)
+                musicLikesRepository.save(musicLikes)
+                music.addLikes(1)
+            }
+            return music.userId
+        }
+    }
+
+    @Transactional
+    @KafkaListener(groupId = "music-service-group", topics = ["review-score-topic"])
+    fun changeMusicScoreAverageByReviewTopic(@Payload payload: String) {
+        val obj = mapper.readValue(payload, Map::class.java)
+        val musicId = obj["musicId"] as Number
+        val score = obj["score"] as Double
+        val oldScore = obj["oldScore"] as Double?
+
+        val music = findMusicById(musicId.toLong())
+        oldScore?.let {
+            music.updateScoreByReviewUpdate(it, score)
+        } ?: run {
+            when {
+                score > 0 -> music.updateScoreByReviewAdd(score)
+                score < 0 -> music.updateScoreByReviewRemove(score)
+            }
+        }
     }
 
     @Transactional
     fun downloadMusic(id: Long): MusicFileResponseDTO {
         val music = findMusicById(id)
-        return music.id?.let {
-            val files = fileRepository.findFilesWhereMusicId(it)
-            var musicInfo: Pair<Resource, String>?
-            files.forEach { file ->
-                if (file.fileType == MUSIC) {
-                    musicInfo = musicHandler.download(file.fileUrl)
-                    return musicInfo?.let { info ->
-                        MusicFileResponseDTO(
-                            musicFile = info.first,
-                            contentType = info.second,
-                            fileName = file.originalFileName
-                        )
-                    } ?: throw MusicFileNotExistException("Music file download failed for id: $id")
-                }
-            }
-            throw MusicFileNotExistException("Music file not found for id: $id")
-        } ?: throw MusicNotFoundException("Music not found with id: $id")
+        val files = fileRepository.findFilesWhereMusicId(music.id!!)
+
+        files.firstOrNull { fileEntity -> fileEntity.fileType == MUSIC }
+            ?.let { musicFileEntity ->
+                val musicInfo = fileListener.downloadMusic(musicFileEntity.fileUrl)
+                return MusicFileResponseDTO(
+                    musicInfo.resource,
+                    musicInfo.contentType,
+                    fileName = musicFileEntity.originalFileName
+                )
+            } ?: throw MusicNotFoundException("Music not found with id: $id")
     }
 
     @Transactional
     fun deleteMusic(id: Long) {
         val music = findMusicById(id)
-        music.id?.let {
-            val files = fileRepository.findFilesWhereMusicId(it)
-            files.forEach { file ->
-                when(file.fileType) {
-                    MUSIC -> musicHandler.delete(file.fileUrl)
-                    IMAGE -> imageHandler.delete(file.fileUrl)
-                }
-            }
-            fileRepository.deleteAllInBatch(files)
-            music.softDelete()
-        }
+        val files = fileRepository.findFilesWhereMusicId(music.id!!)
+
+        fileListener.onMusicDelete(files.map { it.fileUrl })
+        elasticsearchListener.onMusicDelete(music.id!!, files.map { it.id!! })
+
+        fileRepository.deleteAllInBatch(files)
+        music.softDelete()
     }
 
-    private fun findMusicById(id: Long): Music {
-        return musicRepository.findById(id)
-            .orElseThrow { MusicNotFoundException("Music not found with id: $id") }
+    @Transactional
+    @KafkaListener(groupId = "music-service-group", topics = ["user-deletion-topic"])
+    fun deleteMusicsByUserWithdraw(@Payload payload: String) {
+        val obj = mapper.readValue(payload, Map::class.java)
+        val userId = obj["userId"] as Number
+
+        val musics = musicRepository.findMusicByUserId(userId.toLong())
+        val musicLikesList = musicLikesRepository.findMusicLikesByUserId(userId.toLong())
+        musicLikesRepository.deleteAllInBatch(musicLikesList)
+
+        val fileUrls = arrayListOf<String>()
+        musics.forEach { music ->
+            val files = fileRepository.findFilesWhereMusicId(music.id!!)
+            fileUrls.addAll(files.map { it.fileUrl })
+
+            elasticsearchListener.onMusicDelete(music.id!!, files.map { it.id!! })
+            music.softDelete()
+            fileRepository.deleteAllInBatch(files)
+        }
+        fileListener.onMusicDelete(fileUrls)
     }
+
+    @Transactional(readOnly = true)
+    fun findMusicianIdByMusicId(musicId: Long): Long =
+        musicRepository.findMusicianIdById(musicId)
+            ?: throw MusicNotFoundException("Music not found with id: $musicId")
+
+    private fun findMusicById(id: Long): Music =
+        musicRepository.findById(id)
+            .orElseThrow { MusicNotFoundException("Music not found with id: $id") }
 
     private fun createFileEntity(
-        fileType: FileEntity.FileType,
-        fileInfo: Triple<String, String, String>,
-        music: Music,
-    ): FileEntity
-        = FileEntity.create(
+        fileType: FileType,
+        fileInfo: FileUploadResponseDTO,
+        music: Music
+    ) = FileEntity.create(
             fileType,
-            originalFileName = fileInfo.first,
-            savedName = fileInfo.second,
-            fileUrl = fileInfo.third,
+            fileInfo.originalFileName,
+            fileInfo.savedName,
+            fileInfo.fileUrl,
             music
         )
+
+    companion object {
+        private val mapper = jacksonObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    }
 }

@@ -30,7 +30,7 @@ spring:
             - AuthorizationHeaderFilter
             - AuthenticationUserFilter
           predicates:
-            - Path=/api/music/**
+            - Path=/api/musics/**
         - id: review-service
           uri: lb://REVIEW-SERVICE
           filters:

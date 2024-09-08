@@ -1,23 +1,27 @@
 package com.sound_bind.review_service.domain.application
 
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.sound_bind.review_service.domain.application.dto.request.ReviewCreateDTO
 import com.sound_bind.review_service.domain.application.dto.request.ReviewUpdateDTO
 import com.sound_bind.review_service.domain.application.dto.response.ReviewDetailsDTO
+import com.sound_bind.review_service.domain.application.dto.response.ReviewScoreDTO
+import com.sound_bind.review_service.domain.application.listener.ReviewElasticsearchListener
 import com.sound_bind.review_service.domain.persistence.entity.Review
 import com.sound_bind.review_service.domain.persistence.entity.ReviewLikes
 import com.sound_bind.review_service.domain.persistence.repository.CommentRepository
 import com.sound_bind.review_service.domain.persistence.repository.ReviewLikesRepository
-import com.sound_bind.review_service.domain.persistence.repository.ReviewQueryRepository.ReviewSort
 import com.sound_bind.review_service.domain.persistence.repository.ReviewRepository
-import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorRequestDTO
+import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorDTO
 import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewQueryDTO
+import com.sound_bind.review_service.global.enums.ReviewSort
 import com.sound_bind.review_service.global.exception.ReviewServiceException.NegativeValueException
 import com.sound_bind.review_service.global.exception.ReviewServiceException.ReviewAlreadyExistException
 import com.sound_bind.review_service.global.exception.ReviewServiceException.ReviewNotFoundException
 import com.sound_bind.review_service.global.exception.ReviewServiceException.ReviewNotUpdatableException
 import com.sound_bind.review_service.global.exception.ReviewServiceException.ReviewUpdateNotAuthorizedException
 import com.sound_bind.review_service.global.util.RedisUtils
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Slice
 import org.springframework.kafka.annotation.KafkaListener
@@ -33,8 +37,11 @@ class ReviewService(
     private val reviewLikesRepository: ReviewLikesRepository
 ) {
 
+    @Autowired
+    private lateinit var elasticsearchListener: ReviewElasticsearchListener
+
     @Transactional
-    fun createReview(musicId: Long, userId: Long, dto: ReviewCreateDTO): Long? {
+    fun createReview(musicId: Long, userId: Long, dto: ReviewCreateDTO): Long {
         if (reviewRepository.existsReviewByMusicIdAndUserId(musicId, userId)) {
             throw ReviewAlreadyExistException("Review already exists")
         }
@@ -48,21 +55,28 @@ class ReviewService(
             dto.score
         )
         reviewRepository.save(review)
-        return review.id
+        elasticsearchListener.onReviewCreate(ReviewDetailsDTO(review))
+
+        return review.id!!
     }
 
     @Transactional
-    fun updateReviewMessageAndScore(reviewId: Long, userId: Long, dto: ReviewUpdateDTO): Long? {
+    fun updateReviewMessageAndScore(reviewId: Long, userId: Long, dto: ReviewUpdateDTO): ReviewScoreDTO {
         val review = reviewRepository.findReviewByIdAndUserId(reviewId, userId)
             ?: throw ReviewUpdateNotAuthorizedException("Not Authorized for Update")
-        review.id?.let {
-            val before30Days = LocalDateTime.now().minusDays(30)
-            if (reviewRepository.isReviewEligibleForUpdate(it, before30Days)) {
-                review.updateMessageAndScore(dto.message, dto.score)
-                return review.id
-            }
+        val oldScore = review.score
+        val before30Days = LocalDateTime.now().minusDays(30)
+
+        if (reviewRepository.isReviewEligibleForUpdate(review.id!!, before30Days)) {
+            val newScore = dto.score
+            review.updateMessageAndScore(dto.message, newScore)
+            elasticsearchListener.onReviewCreate(ReviewDetailsDTO(review))
+
+            return ReviewScoreDTO(review.id!!, review.musicId, oldScore, newScore)
+
+        } else {
+            throw ReviewNotUpdatableException("It can be modified after 30 days of final modification.")
         }
-        throw ReviewNotUpdatableException("It can be modified 30 days after the initial creation.")
     }
 
     @Transactional(readOnly = true)
@@ -72,17 +86,17 @@ class ReviewService(
     }
 
     @Transactional(readOnly = true)
-    fun findReviewListByMusicId(
+    fun findReviewListByMusicIdV1(
         musicId: Long,
         userId: Long,
-        sort: String,
-        dto: ReviewCursorRequestDTO,
+        reviewSort: ReviewSort,
+        dto: ReviewCursorDTO?,
         pageable: Pageable
     ): Slice<ReviewQueryDTO> =
         reviewRepository.findReviewsOnMusic(
             musicId,
             userId,
-            ReviewSort.of(sort),
+            reviewSort,
             dto,
             pageable
         )
@@ -108,25 +122,39 @@ class ReviewService(
     }
 
     @Transactional
-    fun deleteReview(reviewId: Long, userId: Long) {
+    fun deleteReview(reviewId: Long, userId: Long): ReviewScoreDTO {
         val review = reviewRepository.findReviewByIdAndUserId(reviewId, userId)
             ?: throw ReviewUpdateNotAuthorizedException("Not Authorized for Delete")
-        review.id?.let {
-            val comments = commentRepository.findCommentsByReview(review)
-            val reviewLikesList = reviewLikesRepository.findByReview(review)
+        val comments = commentRepository.findCommentsByReview(review)
+        val reviewLikesList = reviewLikesRepository.findByReview(review)
 
-            comments.forEach { comment -> comment.softDelete() }
-            review.softDelete()
-            reviewLikesRepository.deleteAllInBatch(reviewLikesList)
-        }
+        comments.forEach { it.softDelete() }
+        reviewLikesRepository.deleteAllInBatch(reviewLikesList)
+        review.softDelete()
+
+        val commentIds = comments.map { it.id!! }
+        elasticsearchListener.onReviewDelete(review.id!!, commentIds)
+
+        return ReviewScoreDTO(review.id!!, review.musicId, null, review.score.unaryMinus())
     }
 
     @Transactional
-    @KafkaListener(topics = ["user-deletion-topic"], groupId = "review-service-group")
-    fun deleteReviewByUserWithdraw(@Payload message: String) {
-        val obj = jacksonObjectMapper().readValue(message, Map::class.java)
-        val userId = obj["userId"].toString()
-        reviewRepository.deleteReviewsByUserId(LocalDateTime.now(), userId.toLong())
+    @KafkaListener(groupId = "review-service-group", topics = ["user-deletion-topic"])
+    fun deleteReviewsByUserWithdraw(@Payload payload: String) {
+        val obj = mapper.readValue(payload, Map::class.java)
+        val userId = (obj["userId"] as Number).toLong()
+        val reviews = reviewRepository.findReviewsByUserId(userId)
+
+        reviews.forEach { review ->
+            val comments = commentRepository.findCommentsByReview(review)
+            val reviewLikesList = reviewLikesRepository.findByReview(review)
+
+            comments.forEach { it.softDelete() }
+            reviewLikesRepository.deleteAllInBatch(reviewLikesList)
+            review.softDelete()
+        }
+        elasticsearchListener.onReviewsDeleteByUserWithdraw(userId)
+        reviewRepository.deleteReviewsByUserId(LocalDateTime.now(), userId)
     }
 
     fun getUserInformationOnRedis(userId: Long) =
@@ -136,4 +164,9 @@ class ReviewService(
     private fun findReviewById(id: Long): Review =
         reviewRepository.findById(id)
             .orElseThrow { ReviewNotFoundException("Review not found: $id") }
+
+    companion object {
+        private val mapper = jacksonObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    }
 }

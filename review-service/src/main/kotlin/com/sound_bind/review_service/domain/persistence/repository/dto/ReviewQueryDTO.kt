@@ -7,13 +7,19 @@ data class ReviewQueryDTO @QueryProjection constructor(
     val id: Long,
     val userId: Long,
     val userNickname: String,
-    val userImageUrl: String,
+    val userImageUrl: String?,
     val message: String,
     val score: Double,
-    val numberOfComments: Int,
+    val commentNum: Int,
     val likes: Int,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime
 ) {
     var isLiked: Boolean? = null
 }
+
+data class ReviewPartialQueryDTO @QueryProjection constructor(
+    val id: Long,
+    val commentNum: Int,
+    val likes: Int
+)
