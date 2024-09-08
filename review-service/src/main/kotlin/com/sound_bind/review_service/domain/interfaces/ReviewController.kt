@@ -3,7 +3,6 @@ package com.sound_bind.review_service.domain.interfaces
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.review_service.domain.interfaces.dto.APIResponse
-import com.sound_bind.review_service.domain.application.ElasticsearchService
 import com.sound_bind.review_service.domain.application.ReviewService
 import com.sound_bind.review_service.domain.application.dto.request.ReviewCreateDTO
 import com.sound_bind.review_service.domain.application.dto.request.ReviewUpdateDTO
@@ -16,8 +15,6 @@ import khttp.get
 import khttp.post
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
-import org.springframework.kafka.annotation.KafkaListener
-import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -31,10 +28,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/reviews")
-class ReviewController(
-    private val reviewService: ReviewService,
-    private val elasticsearchService: ElasticsearchService
-) {
+class ReviewController(private val reviewService: ReviewService) {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -81,19 +75,7 @@ class ReviewController(
         return APIResponse.of("Review found", result)
     }
 
-    @GetMapping("/found")
-    @ResponseStatus(HttpStatus.OK)
-    fun lookUpReviewsInMusicByDefault(@HeaderSubject sub: String, @RequestParam musicId: String): APIResponse {
-        val result = elasticsearchService.findReviewListByMusicIdV2(
-            musicId.toLong(),
-            userId = sub.toLong(),
-            reviewSort = ReviewSort.LIKES,
-            dto = null
-        )
-        return APIResponse.of("Reviews found", result)
-    }
-
-    @PostMapping("/found/v1")
+    @PostMapping("/found")
     @ResponseStatus(HttpStatus.CREATED)
     fun lookupReviewsInMusicByConditionsV1(
         @HeaderSubject sub: String,
@@ -108,23 +90,6 @@ class ReviewController(
             reviewSort = ReviewSort.of(sort),
             dto,
             pageable = PageRequest.of(page.toInt(), 20)
-        )
-        return APIResponse.of("Reviews found", result)
-    }
-
-    @PostMapping("/found/v2")
-    @ResponseStatus(HttpStatus.CREATED)
-    fun lookupReviewsInMusicByConditionsV2(
-        @HeaderSubject sub: String,
-        @RequestParam musicId: String,
-        @RequestParam(required = false, defaultValue = "likes") sort: String,
-        @RequestBody(required = false) dto: ReviewCursorDTO,
-    ): APIResponse {
-        val result = elasticsearchService.findReviewListByMusicIdV2(
-            musicId.toLong(),
-            userId = sub.toLong(),
-            reviewSort = ReviewSort.of(sort),
-            dto
         )
         return APIResponse.of("Reviews found", result)
     }
