@@ -183,14 +183,6 @@ class ReviewController(
         return APIResponse.of("Review deleted")
     }
 
-    @KafkaListener(groupId = "review-service-group", topics = ["user-deletion-topic"])
-    fun deleteReviewsByUserWithdraw(@Payload message: String) {
-        val obj = mapper.readValue(message, Map::class.java)
-        val userId = obj["userId"] as Number
-        reviewService.deleteReviewsByUserWithdraw(userId.toLong())
-        elasticsearchService.deleteReviewsByUserIdInElasticSearch(userId.toLong())
-    }
-
     companion object {
         private val mapper = jacksonObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)

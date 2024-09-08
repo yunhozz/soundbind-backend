@@ -8,4 +8,6 @@ interface MusicLikesRepository: JpaRepository<MusicLikes, Long> {
 
     @Query("select ml from MusicLikes ml join fetch ml.music m where m.id = :musicId")
     fun findMusicLikesWithMusicByMusicId(musicId: Long): MusicLikes?
+
+    fun findMusicLikesByUserId(userId: Long): List<MusicLikes>
 }

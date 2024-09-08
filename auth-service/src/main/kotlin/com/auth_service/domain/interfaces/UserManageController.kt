@@ -63,7 +63,7 @@ class UserManageController(
         CookieUtils.deleteAllCookies(request, response)
         val record = mapOf(
             "topic" to "user-deletion-topic",
-            "message" to mapOf("userId" to sub)
+            "message" to mapOf("userId" to sub.toLong())
         )
         post(
             url = "http://localhost:9000/api/kafka",

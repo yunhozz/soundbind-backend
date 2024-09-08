@@ -1,5 +1,7 @@
 package com.sound_bind.review_service.domain.application
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.sound_bind.review_service.domain.application.dto.request.ReviewCreateDTO
 import com.sound_bind.review_service.domain.application.dto.request.ReviewUpdateDTO
 import com.sound_bind.review_service.domain.application.dto.response.ReviewDetailsDTO
@@ -22,6 +24,8 @@ import com.sound_bind.review_service.global.util.RedisUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Slice
+import org.springframework.kafka.annotation.KafkaListener
+import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -135,8 +139,12 @@ class ReviewService(
     }
 
     @Transactional
-    fun deleteReviewsByUserWithdraw(userId: Long) {
+    @KafkaListener(groupId = "review-service-group", topics = ["user-deletion-topic"])
+    fun deleteReviewsByUserWithdraw(@Payload payload: String) {
+        val obj = mapper.readValue(payload, Map::class.java)
+        val userId = (obj["userId"] as Number).toLong()
         val reviews = reviewRepository.findReviewsByUserId(userId)
+
         reviews.forEach { review ->
             val comments = commentRepository.findCommentsByReview(review)
             val reviewLikesList = reviewLikesRepository.findByReview(review)
@@ -145,8 +153,8 @@ class ReviewService(
             reviewLikesRepository.deleteAllInBatch(reviewLikesList)
             review.softDelete()
         }
-        reviewRepository.deleteReviewsByUserId(LocalDateTime.now(), userId)
         elasticsearchListener.onReviewsDeleteByUserWithdraw(userId)
+        reviewRepository.deleteReviewsByUserId(LocalDateTime.now(), userId)
     }
 
     fun getUserInformationOnRedis(userId: Long) =
@@ -156,4 +164,9 @@ class ReviewService(
     private fun findReviewById(id: Long): Review =
         reviewRepository.findById(id)
             .orElseThrow { ReviewNotFoundException("Review not found: $id") }
+
+    companion object {
+        private val mapper = jacksonObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    }
 }

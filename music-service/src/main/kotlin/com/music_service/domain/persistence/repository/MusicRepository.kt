@@ -12,4 +12,6 @@ interface MusicRepository: JpaRepository<Music, Long>, MusicQueryRepository {
 
     @Query("select m.userId from Music m where m.id = :id")
     fun findMusicianIdById(id: Long): Long?
+
+    fun findMusicByUserId(userId: Long): List<Music>
 }

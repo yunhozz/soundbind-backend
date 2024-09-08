@@ -175,6 +175,28 @@ class MusicService(
         music.softDelete()
     }
 
+    @Transactional
+    @KafkaListener(groupId = "music-service-group", topics = ["user-deletion-topic"])
+    fun deleteMusicsByUserWithdraw(@Payload payload: String) {
+        val obj = mapper.readValue(payload, Map::class.java)
+        val userId = obj["userId"] as Number
+
+        val musics = musicRepository.findMusicByUserId(userId.toLong())
+        val musicLikesList = musicLikesRepository.findMusicLikesByUserId(userId.toLong())
+        musicLikesRepository.deleteAllInBatch(musicLikesList)
+
+        val fileUrls = arrayListOf<String>()
+        musics.forEach { music ->
+            val files = fileRepository.findFilesWhereMusicId(music.id!!)
+            fileUrls.addAll(files.map { it.fileUrl })
+
+            elasticsearchListener.onMusicDelete(music.id!!, files.map { it.id!! })
+            music.softDelete()
+            fileRepository.deleteAllInBatch(files)
+        }
+        fileListener.onMusicDelete(fileUrls)
+    }
+
     @Transactional(readOnly = true)
     fun findMusicianIdByMusicId(musicId: Long): Long =
         musicRepository.findMusicianIdById(musicId)
