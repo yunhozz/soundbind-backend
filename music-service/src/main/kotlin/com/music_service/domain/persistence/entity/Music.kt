@@ -1,5 +1,6 @@
 package com.music_service.domain.persistence.entity
 
+import jakarta.persistence.CascadeType
 import jakarta.persistence.CollectionTable
 import jakarta.persistence.ElementCollection
 import jakarta.persistence.Entity
@@ -58,7 +59,12 @@ class Music private constructor(
 
     private var reviewCount = 0
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "music", orphanRemoval = true)
+    @OneToMany(
+        fetch = FetchType.LAZY,
+        mappedBy = "music",
+        cascade = [CascadeType.REMOVE],
+        orphanRemoval = true
+    )
     private var files: MutableList<FileEntity> = mutableListOf()
 
     private var deletedAt: LocalDateTime? = null
