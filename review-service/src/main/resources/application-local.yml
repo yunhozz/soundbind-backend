@@ -15,6 +15,7 @@ spring:
         format_sql: true
         default_batch_fetch_size: 100
         dialect: org.hibernate.dialect.MySQLDialect
+    open-in-view: false
   datasource:
     url: ${MYSQL_REVIEW_SERVICE_DB_URL}
     username: ${MYSQL_DB_USERNAME}
