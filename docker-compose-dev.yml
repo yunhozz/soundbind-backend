@@ -2,17 +2,6 @@ networks:
   soundbind-network:
 
 services:
-  eureka-server:
-    build:
-      context: .
-      dockerfile: eureka-server/Dockerfile
-    image: soundbind/eureka-server:latest
-    container_name: soundbind-eureka-server
-    ports:
-      - 8761:8761
-    networks:
-      - soundbind-network
-
   config-server:
     build:
       context: .
@@ -29,6 +18,24 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    restart: always
+    networks:
+      - soundbind-network
+
+  eureka-server:
+    build:
+      context: .
+      dockerfile: eureka-server/Dockerfile
+    image: soundbind/eureka-server:latest
+    container_name: soundbind-eureka-server
+    ports:
+      - 8761:8761
+    environment:
+      - PROFILES_ACTIVE=dev
+      - SERVER_PORT=8761
+      - CONFIG_PROFILE=dev
+    depends_on:
+      - config-server
     restart: always
     networks:
       - soundbind-network
