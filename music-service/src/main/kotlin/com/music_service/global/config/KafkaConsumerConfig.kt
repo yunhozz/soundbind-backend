@@ -1,4 +1,4 @@
-package com.sound_bind.notification_service.global.config
+package com.music_service.global.config
 
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.StringDeserializer

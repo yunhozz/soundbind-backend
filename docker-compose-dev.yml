@@ -90,7 +90,7 @@ services:
     environment:
       - PROFILES_ACTIVE=dev
       - SERVER_PORT=8090
-      - CONFIG_PROFILE=dev,jwt,oauth,redis,mail
+      - CONFIG_PROFILE=dev,jwt,kafka,mail,oauth,redis
     depends_on:
       - eureka-server
       - config-server
@@ -113,7 +113,7 @@ services:
     environment:
       - PROFILES_ACTIVE=dev
       - SERVER_PORT=8070
-      - CONFIG_PROFILE=dev,file,redis
+      - CONFIG_PROFILE=dev,es,file,kafka,redis
     depends_on:
       - eureka-server
       - config-server
@@ -137,7 +137,7 @@ services:
     environment:
       - PROFILES_ACTIVE=dev
       - SERVER_PORT=8060
-      - CONFIG_PROFILE=dev,redis
+      - CONFIG_PROFILE=dev,es,kafka,redis
     depends_on:
       - eureka-server
       - config-server
@@ -161,7 +161,7 @@ services:
     environment:
       - PROFILES_ACTIVE=dev
       - SERVER_PORT=8040
-      - CONFIG_PROFILE=dev
+      - CONFIG_PROFILE=dev,kafka
     depends_on:
       - eureka-server
       - config-server

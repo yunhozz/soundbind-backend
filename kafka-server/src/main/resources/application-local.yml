@@ -7,6 +7,11 @@ spring:
   cloud:
     config:
       enabled: false
+  kafka:
+    bootstrap-servers:
+      - http://localhost:9090
+      - http://localhost:9091
+      - http://localhost:9092
 
 eureka:
   client:
