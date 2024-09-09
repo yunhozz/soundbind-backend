@@ -9,7 +9,7 @@ services:
     image: soundbind/eureka-server:latest
     container_name: soundbind-eureka-server
     ports:
-      - "8761:8761"
+      - 8761:8761
     networks:
       - soundbind-network
 
@@ -20,7 +20,7 @@ services:
     image: soundbind/config-server:latest
     container_name: soundbind-config-server
     ports:
-      - "8888:8888"
+      - 8888:8888
     environment:
       - spring.cloud.config.server.git.host-key=${CONFIG_SERVER_HOST_KEY}
       - spring.cloud.config.server.git.private-key=${CONFIG_SERVER_PRIVATE_KEY}
@@ -40,7 +40,7 @@ services:
     image: soundbind/api-gateway:latest
     container_name: soundbind-api-gateway
     ports:
-      - "8000:8000"
+      - 8000:8000
     environment:
       - PROFILES_ACTIVE=dev
       - SERVER_PORT=8000
@@ -59,7 +59,7 @@ services:
     image: soundbind/kafka-server:latest
     container_name: soundbind-kafka-server
     ports:
-      - "9000:9000"
+      - 9000:9000
     environment:
       - PROFILES_ACTIVE=dev
       - SERVER_PORT=9000
@@ -79,7 +79,7 @@ services:
     image: soundbind/auth-service:latest
     container_name: soundbind-auth-service
     ports:
-      - "8090:8090"
+      - 8090:8090
     environment:
       - PROFILES_ACTIVE=dev
       - SERVER_PORT=8090
@@ -102,7 +102,7 @@ services:
     image: soundbind/music-service:latest
     container_name: soundbind-music-service
     ports:
-      - "8070:8070"
+      - 8070:8070
     environment:
       - PROFILES_ACTIVE=dev
       - SERVER_PORT=8070
@@ -114,6 +114,7 @@ services:
       - kafka-server
       - mysql
       - redis
+      - elasticsearch
     restart: on-failure
     networks:
       - soundbind-network
@@ -125,7 +126,7 @@ services:
     image: soundbind/review-service:latest
     container_name: soundbind-review-service
     ports:
-      - "8060:8060"
+      - 8060:8060
     environment:
       - PROFILES_ACTIVE=dev
       - SERVER_PORT=8060
@@ -137,6 +138,7 @@ services:
       - kafka-server
       - mysql
       - redis
+      - elasticsearch
     restart: on-failure
     networks:
       - soundbind-network
@@ -148,7 +150,7 @@ services:
     image: soundbind/notification-service:latest
     container_name: soundbind-notification-service
     ports:
-      - "8040:8040"
+      - 8040:8040
     environment:
       - PROFILES_ACTIVE=dev
       - SERVER_PORT=8040
@@ -167,7 +169,7 @@ services:
     image: soundbind/mysql:latest
     container_name: soundbind-mysql
     ports:
-      - "3307:3306"
+      - 3307:3306
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_DB_PASSWORD}
       - TZ=Asia/Seoul
@@ -182,9 +184,9 @@ services:
     image: soundbind/mongodb:latest
     container_name: soundbind-mongodb
     ports:
-      - "27017:27017"
+      - 27017:27017
     volumes:
-      - ./db/mongodb/data:/var/lib/mongodb
+      - ./db/mongodb/data:/data/db
     restart: always
     networks:
       - soundbind-network
@@ -193,11 +195,35 @@ services:
     image: soundbind/redis:latest
     container_name: soundbind-redis
     ports:
-      - "6379:6379"
+      - 6379:6379
     volumes:
-      - ./redis/data:/data
-      - ./redis/conf/redis.conf:/usr/local/conf/redis.conf
+      - ./db/redis/data:/data
+      - ./db/redis/conf/redis.conf:/usr/local/conf/redis.conf
     command: redis-server /usr/local/conf/redis.conf
+    restart: always
+    networks:
+      - soundbind-network
+
+  elasticsearch:
+    image: soundbind/elasticsearch:latest
+    container_name: soundbind-elasticsearch
+    ports:
+      - 9201:9200
+    environment:
+      - node.name=es01
+      - cluster.name=es-docker-cluster
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.license.self_generated.type=basic
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./db/es/data:/usr/share/elasticsearch/data
     restart: always
     networks:
       - soundbind-network
