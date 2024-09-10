@@ -1,6 +1,5 @@
 package com.auth_service.domain.interfaces
 
-import com.auth_service.domain.application.MailService
 import com.auth_service.domain.application.UserManageService
 import com.auth_service.domain.application.dto.request.SignUpRequestDTO
 import com.auth_service.domain.interfaces.dto.APIResponse
@@ -24,16 +23,12 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/users")
-class UserManageController(
-    private val userManageService: UserManageService,
-    private val mailService: MailService
-) {
+class UserManageController(private val userManageService: UserManageService) {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun signUpByLocalUser(@Valid @RequestBody dto: SignUpRequestDTO): APIResponse {
         val result = userManageService.createLocalUser(dto)
-        mailService.sendVerifyingEmail(dto.email)
         return APIResponse.of("Local user joined success", result)
     }
 
@@ -44,11 +39,10 @@ class UserManageController(
         return APIResponse.of("Email verification success")
     }
 
-    @PostMapping("/verify/resend")
+    @PostMapping("/verify/email/resend")
     @ResponseStatus(HttpStatus.CREATED)
     fun resendVerifyingEmail(@HeaderSubject sub: String): APIResponse {
-        val profile = userManageService.findUserProfileWithUserByUserId(sub.toLong())
-        mailService.sendVerifyingEmail(profile.email)
+        userManageService.resendVerifyingEmailByUserId(sub.toLong())
         return APIResponse.of("Verifying email is sent now")
     }
 
