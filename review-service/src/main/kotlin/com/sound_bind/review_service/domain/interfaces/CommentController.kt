@@ -8,6 +8,7 @@ import com.sound_bind.review_service.domain.application.ElasticsearchService
 import com.sound_bind.review_service.domain.interfaces.dto.KafkaRequestDTO
 import com.sound_bind.review_service.global.annotation.HeaderSubject
 import khttp.post
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -34,7 +35,7 @@ class CommentController(
     ): APIResponse {
         val result = commentService.createComment(reviewId.toLong(), sub.toLong(), message)
         val myInfo = commentService.getUserInformationOnRedis(sub.toLong())
-        val record = KafkaRequestDTO(
+        val notificationRequest = KafkaRequestDTO(
             topic = "comment-added-topic",
             message = KafkaRequestDTO.KafkaNotificationDTO(
                 userId = result.reviewerId,
@@ -42,11 +43,7 @@ class CommentController(
                 link = null
             )
         )
-        post(
-            url = "http://localhost:9000/api/kafka",
-            headers = mapOf("Content-Type" to "application/json"),
-            data = mapper.writeValueAsString(record)
-        )
+        sendMessageToKafkaProducer(notificationRequest)
 
         return APIResponse.of("Comment Created", result.commentId)
     }
@@ -64,6 +61,16 @@ class CommentController(
         commentService.deleteComment(id.toLong(), sub.toLong())
         return APIResponse.of("Comment Deleted")
     }
+
+    @Value("\${uris.kafka-server-uri:http://localhost:9000}/api/kafka")
+    private lateinit var kafkaRequestUri: String
+
+    private fun sendMessageToKafkaProducer(vararg request: KafkaRequestDTO) =
+        post(
+            url = kafkaRequestUri,
+            headers = mapOf("Content-Type" to "application/json"),
+            data = mapper.writeValueAsString(request.toList())
+        )
 
     companion object {
         private val mapper = jacksonObjectMapper()

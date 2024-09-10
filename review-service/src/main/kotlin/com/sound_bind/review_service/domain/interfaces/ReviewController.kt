@@ -13,6 +13,7 @@ import com.sound_bind.review_service.global.enums.ReviewSort
 import jakarta.validation.Valid
 import khttp.get
 import khttp.post
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -37,7 +38,7 @@ class ReviewController(private val reviewService: ReviewService) {
         @RequestParam musicId: String,
         @Valid @RequestBody dto: ReviewCreateDTO
     ): APIResponse {
-        val response = get("http://localhost:8070/api/musics/$musicId/musician")
+        val response = get("$musicServiceUri/$musicId/musician")
         if (response.statusCode != HttpStatus.OK.value()) {
             val message = response.jsonObject.getString("message")
             return APIResponse.of(message)
@@ -64,7 +65,7 @@ class ReviewController(private val reviewService: ReviewService) {
                 score = dto.score
             )
         )
-        sendMessageToKafkaProducer(listOf(notificationRequest, musicScoreRequest))
+        sendMessageToKafkaProducer(notificationRequest, musicScoreRequest)
         return APIResponse.of("Review created", reviewId)
     }
 
@@ -110,7 +111,7 @@ class ReviewController(private val reviewService: ReviewService) {
                 score = reviewScoreDTO.newScore
             )
         )
-        sendMessageToKafkaProducer(listOf(musicScoreRequest))
+        sendMessageToKafkaProducer(musicScoreRequest)
         return APIResponse.of("Review updated", reviewScoreDTO.id)
     }
 
@@ -127,7 +128,7 @@ class ReviewController(private val reviewService: ReviewService) {
                     link = null
                 )
             )
-            sendMessageToKafkaProducer(listOf(notificationRequest))
+            sendMessageToKafkaProducer(notificationRequest)
         }
         return APIResponse.of("Likes of Review Changed")
     }
@@ -144,19 +145,25 @@ class ReviewController(private val reviewService: ReviewService) {
                 score = reviewScoreDTO.newScore
             )
         )
-        sendMessageToKafkaProducer(listOf(musicScoreRequest))
+        sendMessageToKafkaProducer(musicScoreRequest)
         return APIResponse.of("Review deleted")
     }
+
+    @Value("\${uris.kafka-server-uri:http://localhost:9000}/api/kafka")
+    private lateinit var kafkaRequestUri: String
+
+    @Value("\${uris.music-service-uri:http://localhost:8070}/api/musics")
+    private lateinit var musicServiceUri: String
+
+    private fun sendMessageToKafkaProducer(vararg request: KafkaRequestDTO) =
+        post(
+            url = kafkaRequestUri,
+            headers = mapOf("Content-Type" to "application/json"),
+            data = mapper.writeValueAsString(request.toList())
+        )
 
     companion object {
         private val mapper = jacksonObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-
-        private fun sendMessageToKafkaProducer(request: List<KafkaRequestDTO>) =
-            post(
-                url = "http://localhost:9000/api/kafka",
-                headers = mapOf("Content-Type" to "application/json"),
-                data = mapper.writeValueAsString(request)
-            )
     }
 }

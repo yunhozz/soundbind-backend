@@ -11,6 +11,7 @@ import com.music_service.global.util.RedisUtils
 import com.sound_bind.music_service.global.annotation.HeaderSubject
 import jakarta.validation.Valid
 import khttp.post
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.Resource
 import org.springframework.http.ContentDisposition
 import org.springframework.http.HttpHeaders
@@ -102,9 +103,12 @@ class MusicManagementController(private val musicService: MusicService) {
         return APIResponse.of("Music Deleted")
     }
 
+    @Value("\${uris.kafka-server-uri:http://localhost:9000}/api/kafka")
+    private lateinit var kafkaRequestUri: String
+
     private fun sendMessageToKafkaProducer(record: KafkaRequestDTO) =
         post(
-            url = "http://localhost:9000/api/kafka",
+            url = kafkaRequestUri,
             headers = mapOf("Content-Type" to "application/json"),
             data = mapper.writeValueAsString(record)
         )

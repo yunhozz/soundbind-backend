@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
 import khttp.post
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -66,10 +67,13 @@ class UserManageController(
             "message" to mapOf("userId" to sub.toLong())
         )
         post(
-            url = "http://localhost:9000/api/kafka",
+            url = kafkaRequestUri,
             headers = mapOf("Content-Type" to "application/json"),
             data = jacksonObjectMapper().writeValueAsString(record)
         )
         return APIResponse.of("Withdraw success")
     }
+
+    @Value("\${uris.kafka-server-uri:http://localhost:9000}/api/kafka")
+    private lateinit var kafkaRequestUri: String
 }
