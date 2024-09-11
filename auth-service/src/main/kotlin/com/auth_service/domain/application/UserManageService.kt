@@ -1,7 +1,8 @@
 package com.auth_service.domain.application
 
 import com.auth_service.domain.application.dto.request.SignUpRequestDTO
-import com.auth_service.domain.application.listener.AsyncListener
+import com.auth_service.domain.application.manager.AsyncManager
+import com.auth_service.domain.application.manager.LockManager
 import com.auth_service.domain.persistence.entity.User
 import com.auth_service.domain.persistence.entity.UserPassword
 import com.auth_service.domain.persistence.entity.UserProfile
@@ -22,13 +23,14 @@ class UserManageService(
     private val userRepository: UserRepository,
     private val userPasswordRepository: UserPasswordRepository,
     private val userProfileRepository: UserProfileRepository,
-    private val asyncListener: AsyncListener,
+    private val asyncManager: AsyncManager,
+    private val lockManager: LockManager,
     private val encoder: BCryptPasswordEncoder
 ) {
 
     @Transactional
     fun createLocalUser(dto: SignUpRequestDTO): Long {
-        if (userProfileRepository.existsByEmail(dto.email))
+        if (lockManager.checkEmailDuplicatedWithLock(dto.email))
             throw EmailDuplicateException("User email already exists")
 
         val guest = User.createGuest()
@@ -41,7 +43,7 @@ class UserManageService(
             dto.profileUrl
         )
 
-        asyncListener.onSendVerifyingEmail(profile.email)
+        asyncManager.onSendVerifyingEmail(profile.email)
 
         userRepository.save(guest)
         userPasswordRepository.save(password)
@@ -79,7 +81,7 @@ class UserManageService(
     @Transactional(readOnly = true)
     fun resendVerifyingEmailByUserId(userId: Long) {
         val profile = findUserProfileWithUserByUserId(userId)
-        asyncListener.onSendVerifyingEmail(profile.email)
+        asyncManager.onSendVerifyingEmail(profile.email)
     }
 
     private fun findUserProfileWithUserByUserId(userId: Long): UserProfile =
