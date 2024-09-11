@@ -1,10 +1,11 @@
-package com.auth_service.domain.application.listener
+package com.auth_service.domain.application.manager.impl
 
 import com.auth_service.domain.application.MailService
+import com.auth_service.domain.application.manager.AsyncManager
 import org.springframework.stereotype.Component
 
 @Component
-class AsyncListenerImpl(private val mailService: MailService): AsyncListener {
+class AsyncManagerImpl(private val mailService: MailService): AsyncManager {
 
     override fun onSendVerifyingEmail(email: String) =
         mailService.sendVerifyingEmail(email)
