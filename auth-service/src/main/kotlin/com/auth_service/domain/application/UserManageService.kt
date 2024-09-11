@@ -30,8 +30,8 @@ class UserManageService(
 
     @Transactional
     fun createLocalUser(dto: SignUpRequestDTO): Long {
-        if (lockManager.checkEmailDuplicatedWithLock(dto.email))
-            throw EmailDuplicateException("User email already exists")
+        if (lockManager.checkEmailAndNicknameDuplicatedWithLock(dto.email, dto.nickname))
+            throw EmailDuplicateException("Email or Nickname already exists")
 
         val guest = User.createGuest()
         val password = UserPassword.create(guest, encoder.encode(dto.password))
