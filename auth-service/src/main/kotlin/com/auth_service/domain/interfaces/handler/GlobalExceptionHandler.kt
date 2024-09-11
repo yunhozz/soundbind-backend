@@ -6,6 +6,7 @@ import io.jsonwebtoken.JwtException
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
@@ -23,16 +24,25 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException::class)
     fun handleRuntimeException(e: RuntimeException): ResponseEntity<ErrorResponse> {
-        log.error("[Runtime Error] ${e.localizedMessage}", e)
-        if (e is JwtException) {
-            return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(ErrorResponse.of(ErrorCode.UNAUTHORIZED, e.localizedMessage))
+        log.error(e.localizedMessage, e)
+        return when (e) {
+            is HttpClientErrorException ->
+                ResponseEntity
+                    .status(e.statusCode)
+                    .body(ErrorResponse.of(ErrorCode.METHOD_NOT_ALLOWED, e.responseBodyAsString))
+            is DataIntegrityViolationException ->
+                ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(ErrorResponse.of(ErrorCode.BAD_REQUEST, e.localizedMessage))
+            is JwtException ->
+                ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(ErrorResponse.of(ErrorCode.UNAUTHORIZED, e.localizedMessage))
+            else ->
+                ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ErrorResponse.of(ErrorCode.UNDEFINED_ERROR, e.localizedMessage))
         }
-
-        return ResponseEntity
-            .status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR, e.localizedMessage))
     }
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
@@ -41,13 +51,5 @@ class GlobalExceptionHandler {
         return ResponseEntity
             .status(e.statusCode)
             .body(ErrorResponse.of(ErrorCode.BAD_REQUEST, e.bindingResult))
-    }
-
-    @ExceptionHandler(HttpClientErrorException::class)
-    fun handleHttpClientErrorException(e: HttpClientErrorException): ResponseEntity<ErrorResponse> {
-        log.error(e.localizedMessage)
-        return ResponseEntity
-            .status(e.statusCode)
-            .body(ErrorResponse.of(ErrorCode.METHOD_NOT_ALLOWED, e.responseBodyAsString))
     }
 }
