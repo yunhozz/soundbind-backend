@@ -1,6 +1,7 @@
 package com.auth_service.domain.persistence.entity
 
 import com.auth_service.global.auth.enums.LoginType
+import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
@@ -12,6 +13,7 @@ import jakarta.persistence.OneToOne
 class UserProfile private constructor(
     @OneToOne(fetch = FetchType.LAZY)
     val user: User,
+    @Column(unique = true)
     val email: String,
     name: String,
     nickname: String,
@@ -35,6 +37,7 @@ class UserProfile private constructor(
     var name = name
         protected set
 
+    @Column(unique = true)
     var nickname = nickname
         protected set
 
