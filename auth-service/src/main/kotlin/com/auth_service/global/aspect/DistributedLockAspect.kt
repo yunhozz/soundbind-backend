@@ -1,6 +1,6 @@
 package com.auth_service.global.aspect
 
-import com.auth_service.global.annotation.DistributedSimpleLock
+import com.auth_service.global.annotation.DistributedLock
 import com.auth_service.global.util.RedisUtils
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.Around
@@ -12,13 +12,13 @@ import java.util.UUID
 
 @Aspect
 @Component
-class DistributedSimpleLockAspect {
+class DistributedLockAspect {
 
-    @Around("@annotation(com.auth_service.global.annotation.DistributedSimpleLock)")
+    @Around("@annotation(com.auth_service.global.annotation.DistributedLock)")
     fun distributedSimpleLock(joinPoint: ProceedingJoinPoint): Any {
         val signature = joinPoint.signature as MethodSignature
         val method = signature.method
-        val distributedLock = method.getAnnotation(DistributedSimpleLock::class.java)
+        val distributedLock = method.getAnnotation(DistributedLock::class.java)
 
         val lockKey = distributedLock.key
         val lockValue = UUID.randomUUID().toString()
