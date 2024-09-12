@@ -1,5 +1,6 @@
 package com.music_service.global.config
 
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.scheduling.annotation.AsyncConfigurer
 import org.springframework.scheduling.annotation.EnableAsync
@@ -11,6 +12,11 @@ import java.util.concurrent.ThreadPoolExecutor
 @EnableAsync
 class AsyncConfig: AsyncConfigurer {
 
+    companion object {
+        const val THREAD_POOL_TASK_EXECUTOR = "threadPoolTaskExecutor"
+    }
+
+    @Bean(THREAD_POOL_TASK_EXECUTOR)
     override fun getAsyncExecutor(): Executor {
         val executor = ThreadPoolTaskExecutor().apply {
             corePoolSize = 5
