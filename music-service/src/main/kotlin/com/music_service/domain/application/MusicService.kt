@@ -7,8 +7,8 @@ import com.music_service.domain.application.dto.request.MusicUpdateDTO
 import com.music_service.domain.application.dto.response.FileUploadResponseDTO
 import com.music_service.domain.application.dto.response.MusicDetailsDTO
 import com.music_service.domain.application.dto.response.MusicFileResponseDTO
-import com.music_service.domain.application.listener.ElasticsearchListener
-import com.music_service.domain.application.listener.FileListener
+import com.music_service.domain.application.manager.ElasticsearchManager
+import com.music_service.domain.application.manager.FileManager
 import com.music_service.domain.persistence.entity.FileEntity
 import com.music_service.domain.persistence.entity.FileType
 import com.music_service.domain.persistence.entity.FileType.IMAGE
@@ -34,8 +34,8 @@ class MusicService(
     private val musicRepository: MusicRepository,
     private val fileRepository: FileRepository,
     private val musicLikesRepository: MusicLikesRepository,
-    private val fileListener: FileListener,
-    private val elasticsearchListener: ElasticsearchListener
+    private val fileManager: FileManager,
+    private val elasticsearchManager: ElasticsearchManager
 ) {
 
     @Transactional
@@ -54,21 +54,21 @@ class MusicService(
         val fileInfoList = arrayListOf<FileUploadResponseDTO>()
         val fileEntities = arrayListOf<FileEntity>()
 
-        val musicFileInfo = fileListener.generateFileInfo(dto.musicFile)
+        val musicFileInfo = fileManager.generateFileInfo(dto.musicFile)
         val musicFileEntity = createFileEntity(MUSIC, musicFileInfo, music)
         fileInfoList.add(musicFileInfo)
         fileEntities.add(musicFileEntity)
 
         dto.imageFile?.let {
-            val imageFileInfo = fileListener.generateFileInfo(it)
+            val imageFileInfo = fileManager.generateFileInfo(it)
             val imageFileEntity = createFileEntity(IMAGE, imageFileInfo, music)
             fileInfoList.add(imageFileInfo)
             fileEntities.add(imageFileEntity)
         }
 
-        fileListener.onMusicUpload(fileInfoList)
+        fileInfoList.forEach { fileManager.onMusicUpload(it) }
         fileRepository.saveAll(fileEntities)
-        elasticsearchListener.onMusicUpload(MusicDetailsDTO(music, fileEntities))
+        elasticsearchManager.onMusicUpload(MusicDetailsDTO(music, fileEntities))
 
         return music.id!!
     }
@@ -87,7 +87,7 @@ class MusicService(
             fileEntities.firstOrNull { fileEntity -> fileEntity.fileType == IMAGE }
                 ?.let { imageFileEntity ->
                     fileUrl = imageFileEntity.fileUrl
-                    fileListener.generateFileInfo(imageFile).let { info ->
+                    fileManager.generateFileInfo(imageFile).let { info ->
                         imageFileInfo = info
                         imageFileEntity.updateImage(
                             info.originalFileName,
@@ -98,12 +98,12 @@ class MusicService(
                 }
         }
 
-        fileListener.onMusicUpdate(fileUrl, imageFileInfo)
+        fileManager.onMusicUpdate(fileUrl, imageFileInfo)
         music.updateInfo(
             dto.title,
             dto.genres.map { Genre.of(it) }.toSet()
         )
-        elasticsearchListener.onMusicUpload(MusicDetailsDTO(music, fileEntities))
+        elasticsearchManager.onMusicUpload(MusicDetailsDTO(music, fileEntities))
 
         return music.id!!
     }
@@ -154,7 +154,7 @@ class MusicService(
 
         files.firstOrNull { fileEntity -> fileEntity.fileType == MUSIC }
             ?.let { musicFileEntity ->
-                val musicInfo = fileListener.downloadMusic(musicFileEntity.fileUrl)
+                val musicInfo = fileManager.downloadMusic(musicFileEntity.fileUrl)
                 return MusicFileResponseDTO(
                     musicInfo.resource,
                     musicInfo.contentType,
@@ -168,8 +168,11 @@ class MusicService(
         val music = findMusicById(id)
         val files = fileRepository.findFilesWhereMusicId(music.id!!)
 
-        fileListener.onMusicDelete(files.map { it.fileUrl })
-        elasticsearchListener.onMusicDelete(music.id!!, files.map { it.id!! })
+        files
+            .map { it.fileUrl }
+            .forEach { fileManager.onMusicDelete(it) }
+        elasticsearchManager
+            .onMusicDelete(music.id!!, files.map { it.id!! })
 
         fileRepository.deleteAllInBatch(files)
         music.softDelete()
@@ -190,11 +193,11 @@ class MusicService(
             val files = fileRepository.findFilesWhereMusicId(music.id!!)
             fileUrls.addAll(files.map { it.fileUrl })
 
-            elasticsearchListener.onMusicDelete(music.id!!, files.map { it.id!! })
+            elasticsearchManager.onMusicDelete(music.id!!, files.map { it.id!! })
             music.softDelete()
             fileRepository.deleteAllInBatch(files)
         }
-        fileListener.onMusicDelete(fileUrls)
+        fileUrls.forEach { fileManager.onMusicDelete(it) }
     }
 
     @Transactional(readOnly = true)

@@ -1,4 +1,4 @@
-package com.music_service.domain.application
+package com.music_service.domain.application.manager.impl
 
 import com.music_service.domain.application.dto.response.FileDownloadResponseDTO
 import com.music_service.domain.application.dto.response.FileUploadResponseDTO
@@ -6,37 +6,39 @@ import com.music_service.domain.application.file.FileHandler
 import com.music_service.domain.application.file.FileHandlerFactory
 import com.music_service.domain.application.file.ImageHandler
 import com.music_service.domain.application.file.MusicHandler
+import com.music_service.domain.application.manager.FileManager
+import com.music_service.global.config.AsyncConfig.Companion.THREAD_POOL_TASK_EXECUTOR
 import jakarta.annotation.PostConstruct
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.core.io.Resource
 import org.springframework.scheduling.annotation.Async
-import org.springframework.stereotype.Service
+import org.springframework.stereotype.Component
 import org.springframework.web.multipart.MultipartFile
 
-@Service
-class FileService(private val fileHandlerFactory: FileHandlerFactory) {
+@Component
+class FileManagerImpl(private val fileHandlerFactory: FileHandlerFactory): FileManager {
 
-    // TODO: 예외 보상 처리
-
-    private val log: Logger = LoggerFactory.getLogger(FileService::class.java)
+    private val log: Logger = LoggerFactory.getLogger(FileManagerImpl::class.java)
 
     private lateinit var fileHandler: FileHandler
     private lateinit var musicHandler: MusicHandler
     private lateinit var imageHandler: ImageHandler
 
-    fun generateFileInfo(file: MultipartFile): FileUploadResponseDTO =
+    // TODO: AOP 이용하여 로그 기능 추가
+
+    override fun generateFileInfo(file: MultipartFile): FileUploadResponseDTO =
         fileHandler.generateFileInfo(file)
 
-    @Async
-    fun upload(fileInfo: FileUploadResponseDTO) {
+    @Async(THREAD_POOL_TASK_EXECUTOR)
+    override fun onMusicUpload(fileInfo: FileUploadResponseDTO) {
         log.info("=====File Upload Start=====")
         fileHandler.upload(fileInfo.file, fileInfo.savedName)
         log.info("=====File Upload End=====")
     }
 
-    @Async
-    fun update(fileUrl: String?, dto: FileUploadResponseDTO?) {
+    @Async(THREAD_POOL_TASK_EXECUTOR)
+    override fun onMusicUpdate(fileUrl: String?, dto: FileUploadResponseDTO?) {
         log.info("=====File Update Start=====")
         dto?.let {
             fileHandler.delete(fileUrl!!)
@@ -45,17 +47,17 @@ class FileService(private val fileHandlerFactory: FileHandlerFactory) {
         log.info("=====File Update End=====")
     }
 
-    @Async
-    fun delete(fileUrl: String) {
+    @Async(THREAD_POOL_TASK_EXECUTOR)
+    override fun onMusicDelete(fileUrl: String) {
         log.info("=====File Delete Start=====")
         fileHandler.delete(fileUrl)
         log.info("=====File Delete End=====")
     }
 
-    fun downloadMusic(fileUrl: String): FileDownloadResponseDTO =
+    override fun downloadMusic(fileUrl: String): FileDownloadResponseDTO =
         musicHandler.downloadMusic(fileUrl)
 
-    fun displayImage(fileUrl: String): Resource =
+    override fun displayImage(fileUrl: String): Resource =
         imageHandler.displayImage(fileUrl)
 
     @PostConstruct
