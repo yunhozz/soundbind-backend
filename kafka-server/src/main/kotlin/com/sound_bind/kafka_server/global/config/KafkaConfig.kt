@@ -16,6 +16,7 @@ import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.core.ProducerFactory
 import org.springframework.kafka.support.serializer.JsonDeserializer
 import org.springframework.kafka.support.serializer.JsonSerializer
+import org.springframework.kafka.transaction.KafkaTransactionManager
 
 @Configuration
 @EnableKafka
@@ -30,10 +31,16 @@ class KafkaConfig {
         fun producerFactory(): ProducerFactory<String, Map<String, Any>> {
             val config = mapOf(
                 ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java,
-                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to JsonSerializer::class.java
+                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to JsonSerializer::class.java,
+                ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG to true,
+                ProducerConfig.TRANSACTIONAL_ID_CONFIG to "kafka-producer-transaction"
             )
             return DefaultKafkaProducerFactory(config)
         }
+
+        @Bean(KAFKA_TX_MANAGER)
+        fun kafkaTransactionManager(@Qualifier(PRODUCER_FACTORY) factory: ProducerFactory<String, Map<String, Any>>) =
+            KafkaTransactionManager(factory)
     }
 
     @Configuration
@@ -62,5 +69,6 @@ class KafkaConfig {
         private const val CONSUMER_FACTORY = "consumerFactory"
         private const val LISTENER_CONTAINER_FACTORY = "listenerContainerFactory"
         private const val KAFKA_TEMPLATE = "kafkaTemplate"
+        private const val KAFKA_TX_MANAGER = "kafkaTransactionManager"
     }
 }
