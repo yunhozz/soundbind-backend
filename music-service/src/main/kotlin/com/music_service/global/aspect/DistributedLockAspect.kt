@@ -2,6 +2,7 @@ package com.music_service.global.aspect
 
 import com.music_service.global.annotation.DistributedLock
 import com.music_service.global.util.RedisUtils
+import jakarta.persistence.LockTimeoutException
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.Around
 import org.aspectj.lang.annotation.Aspect
@@ -35,7 +36,10 @@ class DistributedLockAspect {
             }
             return joinPoint.proceed()
         } finally {
-            RedisUtils.releaseLock(lockKey, lockValue)
+            val released = RedisUtils.releaseLock(lockKey, lockValue)
+            if (!released) {
+                throw LockTimeoutException("Failed to release lock for key: $lockKey")
+            }
         }
     }
 }
