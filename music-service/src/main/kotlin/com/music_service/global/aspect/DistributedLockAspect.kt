@@ -18,6 +18,7 @@ import java.util.UUID
 class DistributedLockAspect {
 
     private val parser = SpelExpressionParser()
+    private val context = StandardEvaluationContext()
 
     @Around("@annotation(com.music_service.global.annotation.DistributedLock)")
     fun distributedLock(joinPoint: ProceedingJoinPoint): Any? {
@@ -25,31 +26,35 @@ class DistributedLockAspect {
         val method = signature.method
         val distributedLock = method.getAnnotation(DistributedLock::class.java)
 
-        val context = StandardEvaluationContext().apply {
-            setVariable("userId", joinPoint.args[0])
+        val parameterNames = signature.parameterNames
+        val parameterValues = joinPoint.args
+        for (i in parameterNames.indices) {
+            context.setVariable(parameterNames[i], parameterValues[i])
         }
         val lockKey = parser.parseExpression(distributedLock.key)
             .getValue(context, String::class.java)
             ?: throw IllegalStateException("Lock key cannot be null")
         val lockValue = UUID.randomUUID().toString()
 
-        var retryCount = 0
+        val leaseTime = distributedLock.leaseTime
+        val timeUnit = distributedLock.timeUnit
+        var retryCount = distributedLock.retryCount
+        val waitTimeMills = distributedLock.waitTimeMillis
         var acquired = false
-        while (retryCount < 3) {
+        while (retryCount >= 0) {
+            retryCount --
             acquired = RedisUtils.tryLock(
                 lockKey,
                 lockValue,
-                distributedLock.leaseTime,
-                distributedLock.timeUnit
+                leaseTime,
+                timeUnit
             )
             if (acquired) break
-            retryCount++
-            Thread.sleep(10)
+            Thread.sleep(waitTimeMills)
         }
         if (!acquired) {
             throw CannotAcquireLockException("Failed to acquire lock for key: $lockKey")
         }
-
         try {
             return joinPoint.proceed()
         } finally {
