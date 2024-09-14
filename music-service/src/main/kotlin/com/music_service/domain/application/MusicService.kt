@@ -23,6 +23,7 @@ import com.music_service.domain.persistence.repository.MusicRepository
 import com.music_service.global.exception.MusicServiceException.MusicNotFoundException
 import com.music_service.global.exception.MusicServiceException.MusicNotUpdatableException
 import com.music_service.global.exception.MusicServiceException.NegativeValueException
+import com.music_service.global.util.RedisUtils
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Service
@@ -41,7 +42,14 @@ class MusicService(
 
     @Transactional
     fun uploadMusic(userId: Long, dto: MusicCreateDTO): Long {
-        val music = lockManager.saveMusicWithLock(userId, dto.title, dto.genres)
+        val userInfo = RedisUtils.getJson("user:$userId", Map::class.java)
+        val music = Music.create(
+            userId,
+            userInfo["nickname"] as String,
+            dto.title,
+            dto.genres.map { Genre.of(it) }.toSet()
+        )
+        musicRepository.save(music)
 
         val fileInfoList = arrayListOf<FileUploadResponseDTO>()
         val fileEntities = arrayListOf<FileEntity>()
@@ -72,25 +80,20 @@ class MusicService(
             ?: throw MusicNotUpdatableException("It can be modified after 30 days of final modification.")
         val fileEntities = fileRepository.findFilesWhereMusicId(music.id!!)
 
-        var imageFileInfo: FileUploadResponseDTO? = null
-        var fileUrl: String? = null
-
         dto.imageFile?.let { imageFile ->
             fileEntities.firstOrNull { fileEntity -> fileEntity.fileType == IMAGE }
                 ?.let { imageFileEntity ->
-                    fileUrl = imageFileEntity.fileUrl
+                    val fileUrl = imageFileEntity.fileUrl
                     fileManager.generateFileInfo(imageFile).let { info ->
-                        imageFileInfo = info
                         imageFileEntity.updateImage(
                             info.originalFileName,
                             info.savedName,
                             info.fileUrl
                         )
+                        fileManager.onMusicUpdate(fileUrl, info)
                     }
                 }
         }
-
-        fileManager.onMusicUpdate(fileUrl, imageFileInfo)
         music.updateInfo(
             dto.title,
             dto.genres.map { Genre.of(it) }.toSet()
@@ -102,7 +105,7 @@ class MusicService(
 
     @Transactional
     fun changeLikesFlag(musicId: Long, userId: Long): Long? {
-        musicLikesRepository.findMusicLikesWithMusicByMusicId(musicId)?.let { ml ->
+        musicLikesRepository.findMusicLikesWithMusicByMusicIdAndUserId(musicId, userId)?.let { ml ->
             try {
                 ml.changeFlag()
                 if (ml.flag) return ml.music.userId

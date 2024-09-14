@@ -32,11 +32,9 @@ class FileManagerImpl(private val fileHandlerFactory: FileHandlerFactory): FileM
 
     @Async(THREAD_POOL_TASK_EXECUTOR)
     @LogMessage("Updating File...")
-    override fun onMusicUpdate(fileUrl: String?, dto: FileUploadResponseDTO?) {
-        dto?.let {
-            fileHandler.delete(fileUrl!!)
-            fileHandler.upload(it.file, it.savedName)
-        }
+    override fun onMusicUpdate(fileUrl: String, dto: FileUploadResponseDTO) {
+        fileHandler.delete(fileUrl)
+        fileHandler.upload(dto.file, dto.savedName)
     }
 
     @Async(THREAD_POOL_TASK_EXECUTOR)
