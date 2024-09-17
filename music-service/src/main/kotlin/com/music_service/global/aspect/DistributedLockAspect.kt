@@ -31,30 +31,17 @@ class DistributedLockAspect {
         for (i in parameterNames.indices) {
             context.setVariable(parameterNames[i], parameterValues[i])
         }
+
         val lockKey = parser.parseExpression(distributedLock.key)
             .getValue(context, String::class.java)
             ?: throw IllegalStateException("Lock key cannot be null")
         val lockValue = UUID.randomUUID().toString()
-
         val leaseTime = distributedLock.leaseTime
         val timeUnit = distributedLock.timeUnit
-        var retryCount = distributedLock.retryCount
-        val waitTimeMills = distributedLock.waitTimeMillis
-        var acquired = false
-        while (retryCount >= 0) {
-            retryCount --
-            acquired = RedisUtils.tryLock(
-                lockKey,
-                lockValue,
-                leaseTime,
-                timeUnit
-            )
-            if (acquired) break
-            Thread.sleep(waitTimeMills)
+        withRetry(distributedLock) {
+            RedisUtils.tryLock(lockKey, lockValue, leaseTime, timeUnit)
         }
-        if (!acquired) {
-            throw CannotAcquireLockException("Failed to acquire lock for key: $lockKey")
-        }
+
         try {
             return joinPoint.proceed()
         } finally {
@@ -62,6 +49,29 @@ class DistributedLockAspect {
             if (!released) {
                 throw LockTimeoutException("Failed to release lock for key: $lockKey")
             }
+        }
+    }
+
+    private inline fun withRetry(
+        distributedLock: DistributedLock,
+        action: () -> Boolean
+    ) {
+        val lockKey = parser.parseExpression(distributedLock.key)
+            .getValue(context, String::class.java)
+            ?: throw IllegalStateException("Lock key cannot be null")
+        val retryCount = distributedLock.retryCount
+        val waitTimeMillis = distributedLock.waitTimeMillis
+
+        var count = 0
+        var acquired = false
+        while (count <= retryCount) {
+            acquired = action()
+            if (acquired) break
+            count++
+            Thread.sleep(waitTimeMillis)
+        }
+        if (!acquired) {
+            throw CannotAcquireLockException("Failed to acquire lock for key: $lockKey")
         }
     }
 }
