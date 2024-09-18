@@ -2,6 +2,7 @@ package com.music_service.domain.application
 
 import com.music_service.domain.application.dto.request.MusicCreateDTO
 import com.music_service.domain.application.dto.request.MusicUpdateDTO
+import com.music_service.domain.application.dto.response.MusicFileResponseDTO
 import com.music_service.domain.persistence.repository.MusicLikesRepository
 import com.music_service.domain.persistence.repository.MusicRepository
 import com.music_service.global.util.RedisUtils
@@ -209,7 +210,6 @@ class MusicServiceConcurrencyTest {
         latch.await()
 
         // then
-        failureResults.forEach { println(it) }
         println("테스트 실행 시간 : ${System.currentTimeMillis() - startTime} 밀리초")
 
         assertEquals(
@@ -218,5 +218,61 @@ class MusicServiceConcurrencyTest {
             "무작위 $threads 명의 음원 좋아요에 모두 성공해야 합니다."
         )
         assertEquals(0, failureResults.size, "음원 좋아요에 실패한 thread 는 없어야 합니다.")
+    }
+
+    @Test
+    fun `Test Concurrency in downloadMusic() with 1000 Users`() {
+        // given
+        val userId = threads.toLong()
+
+        val musicFile = MockMultipartFile("file", "music-file.mp4", "audio/mp4", "This is Music".toByteArray())
+        val imageFile = MockMultipartFile("file", "image-file.jpg", "image/jpeg", "This is Image".toByteArray())
+        val musicCreateDTO = MusicCreateDTO(
+            title = "Test Music",
+            genres = setOf("POP", "ROCK"),
+            musicFile = musicFile,
+            imageFile = imageFile
+        )
+        val musicId = musicService.uploadMusic(userId, musicCreateDTO)
+
+        val executorService = Executors.newFixedThreadPool(threads)
+        val latch = CountDownLatch(threads)
+
+        val successResults = CopyOnWriteArrayList<MusicFileResponseDTO>()
+        val failureResults = CopyOnWriteArrayList<Throwable>()
+
+        // when
+        val startTime = System.currentTimeMillis()
+
+        repeat(threads) {
+            executorService.execute {
+                try {
+                    val result = musicService.downloadMusic(musicId)
+                    successResults.add(result)
+
+                } catch (e: Exception) {
+                    failureResults.add(e)
+
+                } finally {
+                    latch.countDown()
+                }
+            }
+        }
+        executorService.shutdown()
+        latch.await()
+
+        // then
+        println("테스트 실행 시간 : ${System.currentTimeMillis() - startTime} 밀리초")
+
+        assertEquals(threads, successResults.size, "$threads 개의 음원 다운로드에 모두 성공해야 합니다.")
+        assertEquals(0, failureResults.size, "음원 다운로드에 실패한 thread 는 없어야 합니다.")
+        assertTrue(
+            successResults.all {
+                val originalBytes = musicFile.bytes
+                val downloadedBytes = it.musicFile.inputStream.readBytes()
+                originalBytes.contentEquals(downloadedBytes)
+           },
+            "다운로드된 음원 파일의 내용이 원본과 일치해야 합니다."
+        )
     }
 }
