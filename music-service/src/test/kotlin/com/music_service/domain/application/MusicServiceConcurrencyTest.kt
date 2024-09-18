@@ -2,7 +2,6 @@ package com.music_service.domain.application
 
 import com.music_service.domain.application.dto.request.MusicCreateDTO
 import com.music_service.domain.application.dto.request.MusicUpdateDTO
-import com.music_service.domain.application.manager.LockManager
 import com.music_service.domain.persistence.repository.MusicLikesRepository
 import com.music_service.domain.persistence.repository.MusicRepository
 import com.music_service.global.util.RedisUtils
@@ -33,10 +32,7 @@ class MusicServiceConcurrencyTest {
     @Autowired
     private lateinit var musicLikesRepository: MusicLikesRepository
 
-    @Autowired
-    private lateinit var lockManager: LockManager
-
-    private val threads = 500
+    private val threads = 1000
 
     @BeforeEach
     fun initUserInfoOnRedis() {
@@ -194,11 +190,11 @@ class MusicServiceConcurrencyTest {
         // when
         val startTime = System.currentTimeMillis()
 
-        repeat(threads) { thread ->
+        repeat(threads) {
             executorService.execute {
                 try {
                     val randomUserId = ThreadLocalRandom.current().nextLong(1, threads.toLong())
-                    val result = musicService.changeLikesFlag(musicId, thread.toLong())
+                    val result = musicService.changeLikesFlag(musicId, randomUserId)
                     result?.let { successResults.add(it) }
 
                 } catch (e: Exception) {
