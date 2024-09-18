@@ -15,16 +15,9 @@ import org.springframework.kafka.support.serializer.JsonDeserializer
 @EnableKafka
 class KafkaConsumerConfig {
 
-    companion object {
-        private const val BOOTSTRAP_SERVERS = "localhost:9090, localhost:9091, localhost:9092"
-        private const val CONSUMER_FACTORY = "consumerFactory"
-        private const val LISTENER_CONTAINER_FACTORY = "listenerContainerFactory"
-    }
-
     @Bean(CONSUMER_FACTORY)
-    fun consumerFactory(): ConsumerFactory<String, Map<String, String>> {
+    fun consumerFactory(): ConsumerFactory<String, Map<String, Any>> {
         val config = mapOf(
-            ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to BOOTSTRAP_SERVERS,
             ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
             ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to JsonDeserializer::class.java,
             ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to "earliest"
@@ -33,10 +26,15 @@ class KafkaConsumerConfig {
     }
 
     @Bean(LISTENER_CONTAINER_FACTORY)
-    fun listenerContainerFactory(@Qualifier(CONSUMER_FACTORY) factory: ConsumerFactory<String, Map<String, String>>) =
-        object: ConcurrentKafkaListenerContainerFactory<String, Map<String, String>>() {
+    fun listenerContainerFactory(@Qualifier(CONSUMER_FACTORY) factory: ConsumerFactory<String, Map<String, Any>>) =
+        object: ConcurrentKafkaListenerContainerFactory<String, Map<String, Any>>() {
             init {
                 consumerFactory = factory
             }
         }
+
+    companion object {
+        private const val CONSUMER_FACTORY = "consumerFactory"
+        private const val LISTENER_CONTAINER_FACTORY = "listenerContainerFactory"
+    }
 }

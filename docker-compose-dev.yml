@@ -2,17 +2,6 @@ networks:
   soundbind-network:
 
 services:
-  eureka-server:
-    build:
-      context: .
-      dockerfile: eureka-server/Dockerfile
-    image: soundbind/eureka-server:latest
-    container_name: soundbind-eureka-server
-    ports:
-      - "8761:8761"
-    networks:
-      - soundbind-network
-
   config-server:
     build:
       context: .
@@ -20,15 +9,28 @@ services:
     image: soundbind/config-server:latest
     container_name: soundbind-config-server
     ports:
-      - "8888:8888"
+      - 8888:8888
     environment:
       - spring.cloud.config.server.git.host-key=${CONFIG_SERVER_HOST_KEY}
       - spring.cloud.config.server.git.private-key=${CONFIG_SERVER_PRIVATE_KEY}
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://config-server:8888/actuator/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    restart: always
+    networks:
+      - soundbind-network
+
+  eureka-server:
+    build:
+      context: .
+      dockerfile: eureka-server/Dockerfile
+    image: soundbind/eureka-server:latest
+    container_name: soundbind-eureka-server
+    ports:
+      - 8761:8761
+    environment:
+      - PROFILES_ACTIVE=dev
+      - SERVER_PORT=8761
+      - CONFIG_PROFILE=dev
+    depends_on:
+      - config-server
     restart: always
     networks:
       - soundbind-network
@@ -40,7 +42,7 @@ services:
     image: soundbind/api-gateway:latest
     container_name: soundbind-api-gateway
     ports:
-      - "8000:8000"
+      - 8000:8000
     environment:
       - PROFILES_ACTIVE=dev
       - SERVER_PORT=8000
@@ -48,7 +50,7 @@ services:
     depends_on:
       - eureka-server
       - config-server
-    restart: on-failure
+    restart: always
     networks:
       - soundbind-network
 
@@ -59,7 +61,7 @@ services:
     image: soundbind/kafka-server:latest
     container_name: soundbind-kafka-server
     ports:
-      - "9000:9000"
+      - 9000:9000
     environment:
       - PROFILES_ACTIVE=dev
       - SERVER_PORT=9000
@@ -68,7 +70,11 @@ services:
       - eureka-server
       - config-server
       - api-gateway
-    restart: on-failure
+      - zookeeper
+      - kafka-1
+      - kafka-2
+      - kafka-3
+    restart: always
     networks:
       - soundbind-network
 
@@ -79,11 +85,11 @@ services:
     image: soundbind/auth-service:latest
     container_name: soundbind-auth-service
     ports:
-      - "8090:8090"
+      - 8090:8090
     environment:
       - PROFILES_ACTIVE=dev
       - SERVER_PORT=8090
-      - CONFIG_PROFILE=dev,jwt,oauth,redis,mail
+      - CONFIG_PROFILE=dev,jwt,kafka,mail,oauth,redis
     depends_on:
       - eureka-server
       - config-server
@@ -91,7 +97,7 @@ services:
       - kafka-server
       - mysql
       - redis
-    restart: on-failure
+    restart: always
     networks:
       - soundbind-network
 
@@ -102,11 +108,11 @@ services:
     image: soundbind/music-service:latest
     container_name: soundbind-music-service
     ports:
-      - "8070:8070"
+      - 8070:8070
     environment:
       - PROFILES_ACTIVE=dev
       - SERVER_PORT=8070
-      - CONFIG_PROFILE=dev,file,redis
+      - CONFIG_PROFILE=dev,es,file,kafka,redis
     depends_on:
       - eureka-server
       - config-server
@@ -114,7 +120,8 @@ services:
       - kafka-server
       - mysql
       - redis
-    restart: on-failure
+      - elasticsearch
+    restart: always
     networks:
       - soundbind-network
 
@@ -125,11 +132,11 @@ services:
     image: soundbind/review-service:latest
     container_name: soundbind-review-service
     ports:
-      - "8060:8060"
+      - 8060:8060
     environment:
       - PROFILES_ACTIVE=dev
       - SERVER_PORT=8060
-      - CONFIG_PROFILE=dev,redis
+      - CONFIG_PROFILE=dev,es,kafka,redis
     depends_on:
       - eureka-server
       - config-server
@@ -137,7 +144,8 @@ services:
       - kafka-server
       - mysql
       - redis
-    restart: on-failure
+      - elasticsearch
+    restart: always
     networks:
       - soundbind-network
 
@@ -148,18 +156,18 @@ services:
     image: soundbind/notification-service:latest
     container_name: soundbind-notification-service
     ports:
-      - "8040:8040"
+      - 8040:8040
     environment:
       - PROFILES_ACTIVE=dev
       - SERVER_PORT=8040
-      - CONFIG_PROFILE=dev
+      - CONFIG_PROFILE=dev,kafka
     depends_on:
       - eureka-server
       - config-server
       - api-gateway
       - kafka-server
       - mongodb
-    restart: on-failure
+    restart: always
     networks:
       - soundbind-network
 
@@ -167,7 +175,7 @@ services:
     image: soundbind/mysql:latest
     container_name: soundbind-mysql
     ports:
-      - "3307:3306"
+      - 3307:3306
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_DB_PASSWORD}
       - TZ=Asia/Seoul
@@ -182,9 +190,9 @@ services:
     image: soundbind/mongodb:latest
     container_name: soundbind-mongodb
     ports:
-      - "27017:27017"
+      - 27017:27017
     volumes:
-      - ./db/mongodb/data:/var/lib/mongodb
+      - ./db/mongodb/data:/data/db
     restart: always
     networks:
       - soundbind-network
@@ -193,11 +201,85 @@ services:
     image: soundbind/redis:latest
     container_name: soundbind-redis
     ports:
-      - "6379:6379"
+      - 6379:6379
     volumes:
-      - ./redis/data:/data
-      - ./redis/conf/redis.conf:/usr/local/conf/redis.conf
+      - ./db/redis/data:/data
+      - ./db/redis/conf/redis.conf:/usr/local/conf/redis.conf
     command: redis-server /usr/local/conf/redis.conf
+    restart: always
+    networks:
+      - soundbind-network
+
+  elasticsearch:
+    image: soundbind/elasticsearch:latest
+    container_name: soundbind-elasticsearch
+    ports:
+      - 19200:9200
+    environment:
+      - node.name=es01
+      - cluster.name=es-docker-cluster
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.license.self_generated.type=basic
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./db/es/data:/usr/share/elasticsearch/data
+    restart: always
+    networks:
+      - soundbind-network
+
+  zookeeper:
+    image: soundbind/zookeeper:latest
+    ports:
+      - 22181:2181
+    restart: always
+    networks:
+      - soundbind-network
+
+  kafka-1:
+    image: soundbind/kafka:latest
+    ports:
+      - 29091:9091
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka-1:9091
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+    depends_on:
+      - zookeeper
+    restart: always
+    networks:
+      - soundbind-network
+
+  kafka-2:
+    image: soundbind/kafka:latest
+    ports:
+      - 29092:9092
+    environment:
+      - KAFKA_BROKER_ID=2
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka-2:9092
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+    depends_on:
+      - zookeeper
+    restart: always
+    networks:
+      - soundbind-network
+
+  kafka-3:
+    image: soundbind/kafka:latest
+    ports:
+      - 29093:9093
+    environment:
+      - KAFKA_BROKER_ID=3
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka-3:9093
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+    depends_on:
+      - zookeeper
     restart: always
     networks:
       - soundbind-network

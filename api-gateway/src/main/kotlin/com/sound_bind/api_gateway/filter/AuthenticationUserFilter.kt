@@ -1,9 +1,9 @@
 package com.sound_bind.api_gateway.filter
 
+import com.sound_bind.api_gateway.handler.exception.BusinessException.NoPermissionException
 import org.slf4j.LoggerFactory
 import org.springframework.cloud.gateway.filter.GatewayFilter
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory
-import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
 
@@ -22,12 +22,10 @@ class AuthenticationUserFilter
             log.info("[Authentication User Filter Start] Request ID -> ${request.id}")
 
             if (role != "USER") {
-                log.warn("You do not have USER privileges. role = $role")
-                response.statusCode = HttpStatus.FORBIDDEN
-                return@GatewayFilter response.setComplete()
+                return@GatewayFilter Mono.error(
+                    NoPermissionException("You do not have USER permissions. role = $role")
+                )
             }
-
-            log.info("Access Token is Authorized")
 
             chain.filter(exchange)
                 .then(Mono.fromRunnable {

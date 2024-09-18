@@ -1,11 +1,11 @@
-FROM openjdk:21-slim AS builder
+FROM eclipse-temurin:21-jdk-alpine AS builder
 WORKDIR /app
 COPY . .
 WORKDIR /app/api-gateway
-RUN chmod +x ./gradlew
-RUN ./gradlew clean bootJar
+RUN chmod +x ./gradlew && ./gradlew dependencies --no-daemon
+RUN ./gradlew clean bootJar --no-daemon
 
-FROM openjdk:21-slim
+FROM eclipse-temurin:21-jdk-alpine
 WORKDIR /app
 COPY --from=builder /app/api-gateway/build/libs/api-gateway-0.0.1.jar api-gateway.jar
 ENTRYPOINT ["java", "-jar", "api-gateway.jar"]

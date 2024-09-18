@@ -13,9 +13,9 @@ import jakarta.persistence.ManyToOne
 class FileEntity private constructor(
     @Enumerated(EnumType.STRING)
     val fileType: FileType,
-    val originalFileName: String,
-    val savedName: String,
-    val fileUrl: String,
+    originalFileName: String,
+    savedName: String,
+    fileUrl: String,
 ): BaseEntity() {
 
     companion object {
@@ -32,6 +32,15 @@ class FileEntity private constructor(
         }
     }
 
+    var originalFileName = originalFileName
+        protected set
+
+    var savedName = savedName
+        protected set
+
+    var fileUrl = fileUrl
+        protected set
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = null
@@ -40,10 +49,16 @@ class FileEntity private constructor(
     var music: Music? = null
         protected set(music) {
             field = music
-            music?.files?.add(this)
+            music?.updateFiles(this)
         }
 
-    enum class FileType {
-        MUSIC, IMAGE
+    fun updateImage(originalFileName: String, savedName: String, fileUrl: String) {
+        this.originalFileName = originalFileName
+        this.savedName = savedName
+        this.fileUrl = fileUrl
     }
+}
+
+enum class FileType {
+    MUSIC, IMAGE
 }

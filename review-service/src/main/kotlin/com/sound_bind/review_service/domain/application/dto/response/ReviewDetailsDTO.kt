@@ -1,6 +1,7 @@
 package com.sound_bind.review_service.domain.application.dto.response
 
 import com.sound_bind.review_service.domain.persistence.entity.Review
+import java.time.LocalDateTime
 
 data class ReviewDetailsDTO private constructor(
     val id: Long,
@@ -10,16 +11,22 @@ data class ReviewDetailsDTO private constructor(
     val userImageUrl: String?,
     val message: String,
     val score: Double,
-    val likes: Int
+    val commentNum: Int,
+    val likes: Int,
+    val createdAt: LocalDateTime,
+    val updatedAt: LocalDateTime
 ) {
     constructor(review: Review) : this(
-        id = review.id!!,
-        musicId = review.musicId,
-        userId = review.userId,
-        userNickname = review.userNickname,
-        userImageUrl = review.userImageUrl,
-        message = review.message,
-        score = review.score,
-        likes = review.likes
+        review.id!!,
+        review.musicId,
+        review.userId,
+        review.userNickname,
+        review.userImageUrl,
+        review.message,
+        review.score,
+        review.commentNum,
+        review.likes,
+        review.createdAt,
+        review.updatedAt
     )
 }

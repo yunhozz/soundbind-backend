@@ -30,7 +30,7 @@ class CookieUtils {
                 .sameSite(SameSite.LAX.attributeValue())
 
             maxAgeSec?.let { cookieBuilder.maxAge(it) }
-                ?: run { cookieBuilder.maxAge(60 * 60 * 24 * 365 * 10) } // 10 years
+                ?: run { cookieBuilder.maxAge(60 * 60 * 24) } // 1 day
 
             response.addHeader(HttpHeaders.SET_COOKIE, cookieBuilder.build().toString())
         }
