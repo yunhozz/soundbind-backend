@@ -9,5 +9,5 @@ annotation class DistributedLock(
     val leaseTime: Long,
     val timeUnit: TimeUnit = TimeUnit.SECONDS,
     val retryCount: Int = 0,
-    val waitTimeMillis: Long = 0
+    val retryTimeMillis: Long = 0
 )

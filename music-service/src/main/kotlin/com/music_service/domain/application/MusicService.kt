@@ -16,7 +16,6 @@ import com.music_service.domain.persistence.entity.FileType.IMAGE
 import com.music_service.domain.persistence.entity.FileType.MUSIC
 import com.music_service.domain.persistence.entity.Genre
 import com.music_service.domain.persistence.entity.Music
-import com.music_service.domain.persistence.entity.MusicLikes
 import com.music_service.domain.persistence.repository.FileRepository
 import com.music_service.domain.persistence.repository.MusicLikesRepository
 import com.music_service.domain.persistence.repository.MusicRepository
@@ -105,21 +104,10 @@ class MusicService(
 
     @Transactional
     fun changeLikesFlag(musicId: Long, userId: Long): Long? {
-        musicLikesRepository.findMusicLikesWithMusicByMusicIdAndUserId(musicId, userId)?.let { ml ->
-            try {
-                ml.changeFlag()
-                if (ml.flag) return ml.music.userId
-            } catch (e: IllegalArgumentException) {
-                throw NegativeValueException(e.localizedMessage)
-            }
-            return null
-        } ?: run {
-            val music = findMusicById(musicId).also { music ->
-                val musicLikes = MusicLikes(music, userId)
-                musicLikesRepository.save(musicLikes)
-                music.addLikes(1)
-            }
-            return music.userId
+        try {
+            return lockManager.changeLikesFlagWithLock(musicId, userId)
+        } catch (e: IllegalArgumentException) {
+            throw NegativeValueException(e.localizedMessage)
         }
     }
 

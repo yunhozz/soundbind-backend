@@ -60,7 +60,7 @@ class DistributedLockAspect {
             .getValue(context, String::class.java)
             ?: throw IllegalStateException("Lock key cannot be null")
         val retryCount = distributedLock.retryCount
-        val waitTimeMillis = distributedLock.waitTimeMillis
+        val retryTimeMillis = distributedLock.retryTimeMillis
 
         var count = 0
         var acquired = false
@@ -68,7 +68,7 @@ class DistributedLockAspect {
             acquired = action()
             if (acquired) break
             count++
-            Thread.sleep(waitTimeMillis)
+            Thread.sleep(retryTimeMillis)
         }
         if (!acquired) {
             throw CannotAcquireLockException("Failed to acquire lock for key: $lockKey")
