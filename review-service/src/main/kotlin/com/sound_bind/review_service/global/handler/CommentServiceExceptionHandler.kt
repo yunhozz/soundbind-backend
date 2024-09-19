@@ -1,7 +1,6 @@
-package com.auth_service.domain.interfaces.handler
+package com.sound_bind.review_service.global.handler
 
-import com.auth_service.domain.interfaces.dto.ErrorResponse
-import com.auth_service.global.exception.AuthException
+import com.sound_bind.review_service.global.exception.CommentServiceException
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
@@ -11,14 +10,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 
 @RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
-class AuthenticationExceptionHandler {
+class CommentServiceExceptionHandler {
 
     companion object {
-        private val log = LoggerFactory.getLogger(UserManageExceptionHandler::class.java)
+        private val log = LoggerFactory.getLogger(CommentServiceExceptionHandler::class.java)
     }
 
-    @ExceptionHandler(AuthException::class)
-    fun handleUserManageException(e: AuthException): ResponseEntity<ErrorResponse> {
+    @ExceptionHandler(CommentServiceException::class)
+    fun handleCommentServiceException(e: CommentServiceException): ResponseEntity<ErrorResponse> {
         log.error(e.message)
         return ResponseEntity
             .status(e.errorCode.status)

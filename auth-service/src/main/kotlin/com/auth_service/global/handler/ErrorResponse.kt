@@ -1,6 +1,6 @@
-package com.review_service.domain.interfaces.dto
+package com.auth_service.global.handler
 
-import com.sound_bind.review_service.global.exception.ErrorCode
+import com.auth_service.global.exception.ErrorCode
 import org.springframework.validation.BindingResult
 
 data class ErrorResponse(

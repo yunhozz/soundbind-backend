@@ -1,6 +1,6 @@
-package com.music_service.domain.interfaces.dto
+package com.sound_bind.notification_service.global.handler
 
-import com.music_service.global.exception.ErrorCode
+import com.sound_bind.notification_service.global.exception.ErrorCode
 import org.springframework.validation.BindingResult
 
 data class ErrorResponse(

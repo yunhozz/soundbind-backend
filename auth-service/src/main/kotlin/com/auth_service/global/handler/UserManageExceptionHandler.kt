@@ -1,7 +1,6 @@
-package com.sound_bind.review_service.domain.interfaces.handler
+package com.auth_service.global.handler
 
-import com.review_service.domain.interfaces.dto.ErrorResponse
-import com.sound_bind.review_service.global.exception.ReviewServiceException
+import com.auth_service.global.exception.UserManageException
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
@@ -11,14 +10,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 
 @RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
-class ReviewServiceExceptionHandler {
+class UserManageExceptionHandler {
 
     companion object {
-        private val log = LoggerFactory.getLogger(ReviewServiceExceptionHandler::class.java)
+        private val log = LoggerFactory.getLogger(UserManageExceptionHandler::class.java)
     }
 
-    @ExceptionHandler(ReviewServiceException::class)
-    fun handleReviewServiceException(e: ReviewServiceException): ResponseEntity<ErrorResponse> {
+    @ExceptionHandler(UserManageException::class)
+    fun handleUserManageException(e: UserManageException): ResponseEntity<ErrorResponse> {
         log.error(e.message)
         return ResponseEntity
             .status(e.errorCode.status)

@@ -1,6 +1,5 @@
-package com.auth_service.domain.interfaces.handler
+package com.auth_service.global.handler
 
-import com.auth_service.domain.interfaces.dto.ErrorResponse
 import com.auth_service.global.exception.ErrorCode
 import io.jsonwebtoken.JwtException
 import org.slf4j.LoggerFactory

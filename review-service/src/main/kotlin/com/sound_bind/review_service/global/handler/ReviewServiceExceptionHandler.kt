@@ -1,7 +1,6 @@
-package com.sound_bind.notification_service.domain.interfaces.handler
+package com.sound_bind.review_service.global.handler
 
-import com.sound_bind.notification_service.domain.interfaces.dto.ErrorResponse
-import com.sound_bind.notification_service.global.exception.NotificationException
+import com.sound_bind.review_service.global.exception.ReviewServiceException
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
@@ -11,12 +10,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 
 @RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
-class NotificationExceptionHandler {
+class ReviewServiceExceptionHandler {
 
-    private val log = LoggerFactory.getLogger(NotificationExceptionHandler::class.java)
+    companion object {
+        private val log = LoggerFactory.getLogger(ReviewServiceExceptionHandler::class.java)
+    }
 
-    @ExceptionHandler(NotificationException::class)
-    fun handleUserManageException(e: NotificationException): ResponseEntity<ErrorResponse> {
+    @ExceptionHandler(ReviewServiceException::class)
+    fun handleReviewServiceException(e: ReviewServiceException): ResponseEntity<ErrorResponse> {
         log.error(e.message)
         return ResponseEntity
             .status(e.errorCode.status)

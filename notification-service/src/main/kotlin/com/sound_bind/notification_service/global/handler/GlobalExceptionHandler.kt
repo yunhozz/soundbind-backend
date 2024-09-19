@@ -1,6 +1,5 @@
-package com.sound_bind.notification_service.domain.interfaces.handler
+package com.sound_bind.notification_service.global.handler
 
-import com.sound_bind.notification_service.domain.interfaces.dto.ErrorResponse
 import com.sound_bind.notification_service.global.exception.ErrorCode
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
