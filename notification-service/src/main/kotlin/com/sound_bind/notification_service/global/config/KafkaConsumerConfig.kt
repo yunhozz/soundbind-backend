@@ -10,7 +10,8 @@ import org.springframework.kafka.annotation.EnableKafka
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory
 import org.springframework.kafka.core.ConsumerFactory
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory
-import org.springframework.kafka.support.serializer.JsonDeserializer
+import org.springframework.kafka.listener.ContainerProperties
+import org.springframework.kafka.support.converter.StringJsonMessageConverter
 
 @Configuration
 @EnableKafka
@@ -24,7 +25,7 @@ class KafkaConsumerConfig {
         val config = mapOf(
             ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
             ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
-            ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to JsonDeserializer::class.java,
+            ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
             ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to "latest"
         )
         return DefaultKafkaConsumerFactory(config)
@@ -35,6 +36,8 @@ class KafkaConsumerConfig {
         object: ConcurrentKafkaListenerContainerFactory<String, Map<String, Any>>() {
             init {
                 consumerFactory = factory
+                containerProperties.ackMode = ContainerProperties.AckMode.MANUAL
+                setRecordMessageConverter(StringJsonMessageConverter())
             }
         }
 

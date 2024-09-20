@@ -15,7 +15,8 @@ import org.springframework.kafka.core.DefaultKafkaConsumerFactory
 import org.springframework.kafka.core.DefaultKafkaProducerFactory
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.core.ProducerFactory
-import org.springframework.kafka.support.serializer.JsonDeserializer
+import org.springframework.kafka.listener.ContainerProperties
+import org.springframework.kafka.support.converter.StringJsonMessageConverter
 import org.springframework.kafka.support.serializer.JsonSerializer
 import org.springframework.kafka.transaction.KafkaTransactionManager
 
@@ -40,7 +41,7 @@ class KafkaConfig {
             val config = mapOf(
                 ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
                 ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java,
-                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to JsonSerializer::class.java,
+                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to JsonSerializer::class.java
             )
             return DefaultKafkaProducerFactory(config)
         }
@@ -75,8 +76,8 @@ class KafkaConfig {
             val config = mapOf(
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
                 ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
-                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to JsonDeserializer::class.java,
-                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to "earliest"
+                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
+                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to "latest"
             )
             return DefaultKafkaConsumerFactory(config)
         }
@@ -86,6 +87,8 @@ class KafkaConfig {
             object: ConcurrentKafkaListenerContainerFactory<String, Map<String, Any>>() {
                 init {
                     consumerFactory = factory
+                    containerProperties.ackMode = ContainerProperties.AckMode.MANUAL
+                    setRecordMessageConverter(StringJsonMessageConverter())
                 }
             }
     }
