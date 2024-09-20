@@ -8,6 +8,7 @@ import com.music_service.domain.application.dto.response.FileUploadResponseDTO
 import com.music_service.domain.application.dto.response.MusicDetailsDTO
 import com.music_service.domain.application.dto.response.MusicFileResponseDTO
 import com.music_service.domain.application.manager.AsyncManager
+import com.music_service.domain.application.manager.CacheManager
 import com.music_service.domain.application.manager.FileManager
 import com.music_service.domain.application.manager.LockManager
 import com.music_service.domain.persistence.entity.FileEntity
@@ -36,7 +37,8 @@ class MusicService(
     private val musicLikesRepository: MusicLikesRepository,
     private val asyncManager: AsyncManager,
     private val fileManager: FileManager,
-    private val lockManager: LockManager
+    private val lockManager: LockManager,
+    private val cacheManager: CacheManager
 ) {
 
     @Transactional
@@ -68,14 +70,15 @@ class MusicService(
         fileInfoList.forEach { asyncManager.musicUploadWithAsync(it) }
         fileRepository.saveAll(fileEntities)
         asyncManager.saveMusicByElasticsearchWithAsync(MusicDetailsDTO(music, fileEntities))
+        clearMusicCacheByUpdate(music.id!!)
 
         return music.id!!
     }
 
     @Transactional
-    fun updateMusicInformation(id: Long, dto: MusicUpdateDTO): Long {
+    fun updateMusicInformation(musicId: Long, dto: MusicUpdateDTO): Long {
         val before30Days = LocalDateTime.now().minusDays(30)
-        val music = musicRepository.findMusicEligibleForUpdateById(id, before30Days)
+        val music = musicRepository.findMusicEligibleForUpdateById(musicId, before30Days)
             ?: throw MusicNotUpdatableException("It can be modified after 30 days of final modification.")
         val fileEntities = fileRepository.findFilesWhereMusicId(music.id!!)
 
@@ -98,6 +101,7 @@ class MusicService(
             dto.genres.map { Genre.of(it) }.toSet()
         )
         asyncManager.saveMusicByElasticsearchWithAsync(MusicDetailsDTO(music, fileEntities))
+        clearMusicCacheByUpdate(music.id!!)
 
         return music.id!!
     }
@@ -105,6 +109,7 @@ class MusicService(
     @Transactional
     fun changeLikesFlag(musicId: Long, userId: Long): Long? {
         try {
+            clearMusicCacheByUpdate(musicId)
             return lockManager.changeLikesFlagWithLock(musicId, userId)
         } catch (e: IllegalArgumentException) {
             throw NegativeValueException(e.localizedMessage)
@@ -125,11 +130,12 @@ class MusicService(
                 score < 0 -> music.updateScoreByReviewRemove(score)
             }
         }
+        clearMusicCacheByUpdate(music.id!!)
     }
 
     @Transactional
-    fun downloadMusic(id: Long): MusicFileResponseDTO {
-        val music = findMusicById(id)
+    fun downloadMusic(musicId: Long): MusicFileResponseDTO {
+        val music = findMusicById(musicId)
         val files = fileRepository.findFilesWhereMusicId(music.id!!)
 
         files.firstOrNull { fileEntity -> fileEntity.fileType == MUSIC }
@@ -140,12 +146,12 @@ class MusicService(
                     musicInfo.contentType,
                     fileName = musicFileEntity.originalFileName
                 )
-            } ?: throw MusicNotFoundException("Music not found with id: $id")
+            } ?: throw MusicNotFoundException("Music not found with id: $musicId")
     }
 
     @Transactional
-    fun deleteMusic(id: Long) {
-        val music = findMusicById(id)
+    fun deleteMusic(musicId: Long) {
+        val music = findMusicById(musicId)
         val files = fileRepository.findFilesWhereMusicId(music.id!!)
 
         files.map { it.fileUrl }
@@ -154,6 +160,7 @@ class MusicService(
 
         fileRepository.deleteAllInBatch(files)
         music.softDelete()
+        clearMusicCacheByUpdate(music.id!!)
     }
 
     @Transactional
@@ -173,6 +180,7 @@ class MusicService(
             asyncManager.deleteMusicByElasticsearchWithAsync(music.id!!, files.map { it.id!! })
             music.softDelete()
             fileRepository.deleteAllInBatch(files)
+            clearMusicCacheByUpdate(music.id!!)
         }
         fileUrls.forEach { asyncManager.musicDeleteWithAsync(it) }
     }
@@ -185,6 +193,12 @@ class MusicService(
     private fun findMusicById(id: Long): Music =
         musicRepository.findById(id)
             .orElseThrow { MusicNotFoundException("Music not found with id: $id") }
+
+    private fun clearMusicCacheByUpdate(musicId: Long) =
+        cacheManager.run {
+            clearMusicSimpleSearchResultsCache()
+            clearMusicDetailsCache(musicId)
+        }
 
     private fun createFileEntity(
         fileType: FileType,
