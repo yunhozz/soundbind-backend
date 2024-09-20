@@ -1,13 +1,13 @@
 package com.music_service.domain.application
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.music_service.domain.application.dto.message.ReviewScoreMessageDTO
+import com.music_service.domain.application.dto.message.UserWithdrawMessageDTO
 import com.music_service.domain.application.dto.request.MusicCreateDTO
 import com.music_service.domain.application.dto.request.MusicUpdateDTO
 import com.music_service.domain.application.dto.response.FileUploadResponseDTO
 import com.music_service.domain.application.dto.response.MusicDetailsDTO
 import com.music_service.domain.application.dto.response.MusicFileResponseDTO
-import com.music_service.domain.application.manager.ElasticsearchManager
+import com.music_service.domain.application.manager.AsyncManager
 import com.music_service.domain.application.manager.FileManager
 import com.music_service.domain.application.manager.LockManager
 import com.music_service.domain.persistence.entity.FileEntity
@@ -34,8 +34,8 @@ class MusicService(
     private val musicRepository: MusicRepository,
     private val fileRepository: FileRepository,
     private val musicLikesRepository: MusicLikesRepository,
+    private val asyncManager: AsyncManager,
     private val fileManager: FileManager,
-    private val elasticsearchManager: ElasticsearchManager,
     private val lockManager: LockManager
 ) {
 
@@ -65,9 +65,9 @@ class MusicService(
             fileEntities.add(imageFileEntity)
         }
 
-        fileInfoList.forEach { fileManager.onMusicUpload(it) }
+        fileInfoList.forEach { asyncManager.musicUploadWithAsync(it) }
         fileRepository.saveAll(fileEntities)
-        elasticsearchManager.onMusicUpload(MusicDetailsDTO(music, fileEntities))
+        asyncManager.saveMusicByElasticsearchWithAsync(MusicDetailsDTO(music, fileEntities))
 
         return music.id!!
     }
@@ -89,7 +89,7 @@ class MusicService(
                             info.savedName,
                             info.fileUrl
                         )
-                        fileManager.onMusicUpdate(fileUrl, info)
+                        asyncManager.musicUpdateWithAsync(fileUrl, info)
                     }
                 }
         }
@@ -97,7 +97,7 @@ class MusicService(
             dto.title,
             dto.genres.map { Genre.of(it) }.toSet()
         )
-        elasticsearchManager.onMusicUpload(MusicDetailsDTO(music, fileEntities))
+        asyncManager.saveMusicByElasticsearchWithAsync(MusicDetailsDTO(music, fileEntities))
 
         return music.id!!
     }
@@ -113,14 +113,11 @@ class MusicService(
 
     @Transactional
     @KafkaListener(groupId = "music-service-group", topics = ["review-score-topic"])
-    fun changeMusicScoreAverageByReviewTopic(@Payload payload: String) {
-        val obj = mapper.readValue(payload, Map::class.java)
-        val musicId = obj["musicId"] as Number
-        val score = obj["score"] as Double
-        val oldScore = obj["oldScore"] as Double?
+    fun changeMusicScoreAverageByReviewTopic(@Payload payload: ReviewScoreMessageDTO) {
+        val music = findMusicById(payload.musicId)
+        val score = payload.score
 
-        val music = findMusicById(musicId.toLong())
-        oldScore?.let {
+        payload.oldScore?.let {
             music.updateScoreByReviewUpdate(it, score)
         } ?: run {
             when {
@@ -151,11 +148,9 @@ class MusicService(
         val music = findMusicById(id)
         val files = fileRepository.findFilesWhereMusicId(music.id!!)
 
-        files
-            .map { it.fileUrl }
-            .forEach { fileManager.onMusicDelete(it) }
-        elasticsearchManager
-            .onMusicDelete(music.id!!, files.map { it.id!! })
+        files.map { it.fileUrl }
+            .forEach { asyncManager.musicDeleteWithAsync(it) }
+        asyncManager.deleteMusicByElasticsearchWithAsync(music.id!!, files.map { it.id!! })
 
         fileRepository.deleteAllInBatch(files)
         music.softDelete()
@@ -163,12 +158,11 @@ class MusicService(
 
     @Transactional
     @KafkaListener(groupId = "music-service-group", topics = ["user-deletion-topic"])
-    fun deleteMusicsByUserWithdraw(@Payload payload: String) {
-        val obj = mapper.readValue(payload, Map::class.java)
-        val userId = obj["userId"] as Number
+    fun deleteMusicsByUserWithdraw(@Payload payload: UserWithdrawMessageDTO) {
+        val userId = payload.userId
+        val musics = musicRepository.findMusicByUserId(userId)
+        val musicLikesList = musicLikesRepository.findMusicLikesByUserId(userId)
 
-        val musics = musicRepository.findMusicByUserId(userId.toLong())
-        val musicLikesList = musicLikesRepository.findMusicLikesByUserId(userId.toLong())
         musicLikesRepository.deleteAllInBatch(musicLikesList)
 
         val fileUrls = arrayListOf<String>()
@@ -176,11 +170,11 @@ class MusicService(
             val files = fileRepository.findFilesWhereMusicId(music.id!!)
             fileUrls.addAll(files.map { it.fileUrl })
 
-            elasticsearchManager.onMusicDelete(music.id!!, files.map { it.id!! })
+            asyncManager.deleteMusicByElasticsearchWithAsync(music.id!!, files.map { it.id!! })
             music.softDelete()
             fileRepository.deleteAllInBatch(files)
         }
-        fileUrls.forEach { fileManager.onMusicDelete(it) }
+        fileUrls.forEach { asyncManager.musicDeleteWithAsync(it) }
     }
 
     @Transactional(readOnly = true)
@@ -203,9 +197,4 @@ class MusicService(
             fileInfo.fileUrl,
             music
         )
-
-    companion object {
-        private val mapper = jacksonObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-    }
 }

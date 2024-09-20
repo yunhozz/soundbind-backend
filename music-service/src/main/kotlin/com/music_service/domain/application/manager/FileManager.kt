@@ -7,9 +7,6 @@ import org.springframework.web.multipart.MultipartFile
 
 interface FileManager {
     fun generateFileInfo(file: MultipartFile): FileUploadResponseDTO
-    fun onMusicUpload(fileInfo: FileUploadResponseDTO)
-    fun onMusicUpdate(fileUrl: String, dto: FileUploadResponseDTO)
-    fun onMusicDelete(fileUrl: String)
     fun downloadMusic(fileUrl: String): FileDownloadResponseDTO
     fun displayImage(fileUrl: String): Resource
 }

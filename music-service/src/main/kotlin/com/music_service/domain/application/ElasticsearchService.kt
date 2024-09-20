@@ -11,10 +11,8 @@ import com.music_service.domain.persistence.es.search.MusicSearchRepository
 import com.music_service.domain.persistence.repository.MusicRepository
 import com.music_service.domain.persistence.repository.MusicSort
 import com.music_service.domain.persistence.repository.dto.MusicCursorDTO
-import com.music_service.global.config.AsyncConfig.Companion.THREAD_POOL_TASK_EXECUTOR
 import com.music_service.global.exception.MusicServiceException.MusicNotFoundException
 import com.music_service.global.util.DateTimeUtils
-import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -25,7 +23,6 @@ class ElasticsearchService(
     private val fileSearchRepository: FileSearchRepository
 ) {
 
-    @Async(THREAD_POOL_TASK_EXECUTOR)
     fun saveMusicByElasticsearch(dto: MusicDetailsDTO) {
         val fileDocumentList = dto.files.map {
             FileDocument(
@@ -56,6 +53,11 @@ class ElasticsearchService(
         musicSearchRepository.save(musicDocument)
     }
 
+    fun deleteMusicByElasticsearch(musicId: Long, fileIds: List<Long>) {
+        musicSearchRepository.deleteById(musicId)
+        fileSearchRepository.deleteAllById(fileIds)
+    }
+
     @Transactional(readOnly = true)
     fun findMusicSimpleListByKeywordAndCondition(
         keyword: String,
@@ -79,12 +81,6 @@ class ElasticsearchService(
             FileDetailsDTO(fileDocument, musicDocument.id!!)
         }
         return MusicDocumentResponseDTO(musicDocument, files)
-    }
-
-    @Async(THREAD_POOL_TASK_EXECUTOR)
-    fun deleteMusicByElasticsearch(musicId: Long, fileIds: List<Long>) {
-        musicSearchRepository.deleteById(musicId)
-        fileSearchRepository.deleteAllById(fileIds)
     }
 
     private fun findMusicDocumentById(musicId: Long) =

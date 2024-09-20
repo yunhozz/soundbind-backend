@@ -1,7 +1,6 @@
 package com.music_service.domain.interfaces
 
 import com.music_service.domain.application.ElasticsearchService
-import com.music_service.domain.application.MusicService
 import com.music_service.domain.interfaces.dto.APIResponse
 import com.music_service.domain.persistence.repository.MusicSort
 import com.music_service.domain.persistence.repository.dto.MusicCursorDTO
@@ -18,10 +17,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/musics/search")
-class MusicSearchController(
-    private val musicService: MusicService,
-    private val elasticsearchService: ElasticsearchService
-) {
+class MusicSearchController(private val elasticsearchService: ElasticsearchService) {
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
