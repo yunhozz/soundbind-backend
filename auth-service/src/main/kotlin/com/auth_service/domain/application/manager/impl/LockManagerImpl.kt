@@ -9,11 +9,17 @@ import org.springframework.stereotype.Component
 @Component
 class LockManagerImpl(private val userProfileRepository: UserProfileRepository): LockManager {
 
-    @DistributedLock(key = "checkEmailDuplicated")
+    @DistributedLock(
+        key = "'check-email-nickname-duplicated-lock' + #email + '-' + #nickname",
+        leaseTime = 5
+    )
     override fun checkEmailAndNicknameDuplicatedWithLock(email: String, nickname: String): Boolean =
         userProfileRepository.existsByEmail(email) || userProfileRepository.existsByNickname(nickname)
 
-    @DistributedLock(key = "findSimpleInfoByEmail")
+    @DistributedLock(
+        key = "'find-simple-info-lock' + #email",
+        leaseTime = 5
+    )
     override fun findSimpleInfoByEmailWithLock(email: String): UserSimpleInfoQueryDTO? =
         userProfileRepository.findSimpleInfoByEmail(email)
 }
