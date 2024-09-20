@@ -32,7 +32,7 @@ class KafkaConsumerConfig {
             ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
             ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
             ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
-            ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to "latest"
+            ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to AUTO_OFFSET_RESET_CONFIG
         )
         return DefaultKafkaConsumerFactory(config)
     }
@@ -57,7 +57,7 @@ class KafkaConsumerConfig {
                         exception.message
                     )
                     TopicPartition(record.topic() + ".dlc", record.partition())
-                }, FixedBackOff(100L, 5)
+                }, FixedBackOff(BACK_OFF_INTERVAL_MS, BACK_OFF_MAX_ATTEMPTS)
             ))
         }
     }
@@ -65,5 +65,8 @@ class KafkaConsumerConfig {
     companion object {
         private const val KAFKA_CONSUMER_FACTORY = "kafkaConsumerFactory"
         private const val KAFKA_LISTENER_CONTAINER_FACTORY = "kafkaListenerContainerFactory"
+        private const val AUTO_OFFSET_RESET_CONFIG = "latest"
+        private const val BACK_OFF_INTERVAL_MS = 1000L
+        private const val BACK_OFF_MAX_ATTEMPTS = 5L
     }
 }
