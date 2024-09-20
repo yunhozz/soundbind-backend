@@ -45,6 +45,20 @@ class KafkaConsumerConfig {
             init {
                 consumerFactory = factory
                 containerProperties.ackMode = ContainerProperties.AckMode.MANUAL
+                setRecordMessageConverter(StringJsonMessageConverter())
+                setCommonErrorHandler(DefaultErrorHandler(
+                    DeadLetterPublishingRecoverer(template) { record, exception ->
+                        val log = LoggerFactory.getLogger("KafkaConsumerErrorHandler")
+                        log.error(
+                            "[Kafka Consumer Error] topic='{}', key='{}', value='{}', error message='{}'",
+                            record.topic(),
+                            record.key(),
+                            record.value(),
+                            exception.printStackTrace()
+                        )
+                        TopicPartition(record.topic() + ".dlc", record.partition())
+                    }, FixedBackOff(100L, 5)
+                ))
             }
         }
 
