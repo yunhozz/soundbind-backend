@@ -42,25 +42,25 @@ class KafkaConsumerConfig {
         @Qualifier(KAFKA_CONSUMER_FACTORY) factory: ConsumerFactory<String, Map<String, Any>>,
         template: KafkaTemplate<String, Map<String, Any>>
     ) = object: ConcurrentKafkaListenerContainerFactory<String, Map<String, Any>>() {
-            init {
-                consumerFactory = factory
-                containerProperties.ackMode = ContainerProperties.AckMode.MANUAL
-                setRecordMessageConverter(StringJsonMessageConverter())
-                setCommonErrorHandler(DefaultErrorHandler(
-                    DeadLetterPublishingRecoverer(template) { record, exception ->
-                        val log = LoggerFactory.getLogger("KafkaConsumerErrorHandler")
-                        log.error(
-                            "[Kafka Consumer Error] topic='{}', key='{}', value='{}', error message='{}'",
-                            record.topic(),
-                            record.key(),
-                            record.value(),
-                            exception.message
-                        )
-                        TopicPartition(record.topic() + ".dlc", record.partition())
-                    }, FixedBackOff(100L, 5)
-                ))
-            }
+        init {
+            consumerFactory = factory
+            containerProperties.ackMode = ContainerProperties.AckMode.MANUAL
+            setRecordMessageConverter(StringJsonMessageConverter())
+            setCommonErrorHandler(DefaultErrorHandler(
+                DeadLetterPublishingRecoverer(template) { record, exception ->
+                    val log = LoggerFactory.getLogger("KafkaConsumerErrorHandler")
+                    log.error(
+                        "[Kafka Consumer Error] topic='{}', key='{}', value='{}', error message='{}'",
+                        record.topic(),
+                        record.key(),
+                        record.value(),
+                        exception.message
+                    )
+                    TopicPartition(record.topic() + ".dlc", record.partition())
+                }, FixedBackOff(100L, 5)
+            ))
         }
+    }
 
     companion object {
         private const val KAFKA_CONSUMER_FACTORY = "kafkaConsumerFactory"
