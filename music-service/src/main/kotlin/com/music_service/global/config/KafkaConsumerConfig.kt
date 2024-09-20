@@ -54,7 +54,7 @@ class KafkaConsumerConfig {
                             record.topic(),
                             record.key(),
                             record.value(),
-                            exception.printStackTrace()
+                            exception.message
                         )
                         TopicPartition(record.topic() + ".dlc", record.partition())
                     }, FixedBackOff(100L, 5)
