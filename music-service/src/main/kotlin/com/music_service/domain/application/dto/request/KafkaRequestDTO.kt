@@ -1,4 +1,4 @@
-package com.music_service.domain.interfaces.dto
+package com.music_service.domain.application.dto.request
 
 data class KafkaRequestDTO(
     val topic: String,

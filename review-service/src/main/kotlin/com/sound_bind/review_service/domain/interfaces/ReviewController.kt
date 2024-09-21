@@ -1,19 +1,13 @@
 package com.sound_bind.review_service.domain.interfaces
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.review_service.domain.interfaces.dto.APIResponse
 import com.sound_bind.review_service.domain.application.ReviewService
 import com.sound_bind.review_service.domain.application.dto.request.ReviewCreateDTO
 import com.sound_bind.review_service.domain.application.dto.request.ReviewUpdateDTO
-import com.sound_bind.review_service.domain.interfaces.dto.KafkaRequestDTO
 import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorDTO
 import com.sound_bind.review_service.global.annotation.HeaderSubject
 import com.sound_bind.review_service.global.enums.ReviewSort
 import jakarta.validation.Valid
-import khttp.get
-import khttp.post
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -38,42 +32,15 @@ class ReviewController(private val reviewService: ReviewService) {
         @RequestParam musicId: String,
         @Valid @RequestBody dto: ReviewCreateDTO
     ): APIResponse {
-        val response = get("$musicServiceUri/$musicId/musician")
-        if (response.statusCode != HttpStatus.OK.value()) {
-            val message = response.jsonObject.getString("message")
-            return APIResponse.of(message)
-        }
         val reviewId = reviewService.createReview(musicId.toLong(), sub.toLong(), dto)
-
-        val obj = mapper.readValue(response.text, Map::class.java)
-        val musicianId = mapper.writeValueAsString(obj["data"])
-        val myInfo = reviewService.getUserInformationOnRedis(sub.toLong())
-
-        val notificationRequest = KafkaRequestDTO(
-            topic = "review-added-topic",
-            message = KafkaRequestDTO.KafkaNotificationDTO(
-                userId = musicianId.toLong(),
-                content = "${myInfo["nickname"]} 님이 당신의 음원에 리뷰를 남겼습니다.",
-                link = "http://localhost:8000/api/reviews/$reviewId"
-            )
-        )
-        val musicScoreRequest = KafkaRequestDTO(
-            topic = "review-score-topic",
-            message = KafkaRequestDTO.KafkaMusicScoreDTO(
-                musicId.toLong(),
-                oldScore = null,
-                score = dto.score
-            )
-        )
-        sendMessageToKafkaProducer(notificationRequest, musicScoreRequest)
         return APIResponse.of("Review created", reviewId)
     }
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     fun lookupDetailsOfReview(@PathVariable id: String): APIResponse {
-        val result = reviewService.lookupDetailsOfReviewById(id.toLong())
-        return APIResponse.of("Review found", result)
+        val reviewDetails = reviewService.lookupDetailsOfReviewById(id.toLong())
+        return APIResponse.of("Review found", reviewDetails)
     }
 
     @PostMapping("/found")
@@ -85,14 +52,14 @@ class ReviewController(private val reviewService: ReviewService) {
         @RequestParam(required = false, defaultValue = "0") page: String,
         @RequestBody(required = false) dto: ReviewCursorDTO,
     ): APIResponse {
-        val result = reviewService.findReviewListByMusicIdV1(
+        val reviews = reviewService.findReviewListByMusicIdV1(
             musicId.toLong(),
             userId = sub.toLong(),
             reviewSort = ReviewSort.of(sort),
             dto,
             pageable = PageRequest.of(page.toInt(), 20)
         )
-        return APIResponse.of("Reviews found", result)
+        return APIResponse.of("Reviews found", reviews)
     }
 
     @PatchMapping("/{id}")
@@ -102,68 +69,21 @@ class ReviewController(private val reviewService: ReviewService) {
         @PathVariable("id") id: String,
         @Valid @RequestBody dto: ReviewUpdateDTO
     ): APIResponse {
-        val reviewScoreDTO = reviewService.updateReviewMessageAndScore(id.toLong(), sub.toLong(), dto)
-        val musicScoreRequest = KafkaRequestDTO(
-            topic = "review-score-topic",
-            message = KafkaRequestDTO.KafkaMusicScoreDTO(
-                musicId = reviewScoreDTO.musicId,
-                oldScore = reviewScoreDTO.oldScore,
-                score = reviewScoreDTO.newScore
-            )
-        )
-        sendMessageToKafkaProducer(musicScoreRequest)
-        return APIResponse.of("Review updated", reviewScoreDTO.id)
+        val reviewId = reviewService.updateReviewMessageAndScore(id.toLong(), sub.toLong(), dto)
+        return APIResponse.of("Review updated", reviewId)
     }
 
     @PostMapping("/{id}/likes")
     @ResponseStatus(HttpStatus.CREATED)
     fun updateLikesOnReview(@HeaderSubject sub: String, @PathVariable("id") id: String): APIResponse {
-        reviewService.changeLikesFlag(id.toLong(), sub.toLong())?.let {
-            val myInfo = reviewService.getUserInformationOnRedis(sub.toLong())
-            val notificationRequest = KafkaRequestDTO(
-                topic = "review-like-topic",
-                message = KafkaRequestDTO.KafkaNotificationDTO(
-                    userId = it,
-                    content = "${myInfo["nickname"] as String} 님이 당신의 리뷰에 좋아요를 눌렀습니다.",
-                    link = null
-                )
-            )
-            sendMessageToKafkaProducer(notificationRequest)
-        }
+        reviewService.changeLikesFlag(id.toLong(), sub.toLong())
         return APIResponse.of("Likes of Review Changed")
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteReview(@HeaderSubject sub: String, @PathVariable("id") id: String): APIResponse {
-        val reviewScoreDTO = reviewService.deleteReview(id.toLong(), sub.toLong())
-        val musicScoreRequest = KafkaRequestDTO(
-            topic = "review-score-topic",
-            message = KafkaRequestDTO.KafkaMusicScoreDTO(
-                musicId = reviewScoreDTO.musicId,
-                oldScore = reviewScoreDTO.oldScore,
-                score = reviewScoreDTO.newScore
-            )
-        )
-        sendMessageToKafkaProducer(musicScoreRequest)
+        reviewService.deleteReview(id.toLong(), sub.toLong())
         return APIResponse.of("Review deleted")
-    }
-
-    @Value("\${uris.kafka-server-uri:http://localhost:9000}/api/kafka")
-    private lateinit var kafkaRequestUri: String
-
-    @Value("\${uris.music-service-uri:http://localhost:8070}/api/musics")
-    private lateinit var musicServiceUri: String
-
-    private fun sendMessageToKafkaProducer(vararg request: KafkaRequestDTO) =
-        post(
-            url = kafkaRequestUri,
-            headers = mapOf("Content-Type" to "application/json"),
-            data = mapper.writeValueAsString(request.toList())
-        )
-
-    companion object {
-        private val mapper = jacksonObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
     }
 }

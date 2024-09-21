@@ -22,8 +22,8 @@ class MusicSearchController(private val musicSearchService: MusicSearchService) 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     fun lookUpMusicDetails(@HeaderSubject sub: String, @PathVariable id: String): APIResponse {
-        val result = musicSearchService.findMusicDetailsByElasticsearch(id.toLong(), sub.toLong())
-        return APIResponse.of("Music Details Found", result)
+        val musicDetails = musicSearchService.findMusicDetailsByElasticsearch(id.toLong(), sub.toLong())
+        return APIResponse.of("Music Details Found", musicDetails)
     }
 
     @GetMapping
@@ -32,13 +32,13 @@ class MusicSearchController(private val musicSearchService: MusicSearchService) 
         @HeaderSubject sub: String,
         @RequestParam(required = true) keyword: String
     ): APIResponse {
-        val result = musicSearchService.findMusicSimpleListByKeywordAndCondition(
+        val musics = musicSearchService.findMusicSimpleListByKeywordAndCondition(
             keyword,
             MusicSort.ACCURACY,
             cursor = null,
             sub.toLong()
         )
-        return APIResponse.of("Music List Found", result)
+        return APIResponse.of("Music List Found", musics)
     }
 
     @PostMapping
@@ -49,12 +49,12 @@ class MusicSearchController(private val musicSearchService: MusicSearchService) 
         @RequestParam(required = false, defaultValue = "accuracy") sort: String,
         @RequestBody(required = false) cursor: MusicCursorDTO?
     ): APIResponse {
-        val result = musicSearchService.findMusicSimpleListByKeywordAndCondition(
+        val musics = musicSearchService.findMusicSimpleListByKeywordAndCondition(
             keyword,
             MusicSort.of(sort),
             cursor,
             sub.toLong()
         )
-        return APIResponse.of("Music List Found", result)
+        return APIResponse.of("Music List Found", musics)
     }
 }

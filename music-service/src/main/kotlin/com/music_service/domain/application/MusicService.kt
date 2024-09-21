@@ -1,7 +1,10 @@
 package com.music_service.domain.application
 
-import com.music_service.domain.application.dto.message.ReviewScoreMessageDTO
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.music_service.domain.application.dto.message.MusicReviewMessageDTO
 import com.music_service.domain.application.dto.message.UserWithdrawMessageDTO
+import com.music_service.domain.application.dto.request.KafkaRequestDTO
 import com.music_service.domain.application.dto.request.MusicCreateDTO
 import com.music_service.domain.application.dto.request.MusicUpdateDTO
 import com.music_service.domain.application.dto.response.FileUploadResponseDTO
@@ -24,6 +27,8 @@ import com.music_service.global.exception.MusicServiceException.MusicNotFoundExc
 import com.music_service.global.exception.MusicServiceException.MusicNotUpdatableException
 import com.music_service.global.exception.MusicServiceException.NegativeValueException
 import com.music_service.global.util.RedisUtils
+import khttp.post
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Service
@@ -107,18 +112,29 @@ class MusicService(
     }
 
     @Transactional
-    fun changeLikesFlag(musicId: Long, userId: Long): Long? {
+    fun changeLikesFlag(musicId: Long, userId: Long) {
         try {
             clearMusicCacheByUpdate(musicId)
-            return lockManager.changeLikesFlagWithLock(musicId, userId)
+            lockManager.changeLikesFlagWithLock(musicId, userId)?.let {
+                val myInfo = RedisUtils.getJson("user:$userId", Map::class.java)
+                val musicLikeTopic = KafkaRequestDTO(
+                    topic = "music-like-topic",
+                    message = KafkaRequestDTO.KafkaNotificationDTO(
+                        userId = it,
+                        content = "${myInfo["nickname"] as String} 님이 당신의 음원에 좋아요를 눌렀습니다.",
+                        link = null
+                    )
+                )
+                sendMessageToKafkaProducer(musicLikeTopic)
+            }
         } catch (e: IllegalArgumentException) {
             throw NegativeValueException(e.localizedMessage)
         }
     }
 
     @Transactional
-    @KafkaListener(groupId = "music-service-group", topics = ["review-score-topic"])
-    fun changeMusicScoreAverageByReviewTopic(@Payload payload: ReviewScoreMessageDTO) {
+    @KafkaListener(groupId = "music-service-group", topics = ["music-review-topic"])
+    fun changeScoreAverageAndSendNotification(@Payload payload: MusicReviewMessageDTO) {
         val music = findMusicById(payload.musicId)
         val score = payload.score
 
@@ -131,6 +147,21 @@ class MusicService(
             }
         }
         clearMusicCacheByUpdate(music.id!!)
+
+        val reviewId = payload.reviewId
+        val nickname = payload.nickname
+
+        if (reviewId != null && nickname != null) {
+            val reviewAddedTopic = KafkaRequestDTO(
+                topic = "review-added-topic",
+                message = KafkaRequestDTO.KafkaNotificationDTO(
+                    userId = music.userId,
+                    content = "$nickname 님이 당신의 음원에 리뷰를 남겼습니다.",
+                    link = "http://localhost:8000/api/reviews/$reviewId"
+                )
+            )
+            sendMessageToKafkaProducer(reviewAddedTopic)
+        }
     }
 
     @Transactional
@@ -185,11 +216,6 @@ class MusicService(
         fileUrls.forEach { asyncManager.musicDeleteWithAsync(it) }
     }
 
-    @Transactional(readOnly = true)
-    fun findMusicianIdByMusicId(musicId: Long): Long =
-        musicRepository.findMusicianIdById(musicId)
-            ?: throw MusicNotFoundException("Music not found with id: $musicId")
-
     private fun findMusicById(id: Long): Music =
         musicRepository.findById(id)
             .orElseThrow { MusicNotFoundException("Music not found with id: $id") }
@@ -211,4 +237,19 @@ class MusicService(
             fileInfo.fileUrl,
             music
         )
+
+    @Value("\${uris.kafka-server-uri:http://localhost:9000}/api/kafka")
+    private lateinit var kafkaRequestUri: String
+
+    private fun sendMessageToKafkaProducer(vararg message: KafkaRequestDTO) =
+        post(
+            url = kafkaRequestUri,
+            headers = mapOf("Content-Type" to "application/json"),
+            data = mapper.writeValueAsString(message.toList())
+        )
+
+    companion object {
+        private val mapper = jacksonObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+        }
 }

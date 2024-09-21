@@ -1,4 +1,4 @@
-package com.sound_bind.review_service.domain.interfaces.dto
+package com.sound_bind.review_service.domain.application.dto.request
 
 data class KafkaRequestDTO(
     val topic: String,
@@ -10,7 +10,15 @@ data class KafkaRequestDTO(
         val link: String?
     ): KafkaMessage
 
-    data class KafkaMusicScoreDTO(
+    data class KafkaMusicReviewCreateDTO(
+        val musicId: Long,
+        val reviewId: Long,
+        val nickname: String,
+        val oldScore: Double?,
+        val score: Double
+    ): KafkaMessage
+
+    data class KafkaMusicReviewUpdateDTO(
         val musicId: Long,
         val oldScore: Double?,
         val score: Double
