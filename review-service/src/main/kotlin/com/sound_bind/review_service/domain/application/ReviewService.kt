@@ -1,12 +1,11 @@
 package com.sound_bind.review_service.domain.application
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.sound_bind.review_service.domain.application.dto.request.KafkaRequestDTO
+import com.sound_bind.review_service.domain.application.dto.message.UserWithdrawMessageDTO
 import com.sound_bind.review_service.domain.application.dto.request.ReviewCreateDTO
 import com.sound_bind.review_service.domain.application.dto.request.ReviewUpdateDTO
 import com.sound_bind.review_service.domain.application.dto.response.ReviewDetailsDTO
-import com.sound_bind.review_service.domain.application.listener.ReviewElasticsearchListener
+import com.sound_bind.review_service.domain.application.manager.KafkaManager
+import com.sound_bind.review_service.domain.application.manager.ReviewElasticsearchManager
 import com.sound_bind.review_service.domain.persistence.entity.Review
 import com.sound_bind.review_service.domain.persistence.entity.ReviewLikes
 import com.sound_bind.review_service.domain.persistence.repository.CommentRepository
@@ -21,8 +20,6 @@ import com.sound_bind.review_service.global.exception.ReviewServiceException.Rev
 import com.sound_bind.review_service.global.exception.ReviewServiceException.ReviewNotUpdatableException
 import com.sound_bind.review_service.global.exception.ReviewServiceException.ReviewUpdateNotAuthorizedException
 import com.sound_bind.review_service.global.util.RedisUtils
-import khttp.post
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Slice
 import org.springframework.kafka.annotation.KafkaListener
@@ -36,7 +33,8 @@ class ReviewService(
     private val reviewRepository: ReviewRepository,
     private val commentRepository: CommentRepository,
     private val reviewLikesRepository: ReviewLikesRepository,
-    private val elasticsearchListener: ReviewElasticsearchListener
+    private val elasticsearchManager: ReviewElasticsearchManager,
+    private val kafkaManager: KafkaManager
 ) {
 
     @Transactional
@@ -54,19 +52,9 @@ class ReviewService(
             dto.score
         )
         reviewRepository.save(review)
-        elasticsearchListener.onReviewCreate(ReviewDetailsDTO(review))
 
-        val musicReviewTopic = KafkaRequestDTO(
-            topic = "music-review-topic",
-            message = KafkaRequestDTO.KafkaMusicReviewCreateDTO(
-                musicId,
-                review.id!!,
-                nickname = userInfo["nickname"] as String,
-                oldScore = null,
-                score = dto.score
-            )
-        )
-        sendMessageToKafkaProducer(musicReviewTopic)
+        elasticsearchManager.onReviewCreate(ReviewDetailsDTO(review))
+        kafkaManager.sendMusicReviewCreateTopic(musicId, review.id!!, userInfo["nickname"] as String, null, dto.score)
 
         return review.id!!
     }
@@ -81,13 +69,8 @@ class ReviewService(
         if (reviewRepository.isReviewEligibleForUpdate(review.id!!, before30Days)) {
             val newScore = dto.score
             review.updateMessageAndScore(dto.message, newScore)
-            elasticsearchListener.onReviewCreate(ReviewDetailsDTO(review))
-
-            val reviewScoreTopic = KafkaRequestDTO(
-                topic = "music-review-topic",
-                message = KafkaRequestDTO.KafkaMusicReviewUpdateDTO(review.musicId, oldScore, newScore)
-            )
-            sendMessageToKafkaProducer(reviewScoreTopic)
+            elasticsearchManager.onReviewCreate(ReviewDetailsDTO(review))
+            kafkaManager.sendMusicReviewUpdateTopic(review.musicId, oldScore, newScore)
 
             return review.id!!
 
@@ -132,15 +115,8 @@ class ReviewService(
             reviewerId = review.userId
         }
         reviewerId?.let {
-            val reviewLikeTopic = KafkaRequestDTO(
-                topic = "review-like-topic",
-                message = KafkaRequestDTO.KafkaNotificationDTO(
-                    userId = it,
-                    content = "${userInfo["nickname"] as String} 님이 당신의 리뷰에 좋아요를 눌렀습니다.",
-                    link = null
-                )
-            )
-            sendMessageToKafkaProducer(reviewLikeTopic)
+            kafkaManager.sendReviewLikeTopic(it,
+                "${userInfo["nickname"] as String} 님이 당신의 리뷰에 좋아요를 눌렀습니다.")
         }
     }
 
@@ -151,29 +127,19 @@ class ReviewService(
         val comments = commentRepository.findCommentsByReview(review)
         val reviewLikesList = reviewLikesRepository.findByReview(review)
 
+        review.softDelete()
         comments.forEach { it.softDelete() }
         reviewLikesRepository.deleteAllInBatch(reviewLikesList)
-        review.softDelete()
 
         val commentIds = comments.map { it.id!! }
-        elasticsearchListener.onReviewDelete(review.id!!, commentIds)
-
-        val musicReviewTopic = KafkaRequestDTO(
-            topic = "music-review-topic",
-            message = KafkaRequestDTO.KafkaMusicReviewUpdateDTO(
-                review.musicId,
-                oldScore = null,
-                score = review.score.unaryMinus()
-            )
-        )
-        sendMessageToKafkaProducer(musicReviewTopic)
+        elasticsearchManager.onReviewDelete(review.id!!, commentIds)
+        kafkaManager.sendMusicReviewUpdateTopic(review.musicId, null, review.score.unaryMinus())
     }
 
     @Transactional
     @KafkaListener(groupId = "review-service-group", topics = ["user-deletion-topic"])
-    fun deleteReviewsByUserWithdraw(@Payload payload: String) {
-        val obj = mapper.readValue(payload, Map::class.java)
-        val userId = (obj["userId"] as Number).toLong()
+    fun deleteReviewsByUserWithdraw(@Payload payload: UserWithdrawMessageDTO) {
+        val userId = payload.userId
         val reviews = reviewRepository.findReviewsByUserId(userId)
 
         reviews.forEach { review ->
@@ -184,7 +150,7 @@ class ReviewService(
             reviewLikesRepository.deleteAllInBatch(reviewLikesList)
             review.softDelete()
         }
-        elasticsearchListener.onReviewsDeleteByUserWithdraw(userId)
+        elasticsearchManager.onReviewsDeleteByUserWithdraw(userId)
         reviewRepository.deleteReviewsByUserId(LocalDateTime.now(), userId)
     }
 
@@ -195,22 +161,4 @@ class ReviewService(
     private fun findReviewById(id: Long): Review =
         reviewRepository.findById(id)
             .orElseThrow { ReviewNotFoundException("Review not found: $id") }
-
-    @Value("\${uris.kafka-server-uri:http://localhost:9000}/api/kafka")
-    private lateinit var kafkaRequestUri: String
-
-    @Value("\${uris.music-service-uri:http://localhost:8070}/api/musics")
-    private lateinit var musicServiceUri: String
-
-    private fun sendMessageToKafkaProducer(vararg message: KafkaRequestDTO) =
-        post(
-            url = kafkaRequestUri,
-            headers = mapOf("Content-Type" to "application/json"),
-            data = mapper.writeValueAsString(message.toList())
-        )
-
-    companion object {
-        private val mapper = jacksonObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-    }
 }

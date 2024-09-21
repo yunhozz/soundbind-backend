@@ -1,10 +1,7 @@
 package com.music_service.domain.application
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.music_service.domain.application.dto.message.MusicReviewMessageDTO
 import com.music_service.domain.application.dto.message.UserWithdrawMessageDTO
-import com.music_service.domain.application.dto.request.KafkaRequestDTO
 import com.music_service.domain.application.dto.request.MusicCreateDTO
 import com.music_service.domain.application.dto.request.MusicUpdateDTO
 import com.music_service.domain.application.dto.response.FileUploadResponseDTO
@@ -13,6 +10,7 @@ import com.music_service.domain.application.dto.response.MusicFileResponseDTO
 import com.music_service.domain.application.manager.AsyncManager
 import com.music_service.domain.application.manager.CacheManager
 import com.music_service.domain.application.manager.FileManager
+import com.music_service.domain.application.manager.KafkaManager
 import com.music_service.domain.application.manager.LockManager
 import com.music_service.domain.persistence.entity.FileEntity
 import com.music_service.domain.persistence.entity.FileType
@@ -27,8 +25,6 @@ import com.music_service.global.exception.MusicServiceException.MusicNotFoundExc
 import com.music_service.global.exception.MusicServiceException.MusicNotUpdatableException
 import com.music_service.global.exception.MusicServiceException.NegativeValueException
 import com.music_service.global.util.RedisUtils
-import khttp.post
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Service
@@ -42,6 +38,7 @@ class MusicService(
     private val musicLikesRepository: MusicLikesRepository,
     private val asyncManager: AsyncManager,
     private val fileManager: FileManager,
+    private val kafkaManager: KafkaManager,
     private val lockManager: LockManager,
     private val cacheManager: CacheManager
 ) {
@@ -114,19 +111,13 @@ class MusicService(
     @Transactional
     fun changeLikesFlag(musicId: Long, userId: Long) {
         try {
-            clearMusicCacheByUpdate(musicId)
             lockManager.changeLikesFlagWithLock(musicId, userId)?.let {
                 val myInfo = RedisUtils.getJson("user:$userId", Map::class.java)
-                val musicLikeTopic = KafkaRequestDTO(
-                    topic = "music-like-topic",
-                    message = KafkaRequestDTO.KafkaNotificationDTO(
-                        userId = it,
-                        content = "${myInfo["nickname"] as String} 님이 당신의 음원에 좋아요를 눌렀습니다.",
-                        link = null
-                    )
-                )
-                sendMessageToKafkaProducer(musicLikeTopic)
+                kafkaManager.sendMusicLikeTopic(it,
+                    "${myInfo["nickname"] as String} 님이 당신의 음원에 좋아요를 눌렀습니다.")
             }
+            clearMusicCacheByUpdate(musicId)
+
         } catch (e: IllegalArgumentException) {
             throw NegativeValueException(e.localizedMessage)
         }
@@ -152,15 +143,11 @@ class MusicService(
         val nickname = payload.nickname
 
         if (reviewId != null && nickname != null) {
-            val reviewAddedTopic = KafkaRequestDTO(
-                topic = "review-added-topic",
-                message = KafkaRequestDTO.KafkaNotificationDTO(
-                    userId = music.userId,
-                    content = "$nickname 님이 당신의 음원에 리뷰를 남겼습니다.",
-                    link = "http://localhost:8000/api/reviews/$reviewId"
-                )
+            kafkaManager.sendReviewAddedTopic(
+                music.userId,
+                content = "$nickname 님이 당신의 음원에 리뷰를 남겼습니다.",
+                link = "http://localhost:8000/api/reviews/$reviewId"
             )
-            sendMessageToKafkaProducer(reviewAddedTopic)
         }
     }
 
@@ -237,19 +224,4 @@ class MusicService(
             fileInfo.fileUrl,
             music
         )
-
-    @Value("\${uris.kafka-server-uri:http://localhost:9000}/api/kafka")
-    private lateinit var kafkaRequestUri: String
-
-    private fun sendMessageToKafkaProducer(vararg message: KafkaRequestDTO) =
-        post(
-            url = kafkaRequestUri,
-            headers = mapOf("Content-Type" to "application/json"),
-            data = mapper.writeValueAsString(message.toList())
-        )
-
-    companion object {
-        private val mapper = jacksonObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-        }
 }
