@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class ElasticsearchService(
+class MusicSearchService(
     private val musicRepository: MusicRepository,
     private val musicSearchRepository: MusicSearchRepository,
     private val fileSearchRepository: FileSearchRepository

@@ -1,6 +1,6 @@
 package com.music_service.domain.application.manager.impl
 
-import com.music_service.domain.application.ElasticsearchService
+import com.music_service.domain.application.MusicSearchService
 import com.music_service.domain.application.dto.response.FileUploadResponseDTO
 import com.music_service.domain.application.dto.response.MusicDetailsDTO
 import com.music_service.domain.application.manager.AsyncManager
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component
 @Component
 class AsyncManagerImpl(
     private val fileManager: FileManagerImpl,
-    private val elasticsearchService: ElasticsearchService
+    private val musicSearchService: MusicSearchService
 ): AsyncManager {
 
     @Async(THREAD_POOL_TASK_EXECUTOR)
@@ -28,9 +28,9 @@ class AsyncManagerImpl(
 
     @Async(THREAD_POOL_TASK_EXECUTOR)
     override fun saveMusicByElasticsearchWithAsync(dto: MusicDetailsDTO) =
-        elasticsearchService.saveMusicByElasticsearch(dto)
+        musicSearchService.saveMusicByElasticsearch(dto)
 
     @Async(THREAD_POOL_TASK_EXECUTOR)
     override fun deleteMusicByElasticsearchWithAsync(musicId: Long, fileIds: List<Long>) =
-        elasticsearchService.deleteMusicByElasticsearch(musicId, fileIds)
+        musicSearchService.deleteMusicByElasticsearch(musicId, fileIds)
 }
