@@ -1,14 +1,14 @@
-package com.sound_bind.review_service.domain.application.listener.impl
+package com.sound_bind.review_service.domain.application.manager.impl
 
 import com.sound_bind.review_service.domain.application.ElasticsearchService
 import com.sound_bind.review_service.domain.application.dto.response.CommentDetailsDTO
-import com.sound_bind.review_service.domain.application.listener.CommentElasticsearchListener
+import com.sound_bind.review_service.domain.application.manager.CommentElasticsearchManager
 import org.springframework.stereotype.Component
 
 @Component
-class CommentElasticsearchListenerImpl(
+class CommentElasticsearchManagerImpl(
     private val elasticsearchService: ElasticsearchService
-): CommentElasticsearchListener {
+): CommentElasticsearchManager {
 
     override fun onCommentCreate(dto: CommentDetailsDTO) =
         elasticsearchService.saveCommentInElasticSearch(dto)
