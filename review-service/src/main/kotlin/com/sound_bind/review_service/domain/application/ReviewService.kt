@@ -1,5 +1,6 @@
 package com.sound_bind.review_service.domain.application
 
+import com.sound_bind.review_service.domain.application.dto.message.MusicNotFoundMessageDTO
 import com.sound_bind.review_service.domain.application.dto.message.UserWithdrawMessageDTO
 import com.sound_bind.review_service.domain.application.dto.request.ReviewCreateDTO
 import com.sound_bind.review_service.domain.application.dto.request.ReviewUpdateDTO
@@ -54,9 +55,28 @@ class ReviewService(
         reviewRepository.save(review)
 
         elasticsearchManager.onReviewCreate(ReviewDetailsDTO(review))
-        kafkaManager.sendMusicReviewCreateTopic(musicId, review.id!!, userInfo["nickname"] as String, null, dto.score)
+        kafkaManager.sendMusicReviewCreateTopic(
+            musicId,
+            review.id!!,
+            reviewerId = userId,
+            nickname = userInfo["nickname"] as String,
+            oldScore = null,
+            score = dto.score
+        )
 
         return review.id!!
+    }
+
+    @Transactional
+    @KafkaListener(groupId = "review-service", topics = ["review-rollback-topic"])
+    fun createReviewRollback(@Payload payload: MusicNotFoundMessageDTO) {
+        val reviewId = payload.reviewId
+        val review = findReviewById(reviewId)
+
+        review.softDelete()
+        elasticsearchManager.onReviewDelete(reviewId, emptyList())
+        kafkaManager.sendMusicNotFoundTopic(payload.reviewerId,
+            "music id = ${payload.musicId} 에 해당하는 음원이 존재하지 않아 리뷰가 삭제되었습니다.")
     }
 
     @Transactional
@@ -70,7 +90,13 @@ class ReviewService(
             val newScore = dto.score
             review.updateMessageAndScore(dto.message, newScore)
             elasticsearchManager.onReviewCreate(ReviewDetailsDTO(review))
-            kafkaManager.sendMusicReviewUpdateTopic(review.musicId, oldScore, newScore)
+            kafkaManager.sendMusicReviewUpdateTopic(
+                review.musicId,
+                review.id!!,
+                reviewerId = userId,
+                oldScore,
+                newScore
+            )
 
             return review.id!!
 
@@ -127,13 +153,20 @@ class ReviewService(
         val comments = commentRepository.findCommentsByReview(review)
         val reviewLikesList = reviewLikesRepository.findByReview(review)
 
+        kafkaManager.sendMusicReviewUpdateTopic(
+            musicId = review.musicId,
+            review.id!!,
+            reviewerId = userId,
+            oldScore = null,
+            score = review.score.unaryMinus()
+        )
+
         review.softDelete()
         comments.forEach { it.softDelete() }
         reviewLikesRepository.deleteAllInBatch(reviewLikesList)
 
         val commentIds = comments.map { it.id!! }
         elasticsearchManager.onReviewDelete(review.id!!, commentIds)
-        kafkaManager.sendMusicReviewUpdateTopic(review.musicId, null, review.score.unaryMinus())
     }
 
     @Transactional

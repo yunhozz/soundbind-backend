@@ -16,6 +16,7 @@ class KafkaManagerImpl: KafkaManager {
 
         private const val MUSIC_LIKE_TOPIC = "music-like-topic"
         private const val REVIEW_ADDED_TOPIC = "review-added-topic"
+        private const val REVIEW_ROLLBACK_TOPIC = "review-rollback-topic"
     }
 
     @Value("\${uris.kafka-server-uri:http://localhost:9000}/api/kafka")
@@ -37,6 +38,14 @@ class KafkaManagerImpl: KafkaManager {
         sendMessageToKafkaProducer(reviewAddedTopic)
     }
 
+    override fun sendReviewRollbackTopic(musicId: Long, reviewId: Long, reviewerId: Long) {
+        val reviewRollbackTopic = KafkaRequestDTO(
+            topic = REVIEW_ROLLBACK_TOPIC,
+            message = KafkaRequestDTO.KafkaReviewRollbackDTO(musicId, reviewId, reviewerId)
+        )
+        sendMessageToKafkaProducer(reviewRollbackTopic)
+    }
+
     private fun sendMessageToKafkaProducer(vararg message: KafkaRequestDTO) =
         post(
             url = kafkaRequestUri,
@@ -52,6 +61,12 @@ class KafkaManagerImpl: KafkaManager {
             val userId: Long,
             val content: String,
             val link: String?
+        ): KafkaMessage
+
+        data class KafkaReviewRollbackDTO(
+            val musicId: Long,
+            val reviewId: Long,
+            val reviewerId: Long
         ): KafkaMessage
 
         sealed interface KafkaMessage

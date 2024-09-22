@@ -17,6 +17,7 @@ class KafkaManagerImpl: KafkaManager {
         private const val MUSIC_REVIEW_TOPIC = "music-review-topic"
         private const val REVIEW_LIKE_TOPIC = "review-like-topic"
         private const val COMMENT_ADDED_TOPIC = "comment-added-topic"
+        private const val MUSIC_NOT_FOUND_TOPIC = "music-not-found-topic"
     }
 
     @Value("\${uris.kafka-server-uri:http://localhost:9000}/api/kafka")
@@ -28,21 +29,28 @@ class KafkaManagerImpl: KafkaManager {
     override fun sendMusicReviewCreateTopic(
         musicId: Long,
         reviewId: Long,
+        reviewerId: Long,
         nickname: String,
         oldScore: Double?,
         score: Double
     ) {
         val musicReviewTopic = KafkaRequestDTO(
             topic = MUSIC_REVIEW_TOPIC,
-            message = KafkaRequestDTO.KafkaMusicReviewCreateDTO(musicId, reviewId, nickname, oldScore, score)
+            message = KafkaRequestDTO.KafkaMusicReviewCreateDTO(musicId, reviewId, reviewerId, nickname, oldScore, score)
         )
         sendMessageToKafkaProducer(musicReviewTopic)
     }
 
-    override fun sendMusicReviewUpdateTopic(musicId: Long, oldScore: Double?, score: Double) {
+    override fun sendMusicReviewUpdateTopic(
+        musicId: Long,
+        reviewId: Long,
+        reviewerId: Long,
+        oldScore: Double?,
+        score: Double
+    ) {
         val musicReviewTopic = KafkaRequestDTO(
             topic = MUSIC_REVIEW_TOPIC,
-            message = KafkaRequestDTO.KafkaMusicReviewUpdateDTO(musicId, oldScore, score)
+            message = KafkaRequestDTO.KafkaMusicReviewUpdateDTO(musicId, reviewId, reviewerId, oldScore, score)
         )
         sendMessageToKafkaProducer(musicReviewTopic)
     }
@@ -61,6 +69,14 @@ class KafkaManagerImpl: KafkaManager {
             message = KafkaRequestDTO.KafkaNotificationDTO(userId, content, link)
         )
         sendMessageToKafkaProducer(commentAddedTopic)
+    }
+
+    override fun sendMusicNotFoundTopic(userId: Long, content: String, link: String?) {
+        val musicNotFoundTopic = KafkaRequestDTO(
+            topic = MUSIC_NOT_FOUND_TOPIC,
+            message = KafkaRequestDTO.KafkaNotificationDTO(userId, content, link)
+        )
+        sendMessageToKafkaProducer(musicNotFoundTopic)
     }
 
     private fun sendMessageToKafkaProducer(vararg message: KafkaRequestDTO) =
@@ -83,6 +99,7 @@ class KafkaManagerImpl: KafkaManager {
         data class KafkaMusicReviewCreateDTO(
             val musicId: Long,
             val reviewId: Long,
+            val reviewerId: Long,
             val nickname: String,
             val oldScore: Double?,
             val score: Double
@@ -90,6 +107,8 @@ class KafkaManagerImpl: KafkaManager {
 
         data class KafkaMusicReviewUpdateDTO(
             val musicId: Long,
+            val reviewId: Long,
+            val reviewerId: Long,
             val oldScore: Double?,
             val score: Double
         ): KafkaMessage

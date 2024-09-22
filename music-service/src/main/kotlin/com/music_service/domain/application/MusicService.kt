@@ -126,28 +126,32 @@ class MusicService(
     @Transactional
     @KafkaListener(groupId = "music-service-group", topics = ["music-review-topic"])
     fun changeScoreAverageAndSendNotification(@Payload payload: MusicReviewMessageDTO) {
-        val music = findMusicById(payload.musicId)
-        val score = payload.score
-
-        payload.oldScore?.let {
-            music.updateScoreByReviewUpdate(it, score)
-        } ?: run {
-            when {
-                score > 0 -> music.updateScoreByReviewAdd(score)
-                score < 0 -> music.updateScoreByReviewRemove(score)
+        findMusicByIdWithRollback(
+            payload.musicId,
+            payload.reviewId,
+            payload.reviewerId
+        )?.let { music ->
+            val score = payload.score
+            payload.oldScore?.let {
+                music.updateScoreByReviewUpdate(it, score)
+            } ?: run {
+                when {
+                    score > 0 -> music.updateScoreByReviewAdd(score)
+                    score < 0 -> music.updateScoreByReviewRemove(score)
+                }
             }
-        }
-        clearMusicCacheByUpdate(music.id!!)
+            clearMusicCacheByUpdate(music.id!!)
 
-        val reviewId = payload.reviewId
-        val nickname = payload.nickname
+            val reviewId = payload.reviewId
+            val nickname = payload.nickname
 
-        if (reviewId != null && nickname != null) {
-            kafkaManager.sendReviewAddedTopic(
-                music.userId,
-                content = "$nickname 님이 당신의 음원에 리뷰를 남겼습니다.",
-                link = "http://localhost:8000/api/reviews/$reviewId"
-            )
+            if (nickname != null) {
+                kafkaManager.sendReviewAddedTopic(
+                    music.userId,
+                    content = "$nickname 님이 당신의 음원에 리뷰를 남겼습니다.",
+                    link = "http://localhost:8000/api/reviews/$reviewId"
+                )
+            }
         }
     }
 
@@ -203,9 +207,16 @@ class MusicService(
         fileUrls.forEach { asyncManager.musicDeleteWithAsync(it) }
     }
 
-    private fun findMusicById(id: Long): Music =
-        musicRepository.findById(id)
-            .orElseThrow { MusicNotFoundException("Music not found with id: $id") }
+    private fun findMusicById(musicId: Long): Music =
+        musicRepository.findById(musicId)
+            .orElseThrow { MusicNotFoundException("Music not found with id: $musicId") }
+
+    private fun findMusicByIdWithRollback(musicId: Long, reviewId: Long, reviewerId: Long): Music? =
+        musicRepository.findById(musicId)
+            .orElseGet {
+                kafkaManager.sendReviewRollbackTopic(musicId, reviewId, reviewerId)
+                null
+            }
 
     private fun clearMusicCacheByUpdate(musicId: Long) =
         cacheManager.run {
