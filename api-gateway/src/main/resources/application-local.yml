@@ -48,3 +48,50 @@ spring:
           uri: lb://KAFKA-SERVER
           predicates:
             - Path=/api/kafka/**
+        - id: auth-service-swagger
+          uri: http://localhost:8090
+          predicates:
+            - Path=/auth-service/v3/api-docs
+            - Method=GET
+        - id: music-service-swagger
+          uri: http://localhost:8070
+          predicates:
+            - Path=/music-service/v3/api-docs
+            - Method=GET
+        - id: review-service-swagger
+          uri: http://localhost:8060
+          predicates:
+            - Path=/review-service/v3/api-docs
+            - Method=GET
+        - id: notification-service-swagger
+          uri: http://localhost:8040
+          predicates:
+            - Path=/notification-service/v3/api-docs
+            - Method=GET
+        - id: kafka-server-swagger
+          uri: http://localhost:9000
+          predicates:
+            - Path=/kafka-server/v3/api-docs
+            - Method=GET
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    use-root-path: true
+    path: /swagger-ui.html
+    config-url: /v3/api-docs/swagger-config
+    urls:
+      - url: /v3/api-docs
+        name: API Gateway
+      - url: /auth-service/v3/api-docs
+        name: Auth Service API
+      - url: /music-service/v3/api-docs
+        name: Music Service API
+      - url: /review-service/v3/api-docs
+        name: Review Service API
+      - url: /notification-service/v3/api-docs
+        name: Notification Service API
+      - url: /kafka-server/v3/api-docs
+        name: Kafka Server API
