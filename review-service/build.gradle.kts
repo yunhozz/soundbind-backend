@@ -21,6 +21,9 @@ dependencies {
 	// query logging
 	implementation("com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.1")
 
+	// swagger
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
+
 	testImplementation("org.springframework.kafka:spring-kafka-test")
 	runtimeOnly("com.mysql:mysql-connector-j")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
