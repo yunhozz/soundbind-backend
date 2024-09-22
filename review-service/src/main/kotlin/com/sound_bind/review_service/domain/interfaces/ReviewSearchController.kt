@@ -21,13 +21,13 @@ class ReviewSearchController(private val elasticsearchService: ElasticsearchServ
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     fun lookUpReviewsInMusicByDefault(@HeaderSubject sub: String, @RequestParam musicId: String): APIResponse {
-        val result = elasticsearchService.findReviewListByMusicIdV2(
+        val reviews = elasticsearchService.findReviewListByMusicIdV2(
             musicId.toLong(),
             userId = sub.toLong(),
             reviewSort = ReviewSort.LIKES,
             dto = null
         )
-        return APIResponse.of("Reviews found", result)
+        return APIResponse.of("Reviews found", reviews)
     }
 
     @PostMapping
@@ -38,12 +38,12 @@ class ReviewSearchController(private val elasticsearchService: ElasticsearchServ
         @RequestParam(required = false, defaultValue = "likes") sort: String,
         @RequestBody(required = false) dto: ReviewCursorDTO,
     ): APIResponse {
-        val result = elasticsearchService.findReviewListByMusicIdV2(
+        val reviews = elasticsearchService.findReviewListByMusicIdV2(
             musicId.toLong(),
             userId = sub.toLong(),
             reviewSort = ReviewSort.of(sort),
             dto
         )
-        return APIResponse.of("Reviews found", result)
+        return APIResponse.of("Reviews found", reviews)
     }
 }

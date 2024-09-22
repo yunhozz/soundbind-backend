@@ -1,7 +1,5 @@
 package com.sound_bind.notification_service.domain.application
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.sound_bind.notification_service.domain.persistence.entity.Notification
 import com.sound_bind.notification_service.domain.persistence.repository.NotificationRepository
 import com.sound_bind.notification_service.domain.persistence.repository.SseEmitterRepository
@@ -27,8 +25,6 @@ class NotificationService(
 ) {
 
     companion object {
-        private val mapper = jacksonObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
         private val log = LoggerFactory.getLogger(NotificationService::class.java)
         private const val EMITTER_TIMEOUT = 60 * 60 * 1000L // 1 hour
     }
@@ -55,13 +51,18 @@ class NotificationService(
     @Transactional
     @KafkaListener(
         groupId = "notification-service-group",
-        topics = ["music-like-topic", "review-like-topic", "review-added-topic", "comment-added-topic"],
+        topics = [
+            TopicConstants.MUSIC_LIKE_TOPIC,
+            TopicConstants.REVIEW_LIKE_TOPIC,
+            TopicConstants.REVIEW_ADDED_TOPIC,
+            TopicConstants.COMMENT_ADDED_TOPIC,
+            TopicConstants.MUSIC_NOT_FOUND_TOPIC
+        ]
     )
-    fun sendMessage(@Payload payload: String): String {
-        val obj = mapper.readValue(payload, Map::class.java)
-        val userId = obj["userId"] as Number
-        val content = obj["content"] as String
-        val link = obj["link"] as? String
+    fun sendMessage(@Payload payload: NotificationMessageDTO): String {
+        val userId = payload.userId
+        val content = payload.content
+        val link = payload.link
 
         val notification = Notification.create(userId.toString(), content, link)
         emitterRepository.findEmittersByUserId(userId.toString())
@@ -121,4 +122,10 @@ class NotificationService(
             emitter.completeWithError(e)
             throw SseSendFailException(e.localizedMessage)
         }
+
+    data class NotificationMessageDTO(
+        val userId: Long,
+        val content: String,
+        val link: String?
+    )
 }

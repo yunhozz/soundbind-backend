@@ -1,6 +1,5 @@
 package com.auth_service.domain.interfaces
 
-import com.auth_service.domain.application.MailService
 import com.auth_service.domain.application.UserManageService
 import com.auth_service.domain.application.dto.request.SignUpRequestDTO
 import com.auth_service.domain.interfaces.dto.APIResponse
@@ -12,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
 import khttp.post
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -23,16 +23,12 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/users")
-class UserManageController(
-    private val userManageService: UserManageService,
-    private val mailService: MailService
-) {
+class UserManageController(private val userManageService: UserManageService) {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun signUpByLocalUser(@Valid @RequestBody dto: SignUpRequestDTO): APIResponse {
         val result = userManageService.createLocalUser(dto)
-        mailService.sendVerifyingEmail(dto.email)
         return APIResponse.of("Local user joined success", result)
     }
 
@@ -43,11 +39,10 @@ class UserManageController(
         return APIResponse.of("Email verification success")
     }
 
-    @PostMapping("/verify/resend")
+    @PostMapping("/verify/email/resend")
     @ResponseStatus(HttpStatus.CREATED)
     fun resendVerifyingEmail(@HeaderSubject sub: String): APIResponse {
-        val profile = userManageService.findUserProfileWithUserByUserId(sub.toLong())
-        mailService.sendVerifyingEmail(profile.email)
+        userManageService.resendVerifyingEmailByUserId(sub.toLong())
         return APIResponse.of("Verifying email is sent now")
     }
 
@@ -66,10 +61,13 @@ class UserManageController(
             "message" to mapOf("userId" to sub.toLong())
         )
         post(
-            url = "http://localhost:9000/api/kafka",
+            url = kafkaRequestUri,
             headers = mapOf("Content-Type" to "application/json"),
             data = jacksonObjectMapper().writeValueAsString(record)
         )
         return APIResponse.of("Withdraw success")
     }
+
+    @Value("\${uris.kafka-server-uri:http://localhost:9000}/api/kafka")
+    private lateinit var kafkaRequestUri: String
 }

@@ -52,6 +52,15 @@ eureka:
 spring:
   config:
     activate:
+      on-profile: kafka-local
+  kafka:
+    bootstrap-servers: localhost:9090, localhost:9091, localhost:9092
+
+---
+
+spring:
+  config:
+    activate:
       on-profile: file-local
   servlet:
     multipart:

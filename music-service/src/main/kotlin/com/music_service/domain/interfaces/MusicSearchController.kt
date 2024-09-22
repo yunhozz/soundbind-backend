@@ -1,7 +1,6 @@
 package com.music_service.domain.interfaces
 
-import com.music_service.domain.application.ElasticsearchService
-import com.music_service.domain.application.MusicService
+import com.music_service.domain.application.MusicSearchService
 import com.music_service.domain.interfaces.dto.APIResponse
 import com.music_service.domain.persistence.repository.MusicSort
 import com.music_service.domain.persistence.repository.dto.MusicCursorDTO
@@ -18,16 +17,13 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/musics/search")
-class MusicSearchController(
-    private val musicService: MusicService,
-    private val elasticsearchService: ElasticsearchService
-) {
+class MusicSearchController(private val musicSearchService: MusicSearchService) {
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     fun lookUpMusicDetails(@HeaderSubject sub: String, @PathVariable id: String): APIResponse {
-        val result = elasticsearchService.findMusicDetailsByElasticsearch(id.toLong(), sub.toLong())
-        return APIResponse.of("Music Details Found", result)
+        val musicDetails = musicSearchService.findMusicDetailsByElasticsearch(id.toLong(), sub.toLong())
+        return APIResponse.of("Music Details Found", musicDetails)
     }
 
     @GetMapping
@@ -36,13 +32,13 @@ class MusicSearchController(
         @HeaderSubject sub: String,
         @RequestParam(required = true) keyword: String
     ): APIResponse {
-        val result = elasticsearchService.findMusicSimpleListByKeywordAndCondition(
+        val musics = musicSearchService.findMusicSimpleListByKeywordAndCondition(
             keyword,
             MusicSort.ACCURACY,
             cursor = null,
             sub.toLong()
         )
-        return APIResponse.of("Music List Found", result)
+        return APIResponse.of("Music List Found", musics)
     }
 
     @PostMapping
@@ -53,12 +49,12 @@ class MusicSearchController(
         @RequestParam(required = false, defaultValue = "accuracy") sort: String,
         @RequestBody(required = false) cursor: MusicCursorDTO?
     ): APIResponse {
-        val result = elasticsearchService.findMusicSimpleListByKeywordAndCondition(
+        val musics = musicSearchService.findMusicSimpleListByKeywordAndCondition(
             keyword,
             MusicSort.of(sort),
             cursor,
             sub.toLong()
         )
-        return APIResponse.of("Music List Found", result)
+        return APIResponse.of("Music List Found", musics)
     }
 }

@@ -3,4 +3,5 @@ spring:
     active: ${PROFILES_ACTIVE:local}
     group:
       local:
+        - kafka-local
         - redis-local

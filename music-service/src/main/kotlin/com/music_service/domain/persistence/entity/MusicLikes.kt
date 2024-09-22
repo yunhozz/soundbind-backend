@@ -5,11 +5,11 @@ import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
-import jakarta.persistence.OneToOne
+import jakarta.persistence.ManyToOne
 
 @Entity
 class MusicLikes(
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     val music: Music,
     val userId: Long,
     flag: Boolean = true

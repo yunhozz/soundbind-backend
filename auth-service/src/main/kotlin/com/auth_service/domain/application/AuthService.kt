@@ -2,8 +2,8 @@ package com.auth_service.domain.application
 
 import com.auth_service.domain.application.dto.request.SignInRequestDTO
 import com.auth_service.domain.application.dto.response.SubjectResponseDTO
+import com.auth_service.domain.application.manager.LockManager
 import com.auth_service.domain.persistence.repository.UserPasswordRepository
-import com.auth_service.domain.persistence.repository.UserProfileRepository
 import com.auth_service.domain.persistence.repository.dto.UserSimpleInfoQueryDTO
 import com.auth_service.global.auth.jwt.JwtProvider
 import com.auth_service.global.auth.jwt.TokenResponseDTO
@@ -22,23 +22,24 @@ import java.time.Duration
 @Service
 class AuthService(
     private val userPasswordRepository: UserPasswordRepository,
-    private val userProfileRepository: UserProfileRepository,
+    private val lockManager: LockManager,
     private val jwtProvider: JwtProvider,
     private val passwordEncoder: BCryptPasswordEncoder
 ) {
 
     @Transactional(readOnly = true)
     fun signInByLocalUser(dto: SignInRequestDTO): TokenResponseDTO {
-        val userProfile = userProfileRepository.findSimpleInfoByEmail(dto.email)
+        val userProfile = lockManager.findSimpleInfoByEmailWithLock(dto.email)
             ?: throw UserManageException.UserNotFoundException("User not found with email: ${dto.email}")
         val userPassword = userPasswordRepository.findWithUserByUserId(userProfile.getUserId())
             ?: throw PasswordNotFoundException("Password not found")
 
         if (passwordEncoder.matches(dto.password, userPassword.password)) {
+            saveUserSimpleInformationOnRedis(userProfile)
             val found = userPassword.user
             val tokenResponseDTO = jwtProvider.generateToken(found.id.toString(), found.role)
             saveRefreshTokenOnRedis(tokenResponseDTO)
-            saveUserSimpleInformationOnRedis(userProfile)
+
             return tokenResponseDTO
 
         } else {

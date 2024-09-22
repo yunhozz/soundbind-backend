@@ -1,3 +1,6 @@
 spring:
   profiles:
     active: ${PROFILES_ACTIVE:local}
+    group:
+      local:
+        - kafka-local

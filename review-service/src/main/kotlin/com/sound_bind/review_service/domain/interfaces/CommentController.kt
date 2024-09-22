@@ -1,13 +1,9 @@
 package com.sound_bind.review_service.domain.interfaces
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.review_service.domain.interfaces.dto.APIResponse
 import com.sound_bind.review_service.domain.application.CommentService
 import com.sound_bind.review_service.domain.application.ElasticsearchService
-import com.sound_bind.review_service.domain.interfaces.dto.KafkaRequestDTO
 import com.sound_bind.review_service.global.annotation.HeaderSubject
-import khttp.post
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -32,23 +28,8 @@ class CommentController(
         @RequestParam reviewId: String,
         @RequestParam message: String,
     ): APIResponse {
-        val result = commentService.createComment(reviewId.toLong(), sub.toLong(), message)
-        val myInfo = commentService.getUserInformationOnRedis(sub.toLong())
-        val record = KafkaRequestDTO(
-            topic = "comment-added-topic",
-            message = KafkaRequestDTO.KafkaNotificationDTO(
-                userId = result.reviewerId,
-                content = "${myInfo["nickname"] as String} 님이 당신의 리뷰에 댓글을 남겼습니다.",
-                link = null
-            )
-        )
-        post(
-            url = "http://localhost:9000/api/kafka",
-            headers = mapOf("Content-Type" to "application/json"),
-            data = mapper.writeValueAsString(record)
-        )
-
-        return APIResponse.of("Comment Created", result.commentId)
+        val commentId = commentService.createComment(reviewId.toLong(), sub.toLong(), message)
+        return APIResponse.of("Comment Created", commentId)
     }
 
     @GetMapping
@@ -63,10 +44,5 @@ class CommentController(
     fun deleteCommentOnReview(@HeaderSubject sub: String, @PathVariable("id") id: String): APIResponse {
         commentService.deleteComment(id.toLong(), sub.toLong())
         return APIResponse.of("Comment Deleted")
-    }
-
-    companion object {
-        private val mapper = jacksonObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
     }
 }

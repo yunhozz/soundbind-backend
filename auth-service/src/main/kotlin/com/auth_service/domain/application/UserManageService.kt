@@ -1,6 +1,8 @@
 package com.auth_service.domain.application
 
 import com.auth_service.domain.application.dto.request.SignUpRequestDTO
+import com.auth_service.domain.application.manager.AsyncManager
+import com.auth_service.domain.application.manager.LockManager
 import com.auth_service.domain.persistence.entity.User
 import com.auth_service.domain.persistence.entity.UserPassword
 import com.auth_service.domain.persistence.entity.UserProfile
@@ -21,14 +23,16 @@ class UserManageService(
     private val userRepository: UserRepository,
     private val userPasswordRepository: UserPasswordRepository,
     private val userProfileRepository: UserProfileRepository,
+    private val asyncManager: AsyncManager,
+    private val lockManager: LockManager,
     private val encoder: BCryptPasswordEncoder
 ) {
 
     @Transactional
     fun createLocalUser(dto: SignUpRequestDTO): Long {
-        if (userProfileRepository.existsByEmail(dto.email)) {
-            throw EmailDuplicateException("User email already exists")
-        }
+        if (lockManager.checkEmailAndNicknameDuplicatedWithLock(dto.email, dto.nickname))
+            throw EmailDuplicateException("Email or Nickname already exists")
+
         val guest = User.createGuest()
         val password = UserPassword.create(guest, encoder.encode(dto.password))
         val profile = UserProfile.create(
@@ -38,6 +42,8 @@ class UserManageService(
             dto.nickname,
             dto.profileUrl
         )
+
+        asyncManager.onSendVerifyingEmail(profile.email)
 
         userRepository.save(guest)
         userPasswordRepository.save(password)
@@ -50,13 +56,11 @@ class UserManageService(
     fun verifyByEmail(userId: Long, code: String) {
         val userProfile = findUserProfileWithUserByUserId(userId)
         val email = userProfile.email
-
         val verifyingCode = RedisUtils.getValue("verify:$email")
             ?: throw VerifyingCodeNotFoundException("Please proceed again by retransmitting the verifying mail")
         if (verifyingCode != code) {
             throw VerifyingCodeDifferentException("The verifying code you entered does not match. Please re-enter.")
         }
-
         val user = userProfile.user
         user.verify() // Role : GUEST -> USER
         RedisUtils.deleteValue("verify:$email")
@@ -75,7 +79,12 @@ class UserManageService(
     }
 
     @Transactional(readOnly = true)
-    fun findUserProfileWithUserByUserId(userId: Long): UserProfile =
+    fun resendVerifyingEmailByUserId(userId: Long) {
+        val profile = findUserProfileWithUserByUserId(userId)
+        asyncManager.onSendVerifyingEmail(profile.email)
+    }
+
+    private fun findUserProfileWithUserByUserId(userId: Long): UserProfile =
         userProfileRepository.findWithUserByUserId(userId)
             ?: throw UserNotFoundException("User not found with id: $userId")
 }
