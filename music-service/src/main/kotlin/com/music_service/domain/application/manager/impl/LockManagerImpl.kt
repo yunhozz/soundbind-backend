@@ -10,7 +10,6 @@ import com.music_service.global.annotation.DistributedLock
 import com.music_service.global.exception.MusicServiceException.MusicNotFoundException
 import com.music_service.global.util.RedisUtils
 import org.springframework.stereotype.Component
-import java.util.concurrent.TimeUnit
 
 @Component
 class LockManagerImpl(
@@ -35,10 +34,9 @@ class LockManagerImpl(
 
     @DistributedLock(
         key = "'change-likes-flag-lock-' + #musicId",
-        leaseTime = 500,
-        timeUnit = TimeUnit.MILLISECONDS,
-        retryCount = 10,
-        retryTimeMillis = 1500
+        leaseTime = 1,
+        retryCount = 8,
+        retryTimeMillis = 100
     )
     override fun changeLikesFlagWithLock(musicId: Long, userId: Long): Long? {
         var result: Long? = null

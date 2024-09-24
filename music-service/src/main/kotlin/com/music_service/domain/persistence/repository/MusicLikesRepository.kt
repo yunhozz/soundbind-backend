@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query
 
 interface MusicLikesRepository: JpaRepository<MusicLikes, Long> {
 
-    @Lock(LockModeType.PESSIMISTIC_READ)
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select ml from MusicLikes ml join fetch ml.music m where m.id = :musicId and ml.userId = :userId")
     fun findMusicLikesWithMusicByMusicIdAndUserId(musicId: Long, userId: Long): MusicLikes?
 

@@ -17,7 +17,7 @@ interface MusicRepository: JpaRepository<Music, Long>, MusicQueryRepository {
 
     fun findMusicByUserId(userId: Long): List<Music>
 
-    @Lock(LockModeType.PESSIMISTIC_READ)
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select m from Music m where m.id = :musicId")
     fun findMusicByIdWithLock(musicId: Long): Music?
 }
