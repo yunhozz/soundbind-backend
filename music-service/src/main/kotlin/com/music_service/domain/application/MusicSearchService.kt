@@ -11,8 +11,8 @@ import com.music_service.domain.persistence.es.search.MusicSearchRepository
 import com.music_service.domain.persistence.repository.MusicRepository
 import com.music_service.domain.persistence.repository.MusicSort
 import com.music_service.domain.persistence.repository.dto.MusicCursorDTO
-import com.music_service.global.config.CacheConfig.Companion.FIVE_MIN_CACHE
-import com.music_service.global.config.CacheConfig.Companion.ONE_MIN_CACHE
+import com.music_service.global.config.RedisConfig.Companion.FIVE_MIN_CACHE
+import com.music_service.global.config.RedisConfig.Companion.ONE_MIN_CACHE
 import com.music_service.global.exception.MusicServiceException.MusicNotFoundException
 import com.music_service.global.util.DateTimeUtils
 import org.springframework.cache.annotation.Cacheable
