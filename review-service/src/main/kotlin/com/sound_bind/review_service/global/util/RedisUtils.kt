@@ -7,9 +7,14 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.ValueOperations
 import org.springframework.stereotype.Component
 import java.time.Duration
+import java.util.concurrent.TimeUnit
 
 @Component
 class RedisUtils(private val template: RedisTemplate<String, Any>): InitializingBean {
+
+    override fun afterPropertiesSet() {
+        operation = template.opsForValue()
+    }
 
     companion object {
         private lateinit var operation: ValueOperations<String, Any>
@@ -32,11 +37,11 @@ class RedisUtils(private val template: RedisTemplate<String, Any>): Initializing
         fun getValue(key: String): String? = operation[key] as? String
 
         @Throws(JsonProcessingException::class)
-        fun <T> getJson(key: String, clazz: Class<T>): T? {
+        fun <T> getJson(key: String, clazz: Class<T>): T {
             val jsonStr = operation[key] as? String
             return jsonStr?.takeIf { it.isNotBlank() }.let {
                 om.readValue(it, clazz)
-            }
+            } ?: throw IllegalArgumentException("Value is not Present by Key : $key")
         }
 
         fun updateValue(key: String, value: String, duration: Duration) {
@@ -45,9 +50,22 @@ class RedisUtils(private val template: RedisTemplate<String, Any>): Initializing
         }
 
         fun deleteValue(key: String): Any? = operation.getAndDelete(key)
-    }
 
-    override fun afterPropertiesSet() {
-        operation = template.opsForValue()
+        fun tryLock(
+            key: String,
+            value: String,
+            leaseTime: Long,
+            timeUnit: TimeUnit,
+        ): Boolean =
+            operation.setIfAbsent(key, value, leaseTime, timeUnit) ?: false
+
+        fun releaseLock(key: String, value: String): Boolean {
+            val lockValue = operation.get(key)
+            if (lockValue == value) {
+                deleteValue(key)
+                return true
+            }
+            return false
+        }
     }
 }
