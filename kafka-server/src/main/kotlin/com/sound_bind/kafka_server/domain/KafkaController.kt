@@ -4,7 +4,8 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.sound_bind.kafka_server.global.config.KafkaConfig.Companion.KAFKA_TEMPLATE
-import com.sound_bind.kafka_server.global.config.KafkaConfig.Companion.TX_KAFKA_TEMPLATE
+import com.sound_bind.kafka_server.global.config.KafkaConfig.Companion.KAFKA_TX_TEMPLATE
+import io.swagger.v3.oas.annotations.Operation
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.kafka.core.KafkaTemplate
@@ -21,7 +22,7 @@ import java.util.concurrent.ThreadLocalRandom
 class KafkaController(
     @Qualifier(KAFKA_TEMPLATE)
     private val kafkaTemplate: KafkaTemplate<String, Map<String, Any>>,
-    @Qualifier(TX_KAFKA_TEMPLATE)
+    @Qualifier(KAFKA_TX_TEMPLATE)
     private val kafkaTransactionTemplate: KafkaTemplate<String, Map<String, Any>>
 ) {
 
@@ -32,6 +33,7 @@ class KafkaController(
     }
 
     @PostMapping
+    @Operation(summary = "kafka topic 발행")
     fun sendKafkaMessage(@RequestBody data: String) {
         val response = if (data.trim().startsWith("[")) {
             mapper.readValue(data, List::class.java)

@@ -4,6 +4,7 @@ import com.review_service.domain.interfaces.dto.APIResponse
 import com.sound_bind.review_service.domain.application.CommentService
 import com.sound_bind.review_service.domain.application.ElasticsearchService
 import com.sound_bind.review_service.global.annotation.HeaderSubject
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -23,6 +24,7 @@ class CommentController(
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "리뷰에 대한 댓글 작성")
     fun makeCommentOnReview(
         @HeaderSubject sub: String,
         @RequestParam reviewId: String,
@@ -34,6 +36,7 @@ class CommentController(
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
+    @Operation(summary = "리뷰에 대한 댓글 리스트 조회")
     fun getCommentListByReview(@RequestParam reviewId: String): APIResponse {
         val comments = elasticsearchService.findCommentsByReviewInElasticsearch(reviewId.toLong())
         return APIResponse.of("Comments in Review Found", comments)
@@ -41,6 +44,7 @@ class CommentController(
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "댓글 삭제")
     fun deleteCommentOnReview(@HeaderSubject sub: String, @PathVariable("id") id: String): APIResponse {
         commentService.deleteComment(id.toLong(), sub.toLong())
         return APIResponse.of("Comment Deleted")

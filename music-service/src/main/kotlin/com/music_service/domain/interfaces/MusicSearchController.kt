@@ -5,6 +5,7 @@ import com.music_service.domain.interfaces.dto.APIResponse
 import com.music_service.domain.persistence.repository.MusicSort
 import com.music_service.domain.persistence.repository.dto.MusicCursorDTO
 import com.sound_bind.music_service.global.annotation.HeaderSubject
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -21,6 +22,7 @@ class MusicSearchController(private val musicSearchService: MusicSearchService) 
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
+    @Operation(summary = "음원 상세 조회")
     fun lookUpMusicDetails(@HeaderSubject sub: String, @PathVariable id: String): APIResponse {
         val musicDetails = musicSearchService.findMusicDetailsByElasticsearch(id.toLong(), sub.toLong())
         return APIResponse.of("Music Details Found", musicDetails)
@@ -28,6 +30,7 @@ class MusicSearchController(private val musicSearchService: MusicSearchService) 
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
+    @Operation(summary = "음원 키워드 커서 페이징 조회 (default)")
     fun findMusicSimpleListByKeywordDefault(
         @HeaderSubject sub: String,
         @RequestParam(required = true) keyword: String
@@ -43,6 +46,7 @@ class MusicSearchController(private val musicSearchService: MusicSearchService) 
 
     @PostMapping
     @ResponseStatus(HttpStatus.OK)
+    @Operation(summary = "음원 키워드 커서 페이징 조회")
     fun findMusicSimpleListByKeywordAndCondition(
         @HeaderSubject sub: String,
         @RequestParam(required = true) keyword: String,

@@ -7,6 +7,7 @@ import com.auth_service.domain.interfaces.dto.APIResponse
 import com.auth_service.global.annotation.HeaderToken
 import com.auth_service.global.auth.jwt.TokenResponseDTO
 import com.auth_service.global.util.CookieUtils
+import io.swagger.v3.oas.annotations.Operation
 import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -28,6 +29,7 @@ class AuthController(private val authService: AuthService) {
 
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "유저 로그인")
     fun loginByLocalUser(@Valid @RequestBody dto: SignInRequestDTO, response: HttpServletResponse): APIResponse {
         val result = authService.signInByLocalUser(dto)
         CookieUtils.addCookie(
@@ -41,6 +43,7 @@ class AuthController(private val authService: AuthService) {
 
     @DeleteMapping("/logout")
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "유저 로그아웃")
     fun signOut(
         @HeaderToken token: String,
         request: HttpServletRequest,
@@ -54,6 +57,7 @@ class AuthController(private val authService: AuthService) {
 
     @GetMapping("/token/refresh")
     @ResponseStatus(HttpStatus.OK)
+    @Operation(summary = "JWT 토큰 재발급")
     fun refreshToken(@CookieValue("atk") tokenCookie: Cookie, response: HttpServletResponse): TokenResponseDTO {
         val result = authService.tokenRefresh(CookieUtils.deserialize(tokenCookie, String::class.java))
         CookieUtils.addCookie(
@@ -67,5 +71,6 @@ class AuthController(private val authService: AuthService) {
 
     @GetMapping("/subject")
     @ResponseStatus(HttpStatus.OK)
+    @Operation(summary = "유저의 JWT subject 조회")
     fun getSubject(@HeaderToken token: String): SubjectResponseDTO = authService.getSubjectByToken(token)
 }
