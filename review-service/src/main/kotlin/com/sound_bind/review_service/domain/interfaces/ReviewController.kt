@@ -7,6 +7,7 @@ import com.sound_bind.review_service.domain.application.dto.request.ReviewUpdate
 import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorDTO
 import com.sound_bind.review_service.global.annotation.HeaderSubject
 import com.sound_bind.review_service.global.enums.ReviewSort
+import io.swagger.v3.oas.annotations.Operation
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
@@ -27,6 +28,7 @@ class ReviewController(private val reviewService: ReviewService) {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "음원에 대한 리뷰 작성")
     fun createReviewOnMusic(
         @HeaderSubject sub: String,
         @RequestParam musicId: String,
@@ -38,6 +40,7 @@ class ReviewController(private val reviewService: ReviewService) {
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
+    @Operation(summary = "리뷰 상세 조회")
     fun lookupDetailsOfReview(@PathVariable id: String): APIResponse {
         val reviewDetails = reviewService.lookupDetailsOfReviewById(id.toLong())
         return APIResponse.of("Review found", reviewDetails)
@@ -45,6 +48,7 @@ class ReviewController(private val reviewService: ReviewService) {
 
     @PostMapping("/found")
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "음원에 대한 리뷰 커서 페이징 조회 Ver.1")
     fun lookupReviewsInMusicByConditionsV1(
         @HeaderSubject sub: String,
         @RequestParam musicId: String,
@@ -64,6 +68,7 @@ class ReviewController(private val reviewService: ReviewService) {
 
     @PatchMapping("/{id}")
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "리뷰 업데이트")
     fun updateReview(
         @HeaderSubject sub: String,
         @PathVariable("id") id: String,
@@ -75,6 +80,7 @@ class ReviewController(private val reviewService: ReviewService) {
 
     @PostMapping("/{id}/likes")
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "리뷰 좋아요")
     fun updateLikesOnReview(@HeaderSubject sub: String, @PathVariable("id") id: String): APIResponse {
         reviewService.changeLikesFlag(id.toLong(), sub.toLong())
         return APIResponse.of("Likes of Review Changed")
@@ -82,6 +88,7 @@ class ReviewController(private val reviewService: ReviewService) {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "리뷰 삭제")
     fun deleteReview(@HeaderSubject sub: String, @PathVariable("id") id: String): APIResponse {
         reviewService.deleteReview(id.toLong(), sub.toLong())
         return APIResponse.of("Review deleted")

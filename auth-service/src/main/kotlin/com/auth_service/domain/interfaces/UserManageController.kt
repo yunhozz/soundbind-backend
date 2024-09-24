@@ -7,6 +7,7 @@ import com.auth_service.global.annotation.HeaderSubject
 import com.auth_service.global.annotation.HeaderToken
 import com.auth_service.global.util.CookieUtils
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import io.swagger.v3.oas.annotations.Operation
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
@@ -27,6 +28,7 @@ class UserManageController(private val userManageService: UserManageService) {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "유저 회원가입")
     fun signUpByLocalUser(@Valid @RequestBody dto: SignUpRequestDTO): APIResponse {
         val result = userManageService.createLocalUser(dto)
         return APIResponse.of("Local user joined success", result)
@@ -34,6 +36,7 @@ class UserManageController(private val userManageService: UserManageService) {
 
     @PostMapping("/verify/email")
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "회원가입 이메일 인증")
     fun verifyByEmail(@HeaderSubject sub: String, @RequestParam(required = true) code: String): APIResponse {
         userManageService.verifyByEmail(sub.toLong(), code)
         return APIResponse.of("Email verification success")
@@ -41,6 +44,7 @@ class UserManageController(private val userManageService: UserManageService) {
 
     @PostMapping("/verify/email/resend")
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "인증 이메일 재전송 요청")
     fun resendVerifyingEmail(@HeaderSubject sub: String): APIResponse {
         userManageService.resendVerifyingEmailByUserId(sub.toLong())
         return APIResponse.of("Verifying email is sent now")
@@ -48,6 +52,7 @@ class UserManageController(private val userManageService: UserManageService) {
 
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "유저 회원 탈퇴")
     fun withdrawMember(
         @HeaderToken token: String,
         @HeaderSubject sub: String,
