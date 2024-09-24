@@ -10,12 +10,8 @@ import org.springframework.stereotype.Component
 class CacheManagerImpl: CacheManager {
 
     @CacheEvict(cacheNames = [ONE_MIN_CACHE], allEntries = true)
-    override fun clearMusicSimpleSearchResultsCache() {
-        println("Cache Clear!!")
-    }
+    override fun clearMusicSimpleSearchResultsCache() {}
 
     @CacheEvict(cacheNames = [FIVE_MIN_CACHE], key = "'find-music-details-' + #musicId")
-    override fun clearMusicDetailsCache(musicId: Long) {
-        println("Cache Clear!!")
-    }
+    override fun clearMusicDetailsCache(musicId: Long) {}
 }
