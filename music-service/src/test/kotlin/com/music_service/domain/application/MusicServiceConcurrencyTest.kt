@@ -20,6 +20,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.ThreadLocalRandom
+import java.util.concurrent.atomic.AtomicInteger
 
 @SpringBootTest
 class MusicServiceConcurrencyTest {
@@ -185,7 +186,7 @@ class MusicServiceConcurrencyTest {
         val executorService = Executors.newFixedThreadPool(threads)
         val latch = CountDownLatch(threads)
 
-        val successResults = CopyOnWriteArrayList<Long>()
+        val successResults = AtomicInteger(0)
         val failureResults = CopyOnWriteArrayList<Throwable>()
 
         // when
@@ -195,8 +196,8 @@ class MusicServiceConcurrencyTest {
             executorService.execute {
                 try {
                     val randomUserId = ThreadLocalRandom.current().nextLong(1, threads.toLong())
-                    val result = musicService.changeLikesFlag(musicId, randomUserId)
-                    result?.let { successResults.add(it) }
+                    musicService.changeLikesFlag(musicId, randomUserId)
+                    successResults.getAndIncrement()
 
                 } catch (e: Exception) {
                     failureResults.add(e)
@@ -212,12 +213,13 @@ class MusicServiceConcurrencyTest {
         // then
         println("테스트 실행 시간 : ${System.currentTimeMillis() - startTime} 밀리초")
 
+        assertEquals(threads, successResults.get(), "$threads 개의 좋아요 요청에 모두 성공해야 합니다.")
+        assertEquals(0, failureResults.size, "음원 좋아요에 실패한 thread 는 없어야 합니다.")
         assertEquals(
             musicRepository.findById(musicId).get().likes,
             musicLikesRepository.findMusicLikesByFlag(true).size,
             "무작위 $threads 명의 음원 좋아요에 모두 성공해야 합니다."
         )
-        assertEquals(0, failureResults.size, "음원 좋아요에 실패한 thread 는 없어야 합니다.")
     }
 
     @Test
