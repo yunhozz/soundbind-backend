@@ -1,6 +1,6 @@
-package com.music_service.global.aspect
+package com.sound_bind.review_service.global.aspect
 
-import com.music_service.global.annotation.DistributedLock
+import com.sound_bind.review_service.global.annotation.DistributedLock
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.Around
 import org.aspectj.lang.annotation.Aspect
@@ -28,7 +28,7 @@ class DistributedLockAspect(
         private val log: Logger = LoggerFactory.getLogger(DistributedLockAspect::class.java)
     }
 
-    @Around("@annotation(com.music_service.global.annotation.DistributedLock)")
+    @Around("@annotation(com.sound_bind.review_service.global.annotation.DistributedLock)")
     fun redissonLock(joinPoint: ProceedingJoinPoint): Any? {
         val signature = joinPoint.signature as MethodSignature
         val method = signature.method

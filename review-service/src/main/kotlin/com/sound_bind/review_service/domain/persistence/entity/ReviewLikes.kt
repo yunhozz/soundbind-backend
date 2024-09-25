@@ -5,12 +5,12 @@ import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
-import jakarta.persistence.OneToOne
+import jakarta.persistence.ManyToOne
 
 @Entity
 class ReviewLikes(
     val userId: Long,
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     val review: Review,
     flag: Boolean = true
 ): BaseEntity() {

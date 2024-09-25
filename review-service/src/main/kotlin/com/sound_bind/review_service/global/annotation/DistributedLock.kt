@@ -1,7 +1,7 @@
-package com.music_service.global.annotation
+package com.sound_bind.review_service.global.annotation
 
-@Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
 annotation class DistributedLock(
     val key: String,
     val waitTime: Long = 5000L,

@@ -11,19 +11,19 @@ import com.music_service.domain.application.manager.AsyncManager
 import com.music_service.domain.application.manager.CacheManager
 import com.music_service.domain.application.manager.FileManager
 import com.music_service.domain.application.manager.KafkaManager
-import com.music_service.domain.application.manager.LockManager
 import com.music_service.domain.persistence.entity.FileEntity
 import com.music_service.domain.persistence.entity.FileType
 import com.music_service.domain.persistence.entity.FileType.IMAGE
 import com.music_service.domain.persistence.entity.FileType.MUSIC
 import com.music_service.domain.persistence.entity.Genre
 import com.music_service.domain.persistence.entity.Music
+import com.music_service.domain.persistence.entity.MusicLikes
 import com.music_service.domain.persistence.repository.FileRepository
 import com.music_service.domain.persistence.repository.MusicLikesRepository
 import com.music_service.domain.persistence.repository.MusicRepository
+import com.music_service.global.annotation.DistributedLock
 import com.music_service.global.exception.MusicServiceException.MusicNotFoundException
 import com.music_service.global.exception.MusicServiceException.MusicNotUpdatableException
-import com.music_service.global.exception.MusicServiceException.NegativeValueException
 import com.music_service.global.util.RedisUtils
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.messaging.handler.annotation.Payload
@@ -39,7 +39,6 @@ class MusicService(
     private val asyncManager: AsyncManager,
     private val fileManager: FileManager,
     private val kafkaManager: KafkaManager,
-    private val lockManager: LockManager,
     private val cacheManager: CacheManager
 ) {
 
@@ -109,17 +108,23 @@ class MusicService(
     }
 
     @Transactional
+    @DistributedLock(key = "'change-music-likes-flag-lock-' + #musicId")
     fun changeLikesFlag(musicId: Long, userId: Long) {
-        try {
-            lockManager.changeLikesFlagWithLock(musicId, userId)?.let {
-                val myInfo = RedisUtils.getJson("user:$userId", Map::class.java)
-                kafkaManager.sendMusicLikeTopic(it,
-                    "${myInfo["nickname"] as String} 님이 당신의 음원에 좋아요를 눌렀습니다.")
-            }
-            clearMusicCacheByUpdate(musicId)
-
-        } catch (e: IllegalArgumentException) {
-            throw NegativeValueException(e.localizedMessage)
+        var musicianId: Long? = null
+        musicLikesRepository.findMusicLikesWithMusicByMusicIdAndUserId(musicId, userId)?.let { ml ->
+            ml.changeFlag()
+            if (ml.flag) musicianId = ml.music.userId
+        } ?: run {
+            val music = findMusicById(musicId)
+            val musicLikes = MusicLikes(music, userId)
+            musicLikesRepository.save(musicLikes)
+            music.addLikes(1)
+            musicianId = music.userId
+        }
+        musicianId?.let {
+            val myInfo = RedisUtils.getJson("user:$userId", Map::class.java)
+            kafkaManager.sendMusicLikeTopic(it,
+                "${myInfo["nickname"] as String} 님이 당신의 음원에 좋아요를 눌렀습니다.")
         }
     }
 

@@ -9,7 +9,13 @@ import org.springframework.stereotype.Component
 import java.time.Duration
 
 @Component
-class RedisUtils(private val template: RedisTemplate<String, Any>): InitializingBean {
+class RedisUtils(
+    private val template: RedisTemplate<String, Any>
+): InitializingBean {
+
+    override fun afterPropertiesSet() {
+        operation = template.opsForValue()
+    }
 
     companion object {
         private lateinit var operation: ValueOperations<String, Any>
@@ -32,11 +38,11 @@ class RedisUtils(private val template: RedisTemplate<String, Any>): Initializing
         fun getValue(key: String): String? = operation[key] as? String
 
         @Throws(JsonProcessingException::class)
-        fun <T> getJson(key: String, clazz: Class<T>): T? {
+        fun <T> getJson(key: String, clazz: Class<T>): T {
             val jsonStr = operation[key] as? String
             return jsonStr?.takeIf { it.isNotBlank() }.let {
                 om.readValue(it, clazz)
-            }
+            } ?: throw IllegalArgumentException("Value is not Present by Key : $key")
         }
 
         fun updateValue(key: String, value: String, duration: Duration) {
@@ -45,9 +51,5 @@ class RedisUtils(private val template: RedisTemplate<String, Any>): Initializing
         }
 
         fun deleteValue(key: String): Any? = operation.getAndDelete(key)
-    }
-
-    override fun afterPropertiesSet() {
-        operation = template.opsForValue()
     }
 }

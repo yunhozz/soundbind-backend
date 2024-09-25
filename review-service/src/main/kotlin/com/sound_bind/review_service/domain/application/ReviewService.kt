@@ -14,6 +14,7 @@ import com.sound_bind.review_service.domain.persistence.repository.ReviewLikesRe
 import com.sound_bind.review_service.domain.persistence.repository.ReviewRepository
 import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorDTO
 import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewQueryDTO
+import com.sound_bind.review_service.global.annotation.DistributedLock
 import com.sound_bind.review_service.global.enums.ReviewSort
 import com.sound_bind.review_service.global.exception.ReviewServiceException.NegativeValueException
 import com.sound_bind.review_service.global.exception.ReviewServiceException.ReviewAlreadyExistException
@@ -39,6 +40,7 @@ class ReviewService(
 ) {
 
     @Transactional
+    @DistributedLock(key = "'create-review-lock-' + #musicId + '-' + #userId")
     fun createReview(musicId: Long, userId: Long, dto: ReviewCreateDTO): Long {
         if (reviewRepository.existsReviewByMusicIdAndUserId(musicId, userId)) {
             throw ReviewAlreadyExistException("Review already exists")
@@ -68,7 +70,7 @@ class ReviewService(
     }
 
     @Transactional
-    @KafkaListener(groupId = "review-service", topics = ["review-rollback-topic"])
+    @KafkaListener(groupId = "review-service-group", topics = ["review-rollback-topic"])
     fun createReviewRollback(@Payload payload: MusicNotFoundMessageDTO) {
         val reviewId = payload.reviewId
         val review = findReviewById(reviewId)
@@ -80,11 +82,12 @@ class ReviewService(
     }
 
     @Transactional
+    @DistributedLock(key = "'update-review-lock-' + #reviewId + '-' + #userId", waitTime = 0)
     fun updateReviewMessageAndScore(reviewId: Long, userId: Long, dto: ReviewUpdateDTO): Long {
         val review = reviewRepository.findReviewByIdAndUserId(reviewId, userId)
             ?: throw ReviewUpdateNotAuthorizedException("Not Authorized for Update")
         val oldScore = review.score
-        val before30Days = LocalDateTime.now().minusDays(30)
+        val before30Days = LocalDateTime.now()
 
         if (reviewRepository.isReviewEligibleForUpdate(review.id!!, before30Days)) {
             val newScore = dto.score
@@ -122,10 +125,10 @@ class ReviewService(
         reviewRepository.findReviewsOnMusic(musicId, userId, reviewSort, dto, pageable)
 
     @Transactional
+    @DistributedLock(key = "'change-review-likes-flag-lock-' + #reviewId")
     fun changeLikesFlag(reviewId: Long, userId: Long) {
         var reviewerId: Long? = null
-        val userInfo = getUserInformationOnRedis(userId)
-        reviewLikesRepository.findWithReviewByReviewId(reviewId)?.let { rl ->
+        reviewLikesRepository.findWithReviewByReviewIdAndUserId(reviewId, userId)?.let { rl ->
             try {
                 rl.changeFlag() // change review's likes number
                 if (rl.flag) reviewerId = rl.review.userId
@@ -133,23 +136,23 @@ class ReviewService(
                 throw NegativeValueException(e.localizedMessage)
             }
         } ?: run {
-            val review = findReviewById(reviewId).also { review ->
-                val reviewLikes = ReviewLikes(userId, review)
-                reviewLikesRepository.save(reviewLikes)
-                review.addLikes(1)
-            }
+            val review = findReviewById(reviewId)
+            val reviewLikes = ReviewLikes(userId, review)
+            reviewLikesRepository.save(reviewLikes)
+            review.addLikes(1)
             reviewerId = review.userId
         }
         reviewerId?.let {
+            val myInfo = getUserInformationOnRedis(userId)
             kafkaManager.sendReviewLikeTopic(it,
-                "${userInfo["nickname"] as String} 님이 당신의 리뷰에 좋아요를 눌렀습니다.")
+                "${myInfo["nickname"] as String} 님이 당신의 리뷰에 좋아요를 눌렀습니다.")
         }
     }
 
     @Transactional
     fun deleteReview(reviewId: Long, userId: Long) {
         val review = reviewRepository.findReviewByIdAndUserId(reviewId, userId)
-            ?: throw ReviewUpdateNotAuthorizedException("Not Authorized for Delete")
+            ?: throw ReviewUpdateNotAuthorizedException("You're not Authorized for Delete Review")
         val comments = commentRepository.findCommentsByReview(review)
         val reviewLikesList = reviewLikesRepository.findByReview(review)
 
