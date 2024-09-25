@@ -7,10 +7,11 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.ValueOperations
 import org.springframework.stereotype.Component
 import java.time.Duration
-import java.util.concurrent.TimeUnit
 
 @Component
-class RedisUtils(private val template: RedisTemplate<String, Any>): InitializingBean {
+class RedisUtils(
+    private val template: RedisTemplate<String, Any>
+): InitializingBean {
 
     override fun afterPropertiesSet() {
         operation = template.opsForValue()
@@ -50,22 +51,5 @@ class RedisUtils(private val template: RedisTemplate<String, Any>): Initializing
         }
 
         fun deleteValue(key: String): Any? = operation.getAndDelete(key)
-
-        fun tryLock(
-            key: String,
-            value: String,
-            leaseTime: Long,
-            timeUnit: TimeUnit,
-        ): Boolean =
-            operation.setIfAbsent(key, value, leaseTime, timeUnit) ?: false
-
-        fun releaseLock(key: String, value: String): Boolean {
-            val lockValue = operation.get(key)
-            if (lockValue == value) {
-                deleteValue(key)
-                return true
-            }
-            return false
-        }
     }
 }

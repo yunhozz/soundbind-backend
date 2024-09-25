@@ -9,6 +9,8 @@ interface ReviewLikesRepository: JpaRepository<ReviewLikes, Long> {
 
     fun findByReview(review: Review): List<ReviewLikes>
 
-    @Query("select rl from ReviewLikes rl join fetch rl.review r where r.id = :reviewId")
-    fun findWithReviewByReviewId(reviewId: Long): ReviewLikes?
+    @Query("select rl from ReviewLikes rl join fetch rl.review r where r.id = :reviewId and rl.userId = :userId")
+    fun findWithReviewByReviewIdAndUserId(reviewId: Long, userId: Long): ReviewLikes?
+
+    fun findReviewLikesByFlag(flag: Boolean): List<ReviewLikes>
 }
