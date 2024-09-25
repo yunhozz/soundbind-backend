@@ -107,11 +107,8 @@ class MusicService(
         return music.id!!
     }
 
-    @DistributedLock(
-        key = "'change-likes-flag-lock-' + #musicId",
-        waitTime = 5000,
-        leaseTime = 3000
-    )
+    @Transactional
+    @DistributedLock(key = "'change-music-likes-flag-lock-' + #musicId")
     fun changeLikesFlag(musicId: Long, userId: Long) {
         var musicianId: Long? = null
         musicLikesRepository.findMusicLikesWithMusicByMusicIdAndUserId(musicId, userId)?.let { ml ->

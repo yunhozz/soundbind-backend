@@ -8,6 +8,8 @@ import org.aspectj.lang.reflect.MethodSignature
 import org.redisson.api.RedissonClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.core.Ordered
+import org.springframework.core.annotation.Order
 import org.springframework.expression.spel.standard.SpelExpressionParser
 import org.springframework.expression.spel.support.StandardEvaluationContext
 import org.springframework.stereotype.Component
@@ -15,9 +17,9 @@ import java.util.concurrent.TimeUnit
 
 @Aspect
 @Component
+@Order(Ordered.LOWEST_PRECEDENCE - 1)
 class DistributedLockAspect(
-    private val redissonClient: RedissonClient,
-    private val aopTransaction: AopTransaction
+    private val redissonClient: RedissonClient
 ) {
 
     companion object {
@@ -46,9 +48,10 @@ class DistributedLockAspect(
         try {
             val lockable = rLock.tryLock(distributedLock.waitTime, distributedLock.leaseTime, TimeUnit.MILLISECONDS)
             if (!lockable) {
-                return false
+                log.warn("Failed to acquire lock for key: $lockKey")
+                return null
             }
-            return aopTransaction.proceed(joinPoint)
+            return joinPoint.proceed()
 
         } finally {
             try {
