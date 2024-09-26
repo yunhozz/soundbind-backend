@@ -11,17 +11,16 @@ import java.time.LocalDateTime
 
 @Entity
 @SQLRestriction("deleted_at is null")
-class Sponsor(
+class Sponsor private constructor(
     val senderId: Long,
     val receiverId: Long,
     @OneToOne(fetch = FetchType.LAZY)
-    val point: Point,
-    val amount: Int
+    val point: Point
 ): BaseEntity() {
 
     companion object {
         fun createAndSubtractPoint(senderId: Long, receiverId: Long, point: Point, amount: Int): Sponsor {
-            val sponsor = Sponsor(senderId, receiverId, point, amount)
+            val sponsor = Sponsor(senderId, receiverId, point)
             point.subtractAmount(amount)
             return sponsor
         }
@@ -31,13 +30,17 @@ class Sponsor(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null
 
+    var isCompleted: Boolean = false
+        protected set
+
     private var deletedAt: LocalDateTime? = null
+
+    fun receiveSponsor() {
+        require(!isCompleted) { "Already Received this Sponsor!" }
+        isCompleted = true
+    }
 
     fun softDelete() {
         deletedAt ?: run { deletedAt = LocalDateTime.now() }
     }
-}
-
-enum class ExchangeType {
-    PAYMENT, SEND
 }
