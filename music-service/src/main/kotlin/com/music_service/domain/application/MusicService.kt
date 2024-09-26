@@ -11,6 +11,9 @@ import com.music_service.domain.application.manager.AsyncManager
 import com.music_service.domain.application.manager.CacheManager
 import com.music_service.domain.application.manager.FileManager
 import com.music_service.domain.application.manager.KafkaManager
+import com.music_service.domain.application.manager.impl.KafkaManagerImpl.Companion.MUSIC_REVIEW_TOPIC
+import com.music_service.domain.application.manager.impl.KafkaManagerImpl.Companion.MUSIC_SERVICE_GROUP
+import com.music_service.domain.application.manager.impl.KafkaManagerImpl.Companion.USER_DELETION_TOPIC
 import com.music_service.domain.persistence.entity.FileEntity
 import com.music_service.domain.persistence.entity.FileType
 import com.music_service.domain.persistence.entity.FileType.IMAGE
@@ -129,7 +132,7 @@ class MusicService(
     }
 
     @Transactional
-    @KafkaListener(groupId = "music-service-group", topics = ["music-review-topic"])
+    @KafkaListener(groupId = MUSIC_SERVICE_GROUP, topics = [MUSIC_REVIEW_TOPIC])
     fun changeScoreAverageAndSendNotification(@Payload payload: MusicReviewMessageDTO) {
         findMusicByIdWithRollback(
             payload.musicId,
@@ -191,7 +194,7 @@ class MusicService(
     }
 
     @Transactional
-    @KafkaListener(groupId = "music-service-group", topics = ["user-deletion-topic"])
+    @KafkaListener(groupId = MUSIC_SERVICE_GROUP, topics = [USER_DELETION_TOPIC])
     fun deleteMusicsByUserWithdraw(@Payload payload: UserWithdrawMessageDTO) {
         val userId = payload.userId
         val musics = musicRepository.findMusicByUserId(userId)

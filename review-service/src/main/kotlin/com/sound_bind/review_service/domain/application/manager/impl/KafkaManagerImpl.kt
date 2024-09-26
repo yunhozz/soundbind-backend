@@ -14,6 +14,9 @@ class KafkaManagerImpl: KafkaManager {
         private val mapper = jacksonObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
+        const val REVIEW_SERVICE_GROUP = "review-service-group"
+        const val REVIEW_ROLLBACK_TOPIC = "review-rollback-topic"
+        const val USER_DELETION_TOPIC = "user-deletion-topic"
         private const val MUSIC_REVIEW_TOPIC = "music-review-topic"
         private const val REVIEW_LIKE_TOPIC = "review-like-topic"
         private const val COMMENT_ADDED_TOPIC = "comment-added-topic"
