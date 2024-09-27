@@ -37,7 +37,7 @@ class Sponsor private constructor(
 
     private var deletedAt: LocalDateTime? = null
 
-    fun receiveSponsor() {
+    fun receive() {
         require(!isCompleted) { "Already Received this Sponsor!" }
         isCompleted = true
     }
