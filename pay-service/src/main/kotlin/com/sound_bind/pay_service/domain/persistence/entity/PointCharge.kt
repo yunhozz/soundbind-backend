@@ -19,13 +19,14 @@ class PointCharge private constructor(
     val point: Point,
     @Enumerated(EnumType.STRING)
     val chargeType: ChargeType,
-    val amount: Int
+    val originalAmount: Int,
+    val pointAmount: Int
 ): BaseEntity() {
 
     companion object {
-        fun createAndAddPoint(userId: Long, point: Point, chargeType: ChargeType, amount: Int): PointCharge {
-            val pointCharge = PointCharge(userId, point, chargeType, amount)
-            point.addAmount(amount)
+        fun createAndAddPoint(userId: Long, point: Point, chargeType: ChargeType, originalAmount: Int, pointAmount: Int): PointCharge {
+            val pointCharge = PointCharge(userId, point, chargeType, originalAmount, pointAmount)
+            point.addAmount(pointAmount)
             return pointCharge
         }
     }
@@ -41,6 +42,19 @@ class PointCharge private constructor(
     }
 }
 
-enum class ChargeType {
-    CARD, BANK_ACCOUNT, SIMPLE_PAYMENT
+enum class ChargeType(
+    val type: String,
+    val description: String
+) {
+    CREDIT_CARD("credit_card","신용카드"),
+    BANK_ACCOUNT("bank_account", "은행 계좌"),
+    SIMPLE_PAYMENT("simple_payment", "간편 결제")
+    ;
+
+    companion object {
+        fun of(description: String): ChargeType = entries.find { it.description == description }
+            ?: throw IllegalArgumentException("Unknown charge type: $description")
+
+        fun of(chargeType: ChargeType): String = chargeType.type
+    }
 }

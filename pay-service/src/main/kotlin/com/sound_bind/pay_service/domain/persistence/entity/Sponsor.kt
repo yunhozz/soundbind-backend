@@ -5,7 +5,7 @@ import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
-import jakarta.persistence.OneToOne
+import jakarta.persistence.ManyToOne
 import org.hibernate.annotations.SQLRestriction
 import java.time.LocalDateTime
 
@@ -14,14 +14,16 @@ import java.time.LocalDateTime
 class Sponsor private constructor(
     val senderId: Long,
     val receiverId: Long,
-    @OneToOne(fetch = FetchType.LAZY)
-    val point: Point
+    @ManyToOne(fetch = FetchType.LAZY)
+    val point: Point,
+    val pointAmount: Int
 ): BaseEntity() {
 
     companion object {
-        fun createAndSubtractPoint(senderId: Long, receiverId: Long, point: Point, amount: Int): Sponsor {
-            val sponsor = Sponsor(senderId, receiverId, point)
-            point.subtractAmount(amount)
+        fun createAndSubtractPoint(senderId: Long, receiverId: Long, point: Point, pointAmount: Int): Sponsor {
+            require(pointAmount > 0) { "Sponsorship is available from at least 1 point." }
+            val sponsor = Sponsor(senderId, receiverId, point, pointAmount)
+            point.subtractAmount(pointAmount)
             return sponsor
         }
     }
