@@ -30,8 +30,13 @@ class UserManageController(private val userManageService: UserManageService) {
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "유저 회원가입")
     fun signUpByLocalUser(@Valid @RequestBody dto: SignUpRequestDTO): APIResponse {
-        val result = userManageService.createLocalUser(dto)
-        return APIResponse.of("Local user joined success", result)
+        val userId = userManageService.createLocalUser(dto)
+        val message = mapOf(
+            "topic" to "user-added-topic",
+            "message" to mapOf("userId" to userId)
+        )
+        sendMessageToKafka(message)
+        return APIResponse.of("Local user joined success", userId)
     }
 
     @PostMapping("/verify/email")
@@ -61,18 +66,25 @@ class UserManageController(private val userManageService: UserManageService) {
     ): APIResponse {
         userManageService.deleteLocalUser(sub.toLong(), token)
         CookieUtils.deleteAllCookies(request, response)
-        val record = mapOf(
+        val message = mapOf(
             "topic" to "user-deletion-topic",
             "message" to mapOf("userId" to sub.toLong())
         )
-        post(
-            url = kafkaRequestUri,
-            headers = mapOf("Content-Type" to "application/json"),
-            data = jacksonObjectMapper().writeValueAsString(record)
-        )
+        sendMessageToKafka(message)
         return APIResponse.of("Withdraw success")
     }
 
     @Value("\${uris.kafka-server-uri:http://localhost:9000}/api/kafka")
     private lateinit var kafkaRequestUri: String
+
+    private fun sendMessageToKafka(message: Map<String, Any>) =
+        post(
+            url = kafkaRequestUri,
+            headers = mapOf("Content-Type" to "application/json"),
+            data = mapper.writeValueAsString(message)
+        )
+
+    companion object {
+        private val mapper = jacksonObjectMapper()
+    }
 }

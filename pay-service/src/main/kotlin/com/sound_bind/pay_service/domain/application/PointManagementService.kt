@@ -3,6 +3,7 @@ package com.sound_bind.pay_service.domain.application
 import com.sound_bind.pay_service.domain.application.charge.strategy.impl.BankAccountChargeStrategy
 import com.sound_bind.pay_service.domain.application.charge.strategy.impl.CreditCardChargeStrategy
 import com.sound_bind.pay_service.domain.application.charge.strategy.impl.SimplePaymentChargeStrategy
+import com.sound_bind.pay_service.domain.application.dto.message.UserSignUpMessageDTO
 import com.sound_bind.pay_service.domain.application.dto.request.BankAccountDetails
 import com.sound_bind.pay_service.domain.application.dto.request.CreditCardDetails
 import com.sound_bind.pay_service.domain.application.dto.request.PointChargeRequestDTO
@@ -28,11 +29,10 @@ class PointManagementService(
 
     @Transactional
     @KafkaListener(groupId = PAY_SERVICE_GROUP, topics = [USER_ADDED_TOPIC])
-    fun createPointWithZero(@Payload payload: Any): Long {
-        // TODO : 유저 회원가입 시 userId 를 받아 Point 객체 생성
-        val userId = 999L
-        val point = Point(userId)
-        return pointRepository.save(point).id!!
+    fun createPointWithZero(@Payload payload: UserSignUpMessageDTO): Long {
+        val point = Point(payload.userId)
+        pointRepository.save(point)
+        return point.id!!
     }
 
     @Transactional
