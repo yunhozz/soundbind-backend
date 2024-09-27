@@ -1,8 +1,8 @@
 package com.sound_bind.pay_service.domain.application
 
-import com.sound_bind.pay_service.domain.application.charge.strategy.impl.BankAccountPaymentStrategy
+import com.sound_bind.pay_service.domain.application.charge.strategy.impl.BankAccountChargeStrategy
 import com.sound_bind.pay_service.domain.application.charge.strategy.impl.CreditCardChargeStrategy
-import com.sound_bind.pay_service.domain.application.charge.strategy.impl.SimplePaymentStrategy
+import com.sound_bind.pay_service.domain.application.charge.strategy.impl.SimplePaymentChargeStrategy
 import com.sound_bind.pay_service.domain.application.dto.request.BankAccountDetails
 import com.sound_bind.pay_service.domain.application.dto.request.CreditCardDetails
 import com.sound_bind.pay_service.domain.application.dto.request.PointChargeRequestDTO
@@ -52,14 +52,14 @@ class PointManagementService(
             }
             ChargeType.BANK_ACCOUNT -> {
                 val bankAccountDetails = paymentDetails as BankAccountDetails
-                BankAccountPaymentStrategy(
+                BankAccountChargeStrategy(
                     bankAccountDetails.bank,
                     bankAccountDetails.accountNumber
                 )
             }
             ChargeType.SIMPLE_PAYMENT -> {
                 val simplePaymentDetails = paymentDetails as SimplePaymentDetails
-                SimplePaymentStrategy(
+                SimplePaymentChargeStrategy(
                     simplePaymentDetails.email,
                     simplePaymentDetails.phoneNumber
                 )
