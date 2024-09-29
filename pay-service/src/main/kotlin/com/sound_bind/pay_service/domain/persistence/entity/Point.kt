@@ -23,7 +23,7 @@ class Point(
 
     fun subtractAmount(amount: Int) {
         val remain = this.amount - amount
-        require(remain >= 0) { "Amount can't be less than $amount" }
+        require(remain >= 0) { "Amount can't be less than zero!" }
         this.amount = remain
     }
 }
