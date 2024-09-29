@@ -34,7 +34,8 @@ class ChargeManagerImpl: ChargeManager {
                 val bankAccountDetails = paymentDetails as BankAccountDetails
                 BankAccountChargeStrategy(
                     bankAccountDetails.bank,
-                    bankAccountDetails.accountNumber
+                    bankAccountDetails.accountNumber,
+                    bankAccountDetails.accountPassword
                 )
             }
             ChargeType.SIMPLE_PAYMENT -> {

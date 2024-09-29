@@ -4,5 +4,5 @@ import java.util.Date
 
 interface CreditCardChargeHandler {
     fun validate(cardNumber: String, cardExpirationDate: Date): Boolean
-    fun charge()
+    fun charge(pointAmount: Int)
 }

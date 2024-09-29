@@ -8,7 +8,7 @@ import java.util.Date
 data class PointChargeRequestDTO(
     @field:NotBlank
     val chargeTypeDescription: String,
-    @field:NotBlank
+    @field:NotNull
     val chargeMethod: ChargeMethod,
     @field:NotNull
     @field:Min(1)
@@ -26,7 +26,8 @@ data class CreditCardDetails(
 
 data class BankAccountDetails(
     val bank: Bank,
-    val accountNumber: String
+    val accountNumber: String,
+    val accountPassword: String
 ): PaymentDetails
 
 data class SimplePaymentDetails(
