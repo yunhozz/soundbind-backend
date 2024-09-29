@@ -1,16 +1,11 @@
 package com.sound_bind.pay_service.domain.application
 
-import com.sound_bind.pay_service.domain.application.charge.strategy.impl.BankAccountChargeStrategy
-import com.sound_bind.pay_service.domain.application.charge.strategy.impl.CreditCardChargeStrategy
-import com.sound_bind.pay_service.domain.application.charge.strategy.impl.SimplePaymentChargeStrategy
 import com.sound_bind.pay_service.domain.application.dto.message.UserSignUpMessageDTO
-import com.sound_bind.pay_service.domain.application.dto.request.BankAccountDetails
-import com.sound_bind.pay_service.domain.application.dto.request.CreditCardDetails
 import com.sound_bind.pay_service.domain.application.dto.request.PointChargeRequestDTO
-import com.sound_bind.pay_service.domain.application.dto.request.SimplePaymentDetails
 import com.sound_bind.pay_service.domain.application.manager.ChargeManager
 import com.sound_bind.pay_service.domain.application.manager.impl.KafkaManagerImpl.Companion.PAY_SERVICE_GROUP
 import com.sound_bind.pay_service.domain.application.manager.impl.KafkaManagerImpl.Companion.USER_ADDED_TOPIC
+import com.sound_bind.pay_service.domain.application.manager.impl.KafkaManagerImpl.Companion.USER_DELETION_TOPIC
 import com.sound_bind.pay_service.domain.persistence.entity.ChargeType
 import com.sound_bind.pay_service.domain.persistence.entity.Point
 import com.sound_bind.pay_service.domain.persistence.repository.PointChargeRepository
@@ -42,30 +37,8 @@ class PointManagementService(
         val chargeType = ChargeType.of(dto.chargeTypeDescription)
         val paymentDetails = dto.paymentDetails
 
-        val chargeStrategy = when (chargeType) {
-            ChargeType.CREDIT_CARD -> {
-                val creditCardDetails = paymentDetails as CreditCardDetails
-                CreditCardChargeStrategy(
-                    creditCardDetails.cardNumber,
-                    creditCardDetails.cardExpirationDate
-                )
-            }
-            ChargeType.BANK_ACCOUNT -> {
-                val bankAccountDetails = paymentDetails as BankAccountDetails
-                BankAccountChargeStrategy(
-                    bankAccountDetails.bank,
-                    bankAccountDetails.accountNumber
-                )
-            }
-            ChargeType.SIMPLE_PAYMENT -> {
-                val simplePaymentDetails = paymentDetails as SimplePaymentDetails
-                SimplePaymentChargeStrategy(
-                    simplePaymentDetails.email,
-                    simplePaymentDetails.phoneNumber
-                )
-            }
-        }
-        chargeManager.registerStrategy(chargeStrategy)
+        chargeManager.registerStrategy(chargeType, paymentDetails)
+
         val pointCharge = chargeManager.chargePoint(userId, point, dto)
         pointChargeRepository.save(pointCharge)
 
