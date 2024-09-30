@@ -4,6 +4,7 @@ spring:
     include: oauth
     group:
       local:
+        - kafka-local
         - jwt-local
         - redis-local
         - mail-local

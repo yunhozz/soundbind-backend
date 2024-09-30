@@ -1,5 +1,6 @@
 package com.sound_bind.api_gateway.filter
 
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.sound_bind.api_gateway.config.WebClientConfig.Companion.COMMON_WEB_CLIENT
 import com.sound_bind.api_gateway.config.WebClientConfig.Companion.SSE_WEB_CLIENT
@@ -7,6 +8,7 @@ import com.sound_bind.api_gateway.handler.exception.BusinessException.TokenNotFo
 import com.sound_bind.api_gateway.handler.exception.BusinessException.TokenRefreshFailException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.cloud.gateway.filter.GatewayFilterChain
 import org.springframework.cloud.gateway.filter.OrderedGatewayFilter
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory
@@ -25,12 +27,6 @@ class AuthorizationHeaderFilter(
     @Qualifier(COMMON_WEB_CLIENT) private val commonWebClient: WebClient,
     @Qualifier(SSE_WEB_CLIENT) private val sseWebClient: WebClient
 ): AbstractGatewayFilterFactory<AuthorizationHeaderFilter.Config>(Config::class.java) {
-
-    companion object {
-        private const val USER_SUBJECT_INQUIRY_URI = "http://localhost:8090/api/auth/subject"
-        private const val TOKEN_REFRESH_URI = "http://localhost:8090/api/auth/token/refresh"
-        private const val SSE_SUBSCRIBE_URI = "http://localhost:8000/api/notifications/subscribe"
-    }
 
     private val log = LoggerFactory.getLogger(AuthorizationHeaderFilter::class.java)
 
@@ -64,18 +60,18 @@ class AuthorizationHeaderFilter(
     private fun addSubjectOnRequest(token: String, exchange: ServerWebExchange, chain: GatewayFilterChain): Mono<Void> {
         val request = exchange.request
         val webClient =
-            if (request.uri.toString() == SSE_SUBSCRIBE_URI) sseWebClient
+            if (request.uri.toString() == sseSubscribeUri) sseWebClient
             else commonWebClient
 
         return webClient
             .get()
-            .uri(USER_SUBJECT_INQUIRY_URI)
+            .uri(userSubjectInquiryUri)
             .accept(MediaType.APPLICATION_JSON)
             .header(HttpHeaders.AUTHORIZATION, token)
             .retrieve()
             .bodyToMono(String::class.java)
             .flatMap { response ->
-                val obj = jacksonObjectMapper().readValue(response, Map::class.java)
+                val obj = mapper.readValue(response, Map::class.java)
                 val requestMutate = request.mutate()
                     .headers {
                         it.add(HttpHeaders.AUTHORIZATION, token)
@@ -101,7 +97,7 @@ class AuthorizationHeaderFilter(
 
         return commonWebClient
             .get()
-            .uri(TOKEN_REFRESH_URI)
+            .uri(tokenRefreshUri)
             .accept(MediaType.APPLICATION_JSON)
             .cookie("atk", cookie.value)
             .exchangeToMono { response ->
@@ -109,7 +105,7 @@ class AuthorizationHeaderFilter(
                 val cookies = headers[HttpHeaders.SET_COOKIE]
                 response.bodyToMono(String::class.java)
                     .flatMap {
-                        val obj = jacksonObjectMapper().readValue(it, Map::class.java)
+                        val obj = mapper.readValue(it, Map::class.java)
                         obj["accessToken"]?.let { accessToken ->
                             cookies?.forEach { cookie ->
                                 val httpHeaders = exchange.response.headers
@@ -122,6 +118,20 @@ class AuthorizationHeaderFilter(
                         }
                     }
             }
+    }
+
+    @Value("\${uris.auth-service-uri:http://localhost:8090}/api/auth/subject")
+    private lateinit var userSubjectInquiryUri: String
+
+    @Value("\${uris.auth-service-uri:http://localhost:8090}/api/auth/token/refresh")
+    private lateinit var tokenRefreshUri: String
+
+    @Value("\${uris.api-gateway-uri:http://localhost:8000}/api/notifications/subscribe")
+    private lateinit var sseSubscribeUri: String
+
+    companion object {
+        private val mapper = jacksonObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
     }
 
     class Config

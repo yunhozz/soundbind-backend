@@ -6,8 +6,10 @@ import org.springframework.data.jpa.repository.Query
 
 interface MusicLikesRepository: JpaRepository<MusicLikes, Long> {
 
-    @Query("select ml from MusicLikes ml join fetch ml.music m where m.id = :musicId")
-    fun findMusicLikesWithMusicByMusicId(musicId: Long): MusicLikes?
+    @Query("select ml from MusicLikes ml join fetch ml.music m where m.id = :musicId and ml.userId = :userId")
+    fun findMusicLikesWithMusicByMusicIdAndUserId(musicId: Long, userId: Long): MusicLikes?
 
     fun findMusicLikesByUserId(userId: Long): List<MusicLikes>
+
+    fun findMusicLikesByFlag(flag: Boolean): List<MusicLikes>
 }

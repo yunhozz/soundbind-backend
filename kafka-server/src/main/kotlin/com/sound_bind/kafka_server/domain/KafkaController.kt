@@ -3,7 +3,11 @@ package com.sound_bind.kafka_server.domain
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.sound_bind.kafka_server.global.config.KafkaConfig.Companion.KAFKA_TEMPLATE
+import com.sound_bind.kafka_server.global.config.KafkaConfig.Companion.KAFKA_TX_TEMPLATE
+import io.swagger.v3.oas.annotations.Operation
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -11,10 +15,16 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
+import java.util.concurrent.ThreadLocalRandom
 
 @RestController
 @RequestMapping("/api/kafka")
-class KafkaController(private val kafkaTemplate: KafkaTemplate<String, Map<String, Any>>) {
+class KafkaController(
+    @Qualifier(KAFKA_TEMPLATE)
+    private val kafkaTemplate: KafkaTemplate<String, Map<String, Any>>,
+    @Qualifier(KAFKA_TX_TEMPLATE)
+    private val kafkaTransactionTemplate: KafkaTemplate<String, Map<String, Any>>
+) {
 
     companion object {
         private val mapper = jacksonObjectMapper()
@@ -23,12 +33,14 @@ class KafkaController(private val kafkaTemplate: KafkaTemplate<String, Map<Strin
     }
 
     @PostMapping
+    @Operation(summary = "kafka topic 발행")
     fun sendKafkaMessage(@RequestBody data: String) {
         val response = if (data.trim().startsWith("[")) {
             mapper.readValue(data, List::class.java)
         } else {
             listOf(mapper.readValue(data, Map::class.java))
         }
+        log.info("Received Data : $response")
         val threads = response.size
         val executorService = Executors.newFixedThreadPool(threads)
         val latch = CountDownLatch(threads)
