@@ -19,14 +19,14 @@ class DataSourceConfig {
 
     @Bean(MASTER_DATASOURCE)
     @ConfigurationProperties(prefix = "spring.datasource.master.hikari")
-    fun masterDatabase(): DataSource =
+    fun masterDataSource(): DataSource =
         DataSourceBuilder.create()
             .type(HikariDataSource::class.java)
             .build()
 
     @Bean(SLAVE_DATASOURCE)
     @ConfigurationProperties(prefix = "spring.datasource.slave.hikari")
-    fun slaveDatabase(): DataSource =
+    fun slaveDataSource(): DataSource =
         DataSourceBuilder.create()
             .type(HikariDataSource::class.java)
             .build()
@@ -36,16 +36,16 @@ class DataSourceConfig {
     @DependsOn(MASTER_DATASOURCE, SLAVE_DATASOURCE)
     @Throws(SQLException::class)
     fun routingDataSource(
-        @Qualifier(MASTER_DATASOURCE) masterDatabase: DataSource,
-        @Qualifier(SLAVE_DATASOURCE) slaveDatabase: DataSource
+        @Qualifier(MASTER_DATASOURCE) masterDataSource: DataSource,
+        @Qualifier(SLAVE_DATASOURCE) slaveDataSource: DataSource
     ): DataSource {
         val dataSourceMap = mapOf<Any, Any>(
-            DataSourceConfigConstants.MASTER_DATASOURCE to masterDatabase,
-            DataSourceConfigConstants.SLAVE_DATASOURCE to slaveDatabase
+            DataSourceConfigConstants.MASTER_DATASOURCE to masterDataSource,
+            DataSourceConfigConstants.SLAVE_DATASOURCE to slaveDataSource
         )
         return RoutingDataSource().apply {
             setTargetDataSources(dataSourceMap)
-            setDefaultTargetDataSource(masterDatabase)
+            setDefaultTargetDataSource(masterDataSource)
         }
     }
 
@@ -58,7 +58,7 @@ class DataSourceConfig {
         override fun determineCurrentLookupKey(): Any {
             val isReadOnly = TransactionSynchronizationManager.isCurrentTransactionReadOnly()
             return if (isReadOnly) DataSourceConfigConstants.SLAVE_DATASOURCE
-                else DataSourceConfigConstants.MASTER_DATASOURCE
+            else DataSourceConfigConstants.MASTER_DATASOURCE
         }
     }
 
