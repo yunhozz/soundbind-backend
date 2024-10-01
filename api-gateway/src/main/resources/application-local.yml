@@ -44,6 +44,13 @@ spring:
             - AuthorizationHeaderFilter
           predicates:
             - Path=/api/notifications/**
+        - id: pay-service
+          uri: lb://PAY-SERVICE
+          filters:
+            - AuthorizationHeaderFilter
+            - AuthenticationUserFilter
+          predicates:
+            - Path=/api/payments/**
         - id: kafka-server
           uri: lb://KAFKA-SERVER
           predicates:
