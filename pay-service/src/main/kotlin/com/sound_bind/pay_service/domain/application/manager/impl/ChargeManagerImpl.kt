@@ -15,7 +15,11 @@ import com.sound_bind.pay_service.domain.persistence.entity.PointCharge
 import org.springframework.stereotype.Component
 
 @Component
-class ChargeManagerImpl: ChargeManager {
+class ChargeManagerImpl(
+    private val creditCardChargeStrategy: CreditCardChargeStrategy,
+    private val bankAccountChargeStrategy: BankAccountChargeStrategy,
+    private val simplePaymentChargeStrategy: SimplePaymentChargeStrategy
+): ChargeManager {
 
     private lateinit var strategy: ChargeStrategy
 
@@ -26,27 +30,27 @@ class ChargeManagerImpl: ChargeManager {
         strategy = when (chargeType) {
             ChargeType.CREDIT_CARD -> {
                 val creditCardDetails = paymentDetails as CreditCardDetails
-                CreditCardChargeStrategy(
-                    creditCardDetails.creditCard,
-                    creditCardDetails.cardNumber,
-                    creditCardDetails.cardExpirationDate
-                )
+                creditCardChargeStrategy.apply {
+                    creditCard = creditCardDetails.creditCard
+                    cardNumber = creditCardDetails.cardNumber
+                    cardExpirationDate = creditCardDetails.cardExpirationDate
+                }
             }
             ChargeType.BANK_ACCOUNT -> {
                 val bankAccountDetails = paymentDetails as BankAccountDetails
-                BankAccountChargeStrategy(
-                    bankAccountDetails.bank,
-                    bankAccountDetails.accountNumber,
-                    bankAccountDetails.accountPassword
-                )
+                bankAccountChargeStrategy.apply {
+                    bank = bankAccountDetails.bank
+                    accountNumber = bankAccountDetails.accountNumber
+                    accountPassword = bankAccountDetails.accountPassword
+                }
             }
             ChargeType.SIMPLE_PAYMENT -> {
                 val simplePaymentDetails = paymentDetails as SimplePaymentDetails
-                SimplePaymentChargeStrategy(
-                    simplePaymentDetails.provider,
-                    simplePaymentDetails.email,
-                    simplePaymentDetails.phoneNumber
-                )
+                simplePaymentChargeStrategy.apply {
+                    provider = simplePaymentDetails.provider
+                    email = simplePaymentDetails.email
+                    phoneNumber = simplePaymentDetails.phoneNumber
+                }
             }
         }
 

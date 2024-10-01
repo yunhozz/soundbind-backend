@@ -6,25 +6,22 @@ import com.sound_bind.pay_service.domain.application.charge.handler.credit_card.
 import com.sound_bind.pay_service.domain.application.charge.handler.credit_card.UnionPayChargeHandler
 import com.sound_bind.pay_service.domain.application.charge.handler.credit_card.VisaCardChargeHandler
 import com.sound_bind.pay_service.domain.application.dto.request.CreditCard
+import org.springframework.stereotype.Component
 import java.util.Date
 
-class CreditCardChargeStrategy(
-    private val creditCard: CreditCard,
-    private val cardNumber: String,
-    private val cardExpirationDate: Date
-): ChargeStrategy {
+@Component
+class CreditCardChargeStrategy: ChargeStrategy {
 
-    private lateinit var chargeHandler: CreditCardChargeHandler
+    lateinit var creditCard: CreditCard
+    lateinit var cardNumber: String
+    lateinit var cardExpirationDate: Date
 
-    override fun registerChargeHandler() {
-        chargeHandler = when (creditCard) {
+    override fun chargePoint(pointAmount: Int) {
+        val chargeHandler: CreditCardChargeHandler = when (creditCard) {
             CreditCard.MASTER -> MasterCardChargeHandler()
             CreditCard.VISA -> VisaCardChargeHandler()
             CreditCard.UNION_PAY -> UnionPayChargeHandler()
         }
-    }
-
-    override fun chargePoint(pointAmount: Int) {
         val isValid = chargeHandler.validate(cardNumber, cardExpirationDate)
         if (isValid) {
             chargeHandler.charge(pointAmount)

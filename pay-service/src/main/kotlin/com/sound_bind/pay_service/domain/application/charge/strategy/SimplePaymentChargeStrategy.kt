@@ -6,24 +6,21 @@ import com.sound_bind.pay_service.domain.application.charge.handler.simple_payme
 import com.sound_bind.pay_service.domain.application.charge.handler.simple_payment.NaverSimplePaymentChargeHandler
 import com.sound_bind.pay_service.domain.application.charge.handler.simple_payment.TossSimplePaymentChargeHandler
 import com.sound_bind.pay_service.domain.application.dto.request.SimplePaymentProvider
+import org.springframework.stereotype.Component
 
-class SimplePaymentChargeStrategy(
-    private val provider: SimplePaymentProvider,
-    private val email: String,
-    private val phoneNumber: String
-): ChargeStrategy {
+@Component
+class SimplePaymentChargeStrategy: ChargeStrategy {
 
-    private lateinit var chargeHandler: SimplePaymentChargeHandler
+    lateinit var provider: SimplePaymentProvider
+    lateinit var email: String
+    lateinit var phoneNumber: String
 
-    override fun registerChargeHandler() {
-        chargeHandler = when (provider) {
+    override fun chargePoint(pointAmount: Int) {
+        val chargeHandler: SimplePaymentChargeHandler = when (provider) {
             SimplePaymentProvider.NAVER -> NaverSimplePaymentChargeHandler()
             SimplePaymentProvider.KAKAO -> KakaoSimplePaymentChargeHandler()
             SimplePaymentProvider.TOSS -> TossSimplePaymentChargeHandler()
         }
-    }
-
-    override fun chargePoint(pointAmount: Int) {
         val isValid = chargeHandler.validate(email, phoneNumber)
         if (isValid) {
             chargeHandler.charge(pointAmount)

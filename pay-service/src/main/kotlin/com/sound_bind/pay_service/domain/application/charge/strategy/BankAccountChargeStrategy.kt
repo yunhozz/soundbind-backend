@@ -8,26 +8,23 @@ import com.sound_bind.pay_service.domain.application.charge.handler.bank_account
 import com.sound_bind.pay_service.domain.application.charge.handler.bank_account.ShinhanBankAccountChargeHandler
 import com.sound_bind.pay_service.domain.application.charge.handler.bank_account.WooriBankAccountChargeHandler
 import com.sound_bind.pay_service.domain.application.dto.request.Bank
+import org.springframework.stereotype.Component
 
-class BankAccountChargeStrategy(
-    private val bank: Bank,
-    private val accountNumber: String,
-    private val accountPassword: String
-): ChargeStrategy {
+@Component
+class BankAccountChargeStrategy: ChargeStrategy {
 
-    private lateinit var chargeHandler: BankAccountChargeHandler
+    lateinit var bank: Bank
+    lateinit var accountNumber: String
+    lateinit var accountPassword: String
 
-    override fun registerChargeHandler() {
-        chargeHandler = when (bank) {
+    override fun chargePoint(pointAmount: Int) {
+        val chargeHandler: BankAccountChargeHandler = when (bank) {
             Bank.KB -> KbBankAccountChargeHandler()
             Bank.NH -> NhBankAccountChargeHandler()
             Bank.WOORI -> WooriBankAccountChargeHandler()
             Bank.HANA -> HanaBankAccountChargeHandler()
             Bank.SHINHAN -> ShinhanBankAccountChargeHandler()
         }
-    }
-
-    override fun chargePoint(pointAmount: Int) {
         val isValid = chargeHandler.validate(accountNumber, accountPassword)
         if (isValid) {
             chargeHandler.withdraw(pointAmount)
