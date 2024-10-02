@@ -6,6 +6,7 @@ import com.sound_bind.pay_service.domain.application.charge.strategy.CreditCardC
 import com.sound_bind.pay_service.domain.application.charge.strategy.SimplePaymentChargeStrategy
 import com.sound_bind.pay_service.domain.application.dto.request.BankAccountDetails
 import com.sound_bind.pay_service.domain.application.dto.request.CreditCardDetails
+import com.sound_bind.pay_service.domain.application.dto.request.PaymentDetails
 import com.sound_bind.pay_service.domain.application.dto.request.PointChargeRequestDTO
 import com.sound_bind.pay_service.domain.application.dto.request.SimplePaymentDetails
 import com.sound_bind.pay_service.domain.application.manager.ChargeManager
@@ -27,6 +28,22 @@ class ChargeManagerImpl(
         val chargeType = ChargeType.of(dto.chargeTypeDescription)
         val paymentDetails = dto.paymentDetails
 
+        determineChargeStrategy(chargeType, paymentDetails)
+
+        // TODO : 포인트 전환 정책 추가
+        val pointAmount = dto.originalAmount / 100
+        strategy.chargePoint(pointAmount)
+
+        return PointCharge.createAndAddPoint(
+            userId,
+            point,
+            ChargeType.of(dto.chargeTypeDescription),
+            dto.originalAmount,
+            pointAmount
+        )
+    }
+
+    private fun determineChargeStrategy(chargeType: ChargeType, paymentDetails: PaymentDetails) {
         strategy = when (chargeType) {
             ChargeType.CREDIT_CARD -> {
                 val creditCardDetails = paymentDetails as CreditCardDetails
@@ -53,16 +70,5 @@ class ChargeManagerImpl(
                 }
             }
         }
-
-        val pointAmount = dto.originalAmount / 100 // TODO : 포인트 전환 정책 추가
-        strategy.chargePoint(pointAmount)
-
-        return PointCharge.createAndAddPoint(
-            userId,
-            point,
-            ChargeType.of(dto.chargeTypeDescription),
-            dto.originalAmount,
-            pointAmount
-        )
     }
 }
