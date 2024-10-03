@@ -3,6 +3,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springframework.boot:spring-boot-starter-data-redis")
+	implementation("org.springframework.boot:spring-boot-starter-data-elasticsearch")
 	implementation("org.springframework.cloud:spring-cloud-starter-config")
 	implementation("org.springframework.cloud:spring-cloud-starter-netflix-eureka-client")
 	implementation("org.springframework.kafka:spring-kafka")
@@ -23,9 +24,6 @@ dependencies {
 
 	// jackson
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-
-	// query logging
-	implementation("com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.1")
 
 	// swagger
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
