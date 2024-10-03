@@ -3,6 +3,7 @@ package com.sound_bind.pay_service.domain.application
 import com.sound_bind.pay_service.domain.application.dto.message.UserSignUpMessageDTO
 import com.sound_bind.pay_service.domain.application.dto.message.UserWithdrawMessageDTO
 import com.sound_bind.pay_service.domain.application.dto.request.PointChargeRequestDTO
+import com.sound_bind.pay_service.domain.application.dto.response.PointResponseDTO
 import com.sound_bind.pay_service.domain.application.manager.AsyncManager
 import com.sound_bind.pay_service.domain.application.manager.ChargeManager
 import com.sound_bind.pay_service.domain.application.manager.impl.KafkaManagerImpl.Companion.PAY_SERVICE_GROUP
@@ -39,12 +40,42 @@ class PointManagementService(
             pointRepository.save(Point(userId))
         }
 
-        val point = pointRepository.findPointByUserId(userId)
-            ?: throw IllegalArgumentException("Point with user id $userId doesn't exist")
+        val point = findPointByUserId(userId)
         val pointCharge = chargeManager.chargePoint(userId, point, dto)
 
         pointChargeRepository.save(pointCharge)
+        asyncManager.savePointChargeDocumentOnElasticsearch(pointCharge, point.id!!)
 
         return pointCharge.id!!
     }
+
+    @Transactional(readOnly = true)
+    fun lookUpMyPoint(userId: Long): PointResponseDTO {
+        val point = findPointByUserId(userId)
+        return PointResponseDTO(
+            point.id!!,
+            point.userId,
+            point.amount
+        )
+    }
+
+    @Transactional
+    @KafkaListener(groupId = PAY_SERVICE_GROUP, topics = [USER_DELETION_TOPIC])
+    fun clearPointByUserWithdraw(@Payload payload: UserWithdrawMessageDTO) {
+        val userId = payload.userId
+        val point = findPointByUserId(userId)
+
+        // TODO : 회원탈퇴 취소
+        if (point.amount > 0) {
+            throw IllegalArgumentException("There are remaining points. Please proceed with the refund first.")
+        }
+
+        val pointChargeList = pointChargeRepository.findAllByPointId(point.id!!)
+        asyncManager.softDeletePointChargeList(pointChargeList)
+        pointRepository.delete(point)
+    }
+
+    private fun findPointByUserId(userId: Long): Point =
+        pointRepository.findPointByUserId(userId)
+            ?: throw IllegalArgumentException("Point with user id $userId doesn't exist")
 }

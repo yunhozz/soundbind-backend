@@ -5,4 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository
 
 interface PointRepository: JpaRepository<Point, Long> {
     fun findPointByUserId(userId: Long): Point?
+    fun existsByUserId(userId: Long): Boolean
 }

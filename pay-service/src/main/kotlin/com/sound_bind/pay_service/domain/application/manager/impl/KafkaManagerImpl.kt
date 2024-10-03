@@ -14,5 +14,6 @@ class KafkaManagerImpl: KafkaManager {
 
         const val PAY_SERVICE_GROUP = "pay-service-group"
         const val USER_ADDED_TOPIC = "user-added-topic"
+        const val USER_DELETION_TOPIC = "user-deletion-topic"
     }
 }
