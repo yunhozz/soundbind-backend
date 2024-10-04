@@ -76,6 +76,6 @@ class PointManagementService(
     }
 
     private fun findPointByUserId(userId: Long): Point =
-        pointRepository.findPointByUserId(userId)
+        pointRepository.findByUserId(userId)
             ?: throw IllegalArgumentException("Point with user id $userId doesn't exist")
 }
