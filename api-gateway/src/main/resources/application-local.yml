@@ -50,7 +50,7 @@ spring:
             - AuthorizationHeaderFilter
             - AuthenticationUserFilter
           predicates:
-            - Path=/api/payments/**
+            - Path=/api/payments/**, /api/sponsors/**
         - id: kafka-server
           uri: lb://KAFKA-SERVER
           predicates:
