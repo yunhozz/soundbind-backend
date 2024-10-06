@@ -13,6 +13,7 @@ import com.sound_bind.pay_service.domain.application.manager.impl.KafkaManagerIm
 import com.sound_bind.pay_service.domain.persistence.entity.Point
 import com.sound_bind.pay_service.domain.persistence.repository.PointChargeRepository
 import com.sound_bind.pay_service.domain.persistence.repository.PointRepository
+import com.sound_bind.pay_service.global.exception.PayServiceException
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Service
@@ -74,5 +75,5 @@ class PointManagementService(
 
     private fun findPointByUserId(userId: Long): Point =
         pointRepository.findByUserId(userId)
-            ?: throw IllegalArgumentException("Point with user id $userId doesn't exist")
+            ?: throw PayServiceException.PointNotFoundException("Point with user id $userId doesn't exist")
 }

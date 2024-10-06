@@ -6,6 +6,7 @@ import com.sound_bind.pay_service.domain.application.manager.KafkaManager
 import com.sound_bind.pay_service.domain.persistence.entity.Sponsor
 import com.sound_bind.pay_service.domain.persistence.repository.PointRepository
 import com.sound_bind.pay_service.domain.persistence.repository.SponsorRepository
+import com.sound_bind.pay_service.global.exception.PayServiceException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -20,7 +21,7 @@ class SponsorService(
     @Transactional
     fun sendSponsorAndSubtractPoint(senderId: Long, dto: SponsorRequestDTO): Long {
         val senderPoint = pointRepository.findByUserId(senderId)
-            ?: throw IllegalArgumentException("Point with user id $senderId doesn't exist")
+            ?: throw PayServiceException.PointNotFoundException("Point with user id $senderId doesn't exist")
         val receiverId = dto.receiverId
         val pointAmount = dto.pointAmount
 
@@ -40,12 +41,12 @@ class SponsorService(
     @Transactional
     fun receiveSponsorAndAddPoint(receiverId: Long, sponsorId: Long) {
         val sponsor = sponsorRepository.findByIdAndReceiverId(sponsorId, receiverId)
-            ?: throw IllegalArgumentException("Sponsor with user id $receiverId doesn't exist")
+            ?: throw PayServiceException.SponsorNotFoundException("Sponsor with user id $receiverId doesn't exist")
         sponsor.receive()
         elasticsearchManager.updateSponsorReceived(sponsor.id!!)
 
         val receiverPoint = pointRepository.findByUserId(receiverId)
-            ?: throw IllegalArgumentException("Point with user id $receiverId doesn't exist")
+            ?: throw PayServiceException.PointNotFoundException("Point with user id $receiverId doesn't exist")
         receiverPoint.addAmount(sponsor.pointAmount)
     }
 }

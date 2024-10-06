@@ -3,6 +3,7 @@ package com.sound_bind.pay_service.domain.application
 import com.sound_bind.pay_service.domain.persistence.entity.Sponsor
 import com.sound_bind.pay_service.domain.persistence.es.document.SponsorDocument
 import com.sound_bind.pay_service.domain.persistence.es.search.SponsorSearchRepository
+import com.sound_bind.pay_service.global.exception.PayServiceException
 import com.sound_bind.pay_service.global.util.DateTimeUtils
 import org.springframework.stereotype.Service
 
@@ -26,7 +27,7 @@ class SponsorSearchService(
 
     fun updateSponsorReceivedOnElasticsearch(sponsorId: Long) {
         val sponsor = sponsorSearchRepository.findById(sponsorId)
-            .orElseThrow { IllegalArgumentException("Sponsor not found") }
+            .orElseThrow { PayServiceException.SponsorNotFoundException("Sponsor not found") }
         sponsor.receive()
         sponsorSearchRepository.save(sponsor)
     }
