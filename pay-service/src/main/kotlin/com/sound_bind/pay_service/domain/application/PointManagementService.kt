@@ -37,11 +37,6 @@ class PointManagementService(
 
     @Transactional
     fun chargePoint(userId: Long, dto: PointChargeRequestDTO): Long {
-        // for test
-        if (!pointRepository.existsByUserId(userId)) {
-            pointRepository.save(Point(userId))
-        }
-
         val point = findPointByUserId(userId)
         val pointCharge = chargeManager.chargePoint(userId, point, dto)
 
