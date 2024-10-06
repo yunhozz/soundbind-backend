@@ -6,6 +6,7 @@ import com.sound_bind.pay_service.domain.application.dto.request.PointChargeRequ
 import com.sound_bind.pay_service.domain.application.dto.response.PointResponseDTO
 import com.sound_bind.pay_service.domain.application.manager.AsyncManager
 import com.sound_bind.pay_service.domain.application.manager.ChargeManager
+import com.sound_bind.pay_service.domain.application.manager.ElasticsearchManager
 import com.sound_bind.pay_service.domain.application.manager.impl.KafkaManagerImpl.Companion.PAY_SERVICE_GROUP
 import com.sound_bind.pay_service.domain.application.manager.impl.KafkaManagerImpl.Companion.USER_ADDED_TOPIC
 import com.sound_bind.pay_service.domain.application.manager.impl.KafkaManagerImpl.Companion.USER_DELETION_TOPIC
@@ -22,6 +23,7 @@ class PointManagementService(
     private val pointRepository: PointRepository,
     private val pointChargeRepository: PointChargeRepository,
     private val chargeManager: ChargeManager,
+    private val elasticsearchManager: ElasticsearchManager,
     private val asyncManager: AsyncManager
 ) {
 
@@ -44,7 +46,7 @@ class PointManagementService(
         val pointCharge = chargeManager.chargePoint(userId, point, dto)
 
         pointChargeRepository.save(pointCharge)
-        asyncManager.savePointChargeDocumentOnElasticsearch(pointCharge, point.id!!)
+        elasticsearchManager.savePointChargeDocument(pointCharge, point.id!!)
 
         return pointCharge.id!!
     }

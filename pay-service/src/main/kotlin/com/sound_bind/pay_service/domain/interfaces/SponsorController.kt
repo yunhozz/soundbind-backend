@@ -1,9 +1,10 @@
 package com.sound_bind.pay_service.domain.interfaces
 
+import com.sound_bind.pay_service.domain.application.SponsorSearchService
 import com.sound_bind.pay_service.domain.application.SponsorService
 import com.sound_bind.pay_service.domain.application.dto.request.SponsorRequestDTO
-import com.sound_bind.pay_service.domain.application.dto.response.SponsorResponseDTO
 import com.sound_bind.pay_service.domain.interfaces.dto.ApiResponse
+import com.sound_bind.pay_service.domain.persistence.es.document.SponsorDocument
 import com.sound_bind.pay_service.global.annotation.HeaderSubject
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
@@ -18,7 +19,8 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/sponsors")
 class SponsorController(
-    private val sponsorService: SponsorService
+    private val sponsorService: SponsorService,
+    private val sponsorSearchService: SponsorSearchService
 ) {
 
     @PostMapping
@@ -30,8 +32,8 @@ class SponsorController(
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    fun lookUpSponsorHistory(@HeaderSubject sub: String): ApiResponse<List<SponsorResponseDTO>> {
-        val history = sponsorService.lookUpSponsorHistory(sub.toLong())
+    fun lookUpSponsorHistory(@HeaderSubject sub: String): ApiResponse<List<SponsorDocument>> {
+        val history = sponsorSearchService.lookUpSponsorHistory(sub.toLong())
         return ApiResponse.of("Look Up Sponsor History", history)
     }
 

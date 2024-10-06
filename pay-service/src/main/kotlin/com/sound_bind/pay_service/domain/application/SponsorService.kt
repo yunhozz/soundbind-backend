@@ -1,7 +1,7 @@
 package com.sound_bind.pay_service.domain.application
 
 import com.sound_bind.pay_service.domain.application.dto.request.SponsorRequestDTO
-import com.sound_bind.pay_service.domain.application.dto.response.SponsorResponseDTO
+import com.sound_bind.pay_service.domain.application.manager.ElasticsearchManager
 import com.sound_bind.pay_service.domain.application.manager.KafkaManager
 import com.sound_bind.pay_service.domain.persistence.entity.Sponsor
 import com.sound_bind.pay_service.domain.persistence.repository.PointRepository
@@ -13,7 +13,8 @@ import org.springframework.transaction.annotation.Transactional
 class SponsorService(
     private val pointRepository: PointRepository,
     private val sponsorRepository: SponsorRepository,
-    private val kafkaManager: KafkaManager
+    private val kafkaManager: KafkaManager,
+    private val elasticsearchManager: ElasticsearchManager
 ) {
 
     @Transactional
@@ -31,22 +32,9 @@ class SponsorService(
         )
         sponsorRepository.save(sponsor)
 
-        return sponsor.id!!
-    }
+        elasticsearchManager.saveSponsorDocument(sponsor, senderPoint.id!!)
 
-    @Transactional(readOnly = true)
-    fun lookUpSponsorHistory(receiverId: Long): List<SponsorResponseDTO> {
-        val sponsorList = sponsorRepository.findAllByReceiverId(receiverId)
-        return sponsorList.map { sponsor ->
-            SponsorResponseDTO(
-                sponsor.id!!,
-                sponsor.senderId,
-                sponsor.receiverId,
-                sponsor.pointAmount,
-                sponsor.isCompleted,
-                sponsor.createdAt
-            )
-        }
+        return sponsor.id!!
     }
 
     @Transactional
@@ -54,6 +42,7 @@ class SponsorService(
         val sponsor = sponsorRepository.findByIdAndReceiverId(sponsorId, receiverId)
             ?: throw IllegalArgumentException("Sponsor with user id $receiverId doesn't exist")
         sponsor.receive()
+        elasticsearchManager.updateSponsorReceived(sponsor.id!!)
 
         val receiverPoint = pointRepository.findByUserId(receiverId)
             ?: throw IllegalArgumentException("Point with user id $receiverId doesn't exist")
