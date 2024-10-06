@@ -3,6 +3,7 @@ package com.sound_bind.pay_service.domain.application.manager.impl
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.sound_bind.pay_service.domain.application.manager.KafkaManager
+import khttp.post
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 
@@ -22,9 +23,20 @@ class KafkaManagerImpl: KafkaManager {
     @Value("\${uris.kafka-server-uri:http://localhost:9000}/api/kafka")
     private lateinit var kafkaRequestUri: String
 
-    override fun sendSponsorReceivedTopic(receiverId: Long, pointAmount: Int) {
-        TODO("Not yet implemented")
+    override fun sendSponsorReceivedTopic(receiverId: Long, content: String, link: String?) {
+        val sponsorReceivedTopic = KafkaRequestDTO(
+            topic = SPONSOR_RECEIVED_TOPIC,
+            message = KafkaRequestDTO.KafkaNotificationDTO(receiverId, content, link)
+        )
+        sendMessageToKafkaProducer(sponsorReceivedTopic)
     }
+
+    private fun sendMessageToKafkaProducer(vararg message: KafkaRequestDTO) =
+        post(
+            url = kafkaRequestUri,
+            headers = mapOf("Content-Type" to "application/json"),
+            data = mapper.writeValueAsString(message.toList())
+        )
 
     data class KafkaRequestDTO(
         val topic: String,

@@ -24,7 +24,11 @@ class SponsorService(
         val pointAmount = dto.pointAmount
 
         val sponsor = Sponsor.createAndSubtractPoint(senderId, receiverId, senderPoint, pointAmount)
-//        kafkaManager.sendSponsorReceivedTopic(receiverId, pointAmount)
+        kafkaManager.sendSponsorReceivedTopic(
+            receiverId,
+            content = "Tester 님이 당신에게 $pointAmount 포인트를 후원하셨습니다.",
+            link = null
+        )
         sponsorRepository.save(sponsor)
 
         return sponsor.id!!
