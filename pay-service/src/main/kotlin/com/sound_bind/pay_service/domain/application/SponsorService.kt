@@ -1,12 +1,18 @@
 package com.sound_bind.pay_service.domain.application
 
+import com.sound_bind.pay_service.domain.application.dto.message.UserWithdrawMessageDTO
 import com.sound_bind.pay_service.domain.application.dto.request.SponsorRequestDTO
 import com.sound_bind.pay_service.domain.application.manager.ElasticsearchManager
 import com.sound_bind.pay_service.domain.application.manager.KafkaManager
+import com.sound_bind.pay_service.domain.application.manager.impl.KafkaManagerImpl.Companion.PAY_SERVICE_GROUP
+import com.sound_bind.pay_service.domain.application.manager.impl.KafkaManagerImpl.Companion.USER_DELETION_TOPIC
 import com.sound_bind.pay_service.domain.persistence.entity.Sponsor
 import com.sound_bind.pay_service.domain.persistence.repository.PointRepository
 import com.sound_bind.pay_service.domain.persistence.repository.SponsorRepository
 import com.sound_bind.pay_service.global.exception.PayServiceException
+import com.sound_bind.pay_service.global.util.RedisUtils
+import org.springframework.kafka.annotation.KafkaListener
+import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -26,14 +32,15 @@ class SponsorService(
         val pointAmount = dto.pointAmount
 
         val sponsor = Sponsor.createAndSubtractPoint(senderId, receiverId, senderPoint, pointAmount)
+        sponsorRepository.save(sponsor)
+        elasticsearchManager.saveSponsorDocument(sponsor, senderPoint.id!!)
+
+        val myInfo = RedisUtils.getJson("user:$senderId", Map::class.java)
         kafkaManager.sendSponsorReceivedTopic(
             receiverId,
-            content = "Tester 님이 당신에게 $pointAmount 포인트를 후원하셨습니다.",
+            content = "${myInfo["nickname"]}님이 당신에게 $pointAmount 포인트를 후원하셨습니다.",
             link = null
         )
-        sponsorRepository.save(sponsor)
-
-        elasticsearchManager.saveSponsorDocument(sponsor, senderPoint.id!!)
 
         return sponsor.id!!
     }
