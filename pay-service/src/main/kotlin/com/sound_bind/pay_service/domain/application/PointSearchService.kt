@@ -25,4 +25,7 @@ class PointSearchService(
 
     fun lookUpPointChargeHistory(userId: Long) =
         pointChargeSearchRepository.findAllByUserId(userId)
+
+    fun deletePointChargeDocumentList(pointChargeIds: List<Long>) =
+        pointChargeSearchRepository.deleteAllById(pointChargeIds)
 }

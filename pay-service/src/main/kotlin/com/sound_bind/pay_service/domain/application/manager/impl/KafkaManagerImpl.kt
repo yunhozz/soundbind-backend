@@ -14,7 +14,7 @@ class KafkaManagerImpl: KafkaManager {
         private val mapper = jacksonObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
-        const val PAY_SERVICE_GROUP = "pay-service-group"
+        const val POINT_MANAGE_SERVICE_GROUP = "point-manage-service-group"
         const val USER_ADDED_TOPIC = "user-added-topic"
         const val USER_DELETION_TOPIC = "user-deletion-topic"
         private const val SPONSOR_RECEIVED_TOPIC = "sponsor-received-topic"

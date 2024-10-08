@@ -1,19 +1,21 @@
 package com.sound_bind.pay_service.domain.application
 
-import com.sound_bind.pay_service.domain.application.dto.message.UserSignUpMessageDTO
-import com.sound_bind.pay_service.domain.application.dto.message.UserWithdrawMessageDTO
+import com.sound_bind.pay_service.domain.application.dto.event.ClearPointCommitEvent
+import com.sound_bind.pay_service.domain.application.dto.event.UserSignUpEvent
+import com.sound_bind.pay_service.domain.application.dto.event.UserWithdrawEvent
 import com.sound_bind.pay_service.domain.application.dto.request.PointChargeRequestDTO
 import com.sound_bind.pay_service.domain.application.dto.response.PointResponseDTO
 import com.sound_bind.pay_service.domain.application.manager.AsyncManager
 import com.sound_bind.pay_service.domain.application.manager.ChargeManager
 import com.sound_bind.pay_service.domain.application.manager.ElasticsearchManager
-import com.sound_bind.pay_service.domain.application.manager.impl.KafkaManagerImpl.Companion.PAY_SERVICE_GROUP
+import com.sound_bind.pay_service.domain.application.manager.impl.KafkaManagerImpl.Companion.POINT_MANAGE_SERVICE_GROUP
 import com.sound_bind.pay_service.domain.application.manager.impl.KafkaManagerImpl.Companion.USER_ADDED_TOPIC
 import com.sound_bind.pay_service.domain.application.manager.impl.KafkaManagerImpl.Companion.USER_DELETION_TOPIC
 import com.sound_bind.pay_service.domain.persistence.entity.Point
 import com.sound_bind.pay_service.domain.persistence.repository.PointChargeRepository
 import com.sound_bind.pay_service.domain.persistence.repository.PointRepository
 import com.sound_bind.pay_service.global.exception.PayServiceException
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Service
@@ -25,12 +27,13 @@ class PointManagementService(
     private val pointChargeRepository: PointChargeRepository,
     private val chargeManager: ChargeManager,
     private val elasticsearchManager: ElasticsearchManager,
-    private val asyncManager: AsyncManager
+    private val asyncManager: AsyncManager,
+    private val eventPublisher: ApplicationEventPublisher
 ) {
 
     @Transactional
-    @KafkaListener(groupId = PAY_SERVICE_GROUP, topics = [USER_ADDED_TOPIC])
-    fun createPointWithZero(@Payload payload: UserSignUpMessageDTO): Long {
+    @KafkaListener(groupId = POINT_MANAGE_SERVICE_GROUP, topics = [USER_ADDED_TOPIC])
+    fun createPointWithZero(@Payload payload: UserSignUpEvent): Long {
         val point = Point(payload.userId)
         pointRepository.save(point)
         return point.id!!
@@ -57,20 +60,31 @@ class PointManagementService(
         )
     }
 
+    /*
+    1. User Withdraw
+    2. Music List Delete
+    3. Review & Comment List Delete
+    4. Point & Point Charge List Delete
+    5. Sponsor List Delete
+     */
+
     @Transactional
-    @KafkaListener(groupId = PAY_SERVICE_GROUP, topics = [USER_DELETION_TOPIC])
-    fun clearPointByUserWithdraw(@Payload payload: UserWithdrawMessageDTO) {
+    @KafkaListener(groupId = POINT_MANAGE_SERVICE_GROUP, topics = [USER_DELETION_TOPIC])
+    fun clearPointByUserWithdraw(@Payload payload: UserWithdrawEvent) {
         val userId = payload.userId
         val point = findPointByUserId(userId)
 
-        // TODO : 회원탈퇴 취소
         if (point.amount > 0) {
-            throw IllegalArgumentException("There are remaining points. Please proceed with the refund first.")
+            // TODO : 포인트 존재 시 롤백 -> Kafka
+//            throw IllegalArgumentException("There are remaining points. Please proceed with the refund first.")
         }
 
-        val pointChargeList = pointChargeRepository.findAllByPointId(point.id!!)
+        val pointChargeList = pointChargeRepository.findAllByPoint(point)
         asyncManager.softDeletePointChargeList(pointChargeList)
-        pointRepository.delete(point)
+        elasticsearchManager.deletePointChargeDocumentList(pointChargeList.map { it.id!! })
+
+        eventPublisher.publishEvent(ClearPointCommitEvent(userId, point.id!!))
+        point.softDelete()
     }
 
     private fun findPointByUserId(userId: Long): Point =

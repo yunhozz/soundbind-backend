@@ -21,4 +21,11 @@ class ElasticsearchManagerImpl(
 
     override fun updateSponsorReceived(sponsorId: Long) =
         sponsorSearchService.updateSponsorReceivedOnElasticsearch(sponsorId)
+
+    override fun deletePointChargeDocumentList(pointChargeIds: List<Long>) =
+        pointSearchService.deletePointChargeDocumentList(pointChargeIds)
+
+    override fun deleteSponsorDocumentList(sponsorIds: List<Long>) {
+        sponsorSearchService.deleteSponsorDocumentList(sponsorIds)
+    }
 }

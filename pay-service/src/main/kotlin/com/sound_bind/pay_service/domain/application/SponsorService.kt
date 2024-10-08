@@ -1,27 +1,29 @@
 package com.sound_bind.pay_service.domain.application
 
-import com.sound_bind.pay_service.domain.application.dto.message.UserWithdrawMessageDTO
+import com.sound_bind.pay_service.domain.application.dto.event.ClearPointCommitEvent
 import com.sound_bind.pay_service.domain.application.dto.request.SponsorRequestDTO
+import com.sound_bind.pay_service.domain.application.manager.AsyncManager
 import com.sound_bind.pay_service.domain.application.manager.ElasticsearchManager
 import com.sound_bind.pay_service.domain.application.manager.KafkaManager
-import com.sound_bind.pay_service.domain.application.manager.impl.KafkaManagerImpl.Companion.PAY_SERVICE_GROUP
-import com.sound_bind.pay_service.domain.application.manager.impl.KafkaManagerImpl.Companion.USER_DELETION_TOPIC
 import com.sound_bind.pay_service.domain.persistence.entity.Sponsor
 import com.sound_bind.pay_service.domain.persistence.repository.PointRepository
 import com.sound_bind.pay_service.domain.persistence.repository.SponsorRepository
 import com.sound_bind.pay_service.global.exception.PayServiceException
 import com.sound_bind.pay_service.global.util.RedisUtils
-import org.springframework.kafka.annotation.KafkaListener
-import org.springframework.messaging.handler.annotation.Payload
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.event.TransactionPhase
+import org.springframework.transaction.event.TransactionalEventListener
 
 @Service
 class SponsorService(
     private val pointRepository: PointRepository,
     private val sponsorRepository: SponsorRepository,
     private val kafkaManager: KafkaManager,
-    private val elasticsearchManager: ElasticsearchManager
+    private val asyncManager: AsyncManager,
+    private val elasticsearchManager: ElasticsearchManager,
+    private val eventPublisher: ApplicationEventPublisher
 ) {
 
     @Transactional
@@ -55,5 +57,17 @@ class SponsorService(
         val receiverPoint = pointRepository.findByUserId(receiverId)
             ?: throw PayServiceException.PointNotFoundException("Point with user id $receiverId doesn't exist")
         receiverPoint.addAmount(sponsor.pointAmount)
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
+    fun clearSponsorHistoryByUserWithdraw(event: ClearPointCommitEvent) {
+        val userId = event.userId
+        if (sponsorRepository.existsByReceiverIdAndIsCompletedIsFalse(userId)) {
+            throw IllegalArgumentException("There is a sponsorship that has not yet been received.")
+        }
+
+        val sponsorList = sponsorRepository.findAllByReceiverId(userId)
+        asyncManager.softDeleteSponsorList(sponsorList)
+        elasticsearchManager.deleteSponsorDocumentList(sponsorList.map { it.id!! })
     }
 }

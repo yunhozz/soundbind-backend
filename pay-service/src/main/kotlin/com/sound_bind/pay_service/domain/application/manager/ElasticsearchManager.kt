@@ -7,4 +7,6 @@ interface ElasticsearchManager {
     fun savePointChargeDocument(pointCharge: PointCharge, pointId: Long)
     fun saveSponsorDocument(sponsor: Sponsor, pointId: Long)
     fun updateSponsorReceived(sponsorId: Long)
+    fun deletePointChargeDocumentList(pointChargeIds: List<Long>)
+    fun deleteSponsorDocumentList(sponsorIds: List<Long>)
 }

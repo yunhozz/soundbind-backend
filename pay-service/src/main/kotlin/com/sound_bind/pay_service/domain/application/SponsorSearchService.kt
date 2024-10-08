@@ -34,4 +34,7 @@ class SponsorSearchService(
 
     fun lookUpSponsorHistory(receiverId: Long): List<SponsorDocument> =
         sponsorSearchRepository.findAllByReceiverId(receiverId)
+
+    fun deleteSponsorDocumentList(sponsorIds: List<Long>) =
+        sponsorSearchRepository.deleteAllById(sponsorIds)
 }
