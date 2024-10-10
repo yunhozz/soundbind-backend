@@ -1,11 +1,11 @@
 package com.sound_bind.pay_service.domain.interfaces
 
+import com.sound_bind.global.annotation.HeaderSubject
+import com.sound_bind.global.dto.ApiResponse
 import com.sound_bind.pay_service.domain.application.SponsorSearchService
 import com.sound_bind.pay_service.domain.application.SponsorService
 import com.sound_bind.pay_service.domain.application.dto.request.SponsorRequestDTO
-import com.sound_bind.pay_service.domain.interfaces.dto.ApiResponse
 import com.sound_bind.pay_service.domain.persistence.es.document.SponsorDocument
-import com.sound_bind.pay_service.global.annotation.HeaderSubject
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
