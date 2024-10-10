@@ -11,22 +11,14 @@ dependencies {
 	// kotlin reflect
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 
-	// querydsl
-	implementation("com.querydsl:querydsl-jpa:5.1.0:jakarta")
-	implementation("com.querydsl:querydsl-apt:5.1.0:jakarta")
-	implementation("jakarta.persistence:jakarta.persistence-api")
-	implementation("jakarta.annotation:jakarta.annotation-api")
-	kapt("com.querydsl:querydsl-apt:5.1.0:jakarta")
-	kapt("org.springframework.boot:spring-boot-configuration-processor")
-
 	// redisson
 	implementation("org.redisson:redisson-spring-boot-starter:3.27.0")
 
-	// jackson
-	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-
 	// swagger
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
+
+	// global
+	implementation(project(":global"))
 
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
