@@ -1,4 +1,4 @@
-package com.sound_bind.pay_service.global.util
+package com.sound_bind.global.utils
 
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter

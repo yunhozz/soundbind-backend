@@ -1,7 +1,6 @@
-package com.sound_bind.pay_service.global.handler
+package com.sound_bind.global.exception
 
-import com.sound_bind.pay_service.global.exception.ErrorCode
-import com.sound_bind.pay_service.global.util.logger
+import com.sound_bind.global.utils.logger
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.http.ResponseEntity

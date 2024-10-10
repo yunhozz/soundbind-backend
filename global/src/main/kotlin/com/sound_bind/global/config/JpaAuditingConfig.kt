@@ -1,4 +1,4 @@
-package com.sound_bind.pay_service.global.config
+package com.sound_bind.global.config
 
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing
