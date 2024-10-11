@@ -1,4 +1,4 @@
-package com.sound_bind.global.config
+package com.sound_bind.pay_service.global.config
 
 import com.querydsl.jpa.impl.JPAQueryFactory
 import jakarta.persistence.EntityManager

@@ -1,4 +1,4 @@
-package com.sound_bind.global.config
+package com.sound_bind.pay_service.global.config
 
 import org.redisson.Redisson
 import org.redisson.api.RedissonClient
@@ -41,7 +41,7 @@ class RedisConfig {
         val config = Config()
         config
             .useSingleServer()
-            .setAddress("${REDISSON_HOST_PREFIX}$host:$port")
+            .setAddress("$REDISSON_HOST_PREFIX$host:$port")
         return Redisson.create(config)
     }
 

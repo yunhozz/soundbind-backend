@@ -1,4 +1,4 @@
-package com.sound_bind.global.config
+package com.sound_bind.pay_service.global.config
 
 import com.zaxxer.hikari.HikariDataSource
 import org.springframework.beans.factory.annotation.Qualifier

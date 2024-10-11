@@ -1,4 +1,4 @@
-package com.sound_bind.global.utils
+package com.sound_bind.pay_service.global.utils
 
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
