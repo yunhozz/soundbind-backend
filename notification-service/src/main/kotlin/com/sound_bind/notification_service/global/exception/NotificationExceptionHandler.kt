@@ -1,6 +1,6 @@
-package com.sound_bind.notification_service.global.handler
+package com.sound_bind.notification_service.global.exception
 
-import com.sound_bind.notification_service.global.exception.NotificationException
+import com.sound_bind.global.exception.ErrorResponse
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
