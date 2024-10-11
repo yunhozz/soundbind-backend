@@ -1,7 +1,6 @@
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-	implementation("org.springframework.boot:spring-boot-starter-data-redis")
 	implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
@@ -11,9 +10,6 @@ dependencies {
 	implementation("org.springframework.cloud:spring-cloud-starter-netflix-eureka-client")
 	implementation("org.springframework.kafka:spring-kafka")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
-
-	// jackson
-	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 
 	// jjwt
 	implementation("io.jsonwebtoken:jjwt-api:0.12.3")
@@ -28,11 +24,15 @@ dependencies {
 	kapt("com.querydsl:querydsl-apt:5.1.0:jakarta")
 	kapt("org.springframework.boot:spring-boot-configuration-processor")
 
-	// query logging
-	implementation("com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.1")
+	// redis
+	implementation("org.springframework.boot:spring-boot-starter-data-redis")
+	implementation("org.redisson:redisson-spring-boot-starter:3.27.0")
 
 	// swagger
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
+
+	// global
+	implementation(project(":global"))
 
 	runtimeOnly("com.mysql:mysql-connector-j")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
