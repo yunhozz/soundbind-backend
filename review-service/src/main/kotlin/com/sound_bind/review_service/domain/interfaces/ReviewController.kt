@@ -1,15 +1,18 @@
 package com.sound_bind.review_service.domain.interfaces
 
-import com.review_service.domain.interfaces.dto.APIResponse
+import com.sound_bind.global.annotation.HeaderSubject
+import com.sound_bind.global.dto.ApiResponse
 import com.sound_bind.review_service.domain.application.ReviewService
 import com.sound_bind.review_service.domain.application.dto.request.ReviewCreateDTO
 import com.sound_bind.review_service.domain.application.dto.request.ReviewUpdateDTO
+import com.sound_bind.review_service.domain.application.dto.response.ReviewDetailsDTO
 import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorDTO
-import com.sound_bind.review_service.global.annotation.HeaderSubject
+import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewQueryDTO
 import com.sound_bind.review_service.global.enums.ReviewSort
 import io.swagger.v3.oas.annotations.Operation
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Slice
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -33,17 +36,17 @@ class ReviewController(private val reviewService: ReviewService) {
         @HeaderSubject sub: String,
         @RequestParam musicId: String,
         @Valid @RequestBody dto: ReviewCreateDTO
-    ): APIResponse {
+    ): ApiResponse<Long> {
         val reviewId = reviewService.createReview(musicId.toLong(), sub.toLong(), dto)
-        return APIResponse.of("Review created", reviewId)
+        return ApiResponse.of("Review created", reviewId)
     }
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "리뷰 상세 조회")
-    fun lookupDetailsOfReview(@PathVariable id: String): APIResponse {
+    fun lookupDetailsOfReview(@PathVariable id: String): ApiResponse<ReviewDetailsDTO> {
         val reviewDetails = reviewService.lookupDetailsOfReviewById(id.toLong())
-        return APIResponse.of("Review found", reviewDetails)
+        return ApiResponse.of("Review found", reviewDetails)
     }
 
     @PostMapping("/found")
@@ -55,7 +58,7 @@ class ReviewController(private val reviewService: ReviewService) {
         @RequestParam(required = false, defaultValue = "likes") sort: String,
         @RequestParam(required = false, defaultValue = "0") page: String,
         @RequestBody(required = false) dto: ReviewCursorDTO,
-    ): APIResponse {
+    ): ApiResponse<Slice<ReviewQueryDTO>> {
         val reviews = reviewService.findReviewListByMusicIdV1(
             musicId.toLong(),
             userId = sub.toLong(),
@@ -63,7 +66,7 @@ class ReviewController(private val reviewService: ReviewService) {
             dto,
             pageable = PageRequest.of(page.toInt(), 20)
         )
-        return APIResponse.of("Reviews found", reviews)
+        return ApiResponse.of("Reviews found", reviews)
     }
 
     @PatchMapping("/{id}")
@@ -73,24 +76,30 @@ class ReviewController(private val reviewService: ReviewService) {
         @HeaderSubject sub: String,
         @PathVariable("id") id: String,
         @Valid @RequestBody dto: ReviewUpdateDTO
-    ): APIResponse {
+    ): ApiResponse<Long> {
         val reviewId = reviewService.updateReviewMessageAndScore(id.toLong(), sub.toLong(), dto)
-        return APIResponse.of("Review updated", reviewId)
+        return ApiResponse.of("Review updated", reviewId)
     }
 
     @PostMapping("/{id}/likes")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "리뷰 좋아요")
-    fun updateLikesOnReview(@HeaderSubject sub: String, @PathVariable("id") id: String): APIResponse {
+    fun updateLikesOnReview(
+        @HeaderSubject sub: String,
+        @PathVariable("id") id: String
+    ): ApiResponse<Unit> {
         reviewService.changeLikesFlag(id.toLong(), sub.toLong())
-        return APIResponse.of("Likes of Review Changed")
+        return ApiResponse.of("Likes of Review Changed")
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "리뷰 삭제")
-    fun deleteReview(@HeaderSubject sub: String, @PathVariable("id") id: String): APIResponse {
+    fun deleteReview(
+        @HeaderSubject sub: String,
+        @PathVariable("id") id: String
+    ): ApiResponse<Unit> {
         reviewService.deleteReview(id.toLong(), sub.toLong())
-        return APIResponse.of("Review deleted")
+        return ApiResponse.of("Review deleted")
     }
 }

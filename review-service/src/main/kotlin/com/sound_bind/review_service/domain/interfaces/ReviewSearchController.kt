@@ -1,9 +1,10 @@
 package com.sound_bind.review_service.domain.interfaces
 
-import com.review_service.domain.interfaces.dto.APIResponse
+import com.sound_bind.global.annotation.HeaderSubject
+import com.sound_bind.global.dto.ApiResponse
 import com.sound_bind.review_service.domain.application.ElasticsearchService
+import com.sound_bind.review_service.domain.persistence.es.ReviewDocument
 import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorDTO
-import com.sound_bind.review_service.global.annotation.HeaderSubject
 import com.sound_bind.review_service.global.enums.ReviewSort
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.http.HttpStatus
@@ -22,14 +23,17 @@ class ReviewSearchController(private val elasticsearchService: ElasticsearchServ
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "음원에 대한 리뷰 커서 페이징 조건 조회 (default)")
-    fun lookUpReviewsInMusicByDefault(@HeaderSubject sub: String, @RequestParam musicId: String): APIResponse {
+    fun lookUpReviewsInMusicByDefault(
+        @HeaderSubject sub: String,
+        @RequestParam musicId: String
+    ): ApiResponse<List<ReviewDocument?>> {
         val reviews = elasticsearchService.findReviewListByMusicIdV2(
             musicId.toLong(),
             userId = sub.toLong(),
             reviewSort = ReviewSort.LIKES,
             dto = null
         )
-        return APIResponse.of("Reviews found", reviews)
+        return ApiResponse.of("Reviews found", reviews)
     }
 
     @PostMapping
@@ -40,13 +44,13 @@ class ReviewSearchController(private val elasticsearchService: ElasticsearchServ
         @RequestParam musicId: String,
         @RequestParam(required = false, defaultValue = "likes") sort: String,
         @RequestBody(required = false) dto: ReviewCursorDTO,
-    ): APIResponse {
+    ): ApiResponse<List<ReviewDocument?>> {
         val reviews = elasticsearchService.findReviewListByMusicIdV2(
             musicId.toLong(),
             userId = sub.toLong(),
             reviewSort = ReviewSort.of(sort),
             dto
         )
-        return APIResponse.of("Reviews found", reviews)
+        return ApiResponse.of("Reviews found", reviews)
     }
 }

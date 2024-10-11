@@ -1,5 +1,6 @@
 package com.sound_bind.review_service.domain.application
 
+import com.sound_bind.global.utils.DateTimeUtils
 import com.sound_bind.review_service.domain.application.dto.response.CommentDetailsDTO
 import com.sound_bind.review_service.domain.application.dto.response.ReviewDetailsDTO
 import com.sound_bind.review_service.domain.persistence.es.CommentDocument
@@ -9,7 +10,6 @@ import com.sound_bind.review_service.domain.persistence.es.ReviewSearchRepositor
 import com.sound_bind.review_service.domain.persistence.repository.ReviewRepository
 import com.sound_bind.review_service.domain.persistence.repository.dto.ReviewCursorDTO
 import com.sound_bind.review_service.global.enums.ReviewSort
-import com.sound_bind.review_service.global.util.DateTimeUtils
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
