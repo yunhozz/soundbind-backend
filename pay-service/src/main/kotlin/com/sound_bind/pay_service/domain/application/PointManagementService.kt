@@ -1,5 +1,6 @@
 package com.sound_bind.pay_service.domain.application
 
+import com.sound_bind.global.utils.KafkaConstants
 import com.sound_bind.pay_service.domain.application.dto.event.ClearPointCommitEvent
 import com.sound_bind.pay_service.domain.application.dto.event.UserSignUpEvent
 import com.sound_bind.pay_service.domain.application.dto.event.UserWithdrawEvent
@@ -8,9 +9,6 @@ import com.sound_bind.pay_service.domain.application.dto.response.PointResponseD
 import com.sound_bind.pay_service.domain.application.manager.AsyncManager
 import com.sound_bind.pay_service.domain.application.manager.ChargeManager
 import com.sound_bind.pay_service.domain.application.manager.ElasticsearchManager
-import com.sound_bind.pay_service.domain.application.manager.impl.KafkaManagerImpl.Companion.POINT_MANAGE_SERVICE_GROUP
-import com.sound_bind.pay_service.domain.application.manager.impl.KafkaManagerImpl.Companion.USER_ADDED_TOPIC
-import com.sound_bind.pay_service.domain.application.manager.impl.KafkaManagerImpl.Companion.USER_DELETION_TOPIC
 import com.sound_bind.pay_service.domain.persistence.entity.Point
 import com.sound_bind.pay_service.domain.persistence.repository.PointChargeRepository
 import com.sound_bind.pay_service.domain.persistence.repository.PointRepository
@@ -32,7 +30,7 @@ class PointManagementService(
 ) {
 
     @Transactional
-    @KafkaListener(groupId = POINT_MANAGE_SERVICE_GROUP, topics = [USER_ADDED_TOPIC])
+    @KafkaListener(groupId = KafkaConstants.POINT_MANAGE_SERVICE_GROUP, topics = [KafkaConstants.USER_ADDED_TOPIC])
     fun createPointWithZero(@Payload payload: UserSignUpEvent): Long {
         val point = Point(payload.userId)
         pointRepository.save(point)
@@ -69,7 +67,7 @@ class PointManagementService(
      */
 
     @Transactional
-    @KafkaListener(groupId = POINT_MANAGE_SERVICE_GROUP, topics = [USER_DELETION_TOPIC])
+    @KafkaListener(groupId = KafkaConstants.POINT_MANAGE_SERVICE_GROUP, topics = [KafkaConstants.USER_DELETION_TOPIC])
     fun clearPointByUserWithdraw(@Payload payload: UserWithdrawEvent) {
         val userId = payload.userId
         val point = findPointByUserId(userId)

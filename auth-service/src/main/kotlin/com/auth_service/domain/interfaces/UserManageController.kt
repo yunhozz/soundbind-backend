@@ -6,7 +6,10 @@ import com.auth_service.global.annotation.HeaderToken
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.sound_bind.global.annotation.HeaderSubject
 import com.sound_bind.global.dto.ApiResponse
+import com.sound_bind.global.dto.KafkaEvent
+import com.sound_bind.global.dto.KafkaMessage
 import com.sound_bind.global.utils.CookieUtils
+import com.sound_bind.global.utils.KafkaConstants
 import io.swagger.v3.oas.annotations.Operation
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -26,16 +29,19 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/users")
 class UserManageController(private val userManageService: UserManageService) {
 
+    private val mapper = jacksonObjectMapper()
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "유저 회원가입")
     fun signUpByLocalUser(@Valid @RequestBody dto: SignUpRequestDTO): ApiResponse<Long> {
         val userId = userManageService.createLocalUser(dto)
-        val message = mapOf(
-            "topic" to "user-added-topic",
-            "message" to mapOf("userId" to userId)
+        val userAddedEvent = KafkaEvent(
+            topic = KafkaConstants.USER_ADDED_TOPIC,
+            message = KafkaMessage.UserInfoMessage(userId)
         )
-        sendMessageToKafka(message)
+        sendEventsToKafkaProducer(userAddedEvent)
+
         return ApiResponse.of("Local user joined success", userId)
     }
 
@@ -65,26 +71,25 @@ class UserManageController(private val userManageService: UserManageService) {
         response: HttpServletResponse
     ): ApiResponse<Unit> {
         userManageService.deleteLocalUser(sub.toLong(), token)
+
         CookieUtils.deleteAllCookies(request, response)
-        val message = mapOf(
-            "topic" to "user-deletion-topic",
-            "message" to mapOf("userId" to sub.toLong())
+
+        val userDeletionEvent = KafkaEvent(
+            topic = KafkaConstants.USER_DELETION_TOPIC,
+            message = KafkaMessage.UserInfoMessage(sub.toLong())
         )
-        sendMessageToKafka(message)
+        sendEventsToKafkaProducer(userDeletionEvent)
+
         return ApiResponse.of("Withdraw success")
     }
 
     @Value("\${uris.kafka-server-uri:http://localhost:9000}/api/kafka")
     private lateinit var kafkaRequestUri: String
 
-    private fun sendMessageToKafka(message: Map<String, Any>) =
+    private fun sendEventsToKafkaProducer(vararg events: KafkaEvent) =
         post(
             url = kafkaRequestUri,
             headers = mapOf("Content-Type" to "application/json"),
-            data = mapper.writeValueAsString(message)
+            data = mapper.writeValueAsString(events)
         )
-
-    companion object {
-        private val mapper = jacksonObjectMapper()
-    }
 }

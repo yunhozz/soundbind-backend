@@ -11,9 +11,6 @@ import com.music_service.domain.application.manager.AsyncManager
 import com.music_service.domain.application.manager.CacheManager
 import com.music_service.domain.application.manager.FileManager
 import com.music_service.domain.application.manager.KafkaManager
-import com.music_service.domain.application.manager.impl.KafkaManagerImpl.Companion.MUSIC_REVIEW_TOPIC
-import com.music_service.domain.application.manager.impl.KafkaManagerImpl.Companion.MUSIC_SERVICE_GROUP
-import com.music_service.domain.application.manager.impl.KafkaManagerImpl.Companion.USER_DELETION_TOPIC
 import com.music_service.domain.persistence.entity.FileEntity
 import com.music_service.domain.persistence.entity.FileType
 import com.music_service.domain.persistence.entity.FileType.IMAGE
@@ -28,6 +25,7 @@ import com.music_service.global.annotation.DistributedLock
 import com.music_service.global.exception.MusicServiceException.MusicNotFoundException
 import com.music_service.global.exception.MusicServiceException.MusicNotUpdatableException
 import com.music_service.global.util.RedisUtils
+import com.sound_bind.global.utils.KafkaConstants
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Service
@@ -132,7 +130,7 @@ class MusicService(
     }
 
     @Transactional
-    @KafkaListener(groupId = MUSIC_SERVICE_GROUP, topics = [MUSIC_REVIEW_TOPIC])
+    @KafkaListener(groupId = KafkaConstants.MUSIC_SERVICE_GROUP, topics = [KafkaConstants.MUSIC_REVIEW_TOPIC])
     fun changeScoreAverageAndSendNotification(@Payload payload: MusicReviewMessageDTO) {
         findMusicByIdWithRollback(
             payload.musicId,
@@ -194,7 +192,7 @@ class MusicService(
     }
 
     @Transactional
-    @KafkaListener(groupId = MUSIC_SERVICE_GROUP, topics = [USER_DELETION_TOPIC])
+    @KafkaListener(groupId = KafkaConstants.MUSIC_SERVICE_GROUP, topics = [KafkaConstants.USER_DELETION_TOPIC])
     fun deleteMusicsByUserWithdraw(@Payload payload: UserWithdrawMessageDTO) {
         val userId = payload.userId
         val musics = musicRepository.findMusicByUserId(userId)
