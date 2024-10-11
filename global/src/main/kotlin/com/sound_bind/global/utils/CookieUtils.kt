@@ -1,4 +1,4 @@
-package com.auth_service.global.util
+package com.sound_bind.global.utils
 
 import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletRequest
