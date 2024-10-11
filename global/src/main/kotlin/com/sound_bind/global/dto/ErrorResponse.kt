@@ -1,5 +1,6 @@
-package com.sound_bind.global.exception
+package com.sound_bind.global.dto
 
+import com.sound_bind.global.exception.ErrorCode
 import org.springframework.validation.BindingResult
 
 data class ErrorResponse(

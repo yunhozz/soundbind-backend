@@ -1,6 +1,6 @@
 package com.sound_bind.review_service.global.exception
 
-import com.sound_bind.global.exception.ErrorResponse
+import com.sound_bind.global.dto.ErrorResponse
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
