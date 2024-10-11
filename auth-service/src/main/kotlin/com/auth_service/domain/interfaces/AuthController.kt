@@ -3,8 +3,8 @@ package com.auth_service.domain.interfaces
 import com.auth_service.domain.application.AuthService
 import com.auth_service.domain.application.dto.request.SignInRequestDTO
 import com.auth_service.domain.application.dto.response.SubjectResponseDTO
-import com.auth_service.global.annotation.HeaderToken
 import com.auth_service.global.auth.jwt.TokenResponseDTO
+import com.sound_bind.global.annotation.HeaderToken
 import com.sound_bind.global.dto.ApiResponse
 import com.sound_bind.global.utils.CookieUtils
 import io.swagger.v3.oas.annotations.Operation

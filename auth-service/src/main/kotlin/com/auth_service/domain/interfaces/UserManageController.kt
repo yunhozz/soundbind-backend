@@ -2,9 +2,9 @@ package com.auth_service.domain.interfaces
 
 import com.auth_service.domain.application.UserManageService
 import com.auth_service.domain.application.dto.request.SignUpRequestDTO
-import com.auth_service.global.annotation.HeaderToken
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.sound_bind.global.annotation.HeaderSubject
+import com.sound_bind.global.annotation.HeaderToken
 import com.sound_bind.global.dto.ApiResponse
 import com.sound_bind.global.dto.KafkaEvent
 import com.sound_bind.global.dto.KafkaMessage

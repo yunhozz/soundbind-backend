@@ -2,8 +2,10 @@ package com.sound_bind.global.config
 
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
+import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.serialization.StringSerializer
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -16,16 +18,30 @@ import org.springframework.kafka.core.DefaultKafkaProducerFactory
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.core.ProducerFactory
 import org.springframework.kafka.listener.ContainerProperties
+import org.springframework.kafka.listener.DeadLetterPublishingRecoverer
+import org.springframework.kafka.listener.DefaultErrorHandler
 import org.springframework.kafka.support.converter.StringJsonMessageConverter
 import org.springframework.kafka.support.serializer.JsonSerializer
-import org.springframework.kafka.transaction.KafkaTransactionManager
+import org.springframework.util.backoff.FixedBackOff
 
 @Configuration
 @EnableKafka
 class KafkaConfig {
 
+    companion object {
+        const val KAFKA_TEMPLATE = "kafkaTemplate"
+        private const val KAFKA_PRODUCER_FACTORY = "kafkaProducerFactory"
+        private const val KAFKA_CONSUMER_FACTORY = "kafkaConsumerFactory"
+        private const val KAFKA_LISTENER_CONTAINER_FACTORY = "kafkaListenerContainerFactory"
+        private const val AUTO_OFFSET_RESET_CONFIG = "latest"
+        private const val BACK_OFF_INTERVAL_MS = 1000L
+        private const val BACK_OFF_MAX_ATTEMPTS = 5L
+    }
+
     @Bean(KAFKA_TEMPLATE)
-    fun kafkaTemplate(@Qualifier(KAFKA_PRODUCER_FACTORY) factory: ProducerFactory<String, Map<String, Any>>) = KafkaTemplate(factory)
+    fun kafkaTemplate(
+        @Qualifier(KAFKA_PRODUCER_FACTORY) factory: ProducerFactory<String, Map<String, Any>>
+    ) = KafkaTemplate(factory)
 
     @Configuration
     class KafkaProducerConfig {
@@ -42,24 +58,6 @@ class KafkaConfig {
             )
             return DefaultKafkaProducerFactory(config)
         }
-
-        @Bean(KAFKA_TX_PRODUCER_FACTORY)
-        fun kafkaProducerTransactionFactory(): ProducerFactory<String, Map<String, Any>> {
-            val config = mapOf(
-                ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
-                ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java,
-                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to JsonSerializer::class.java,
-                ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG to true,
-                ProducerConfig.TRANSACTIONAL_ID_CONFIG to "kafka-producer-transaction"
-            )
-            val producerFactory = DefaultKafkaProducerFactory<String, Map<String, Any>>(config)
-            producerFactory.setTransactionIdPrefix("trx-")
-            return producerFactory
-        }
-
-        @Bean(KAFKA_TX_MANAGER)
-        fun kafkaTransactionManager(@Qualifier(KAFKA_TX_PRODUCER_FACTORY) factory: ProducerFactory<String, Map<String, Any>>) =
-            KafkaTransactionManager(factory)
     }
 
     @Configuration
@@ -74,28 +72,36 @@ class KafkaConfig {
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
                 ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
                 ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
-                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to "latest"
+                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to AUTO_OFFSET_RESET_CONFIG
             )
             return DefaultKafkaConsumerFactory(config)
         }
 
         @Bean(KAFKA_LISTENER_CONTAINER_FACTORY)
-        fun kafkaListenerContainerFactory(@Qualifier(KAFKA_CONSUMER_FACTORY) factory: ConsumerFactory<String, Map<String, Any>>) =
-            object: ConcurrentKafkaListenerContainerFactory<String, Map<String, Any>>() {
-                init {
-                    consumerFactory = factory
-                    containerProperties.ackMode = ContainerProperties.AckMode.MANUAL
-                    setRecordMessageConverter(StringJsonMessageConverter())
-                }
+        fun kafkaListenerContainerFactory(
+            @Qualifier(KAFKA_CONSUMER_FACTORY) factory: ConsumerFactory<String, Map<String, Any>>,
+            template: KafkaTemplate<String, Map<String, Any>>
+        ) = object : ConcurrentKafkaListenerContainerFactory<String, Map<String, Any>>() {
+            init {
+                consumerFactory = factory
+                containerProperties.ackMode = ContainerProperties.AckMode.MANUAL
+                setRecordMessageConverter(StringJsonMessageConverter())
+                setCommonErrorHandler(
+                    DefaultErrorHandler(
+                        DeadLetterPublishingRecoverer(template) { record, exception ->
+                            val log = LoggerFactory.getLogger("KafkaConsumerErrorHandler")
+                            log.error(
+                                "[Kafka Consumer Error] topic='{}', key='{}', value='{}', error message='{}'",
+                                record.topic(),
+                                record.key(),
+                                record.value(),
+                                exception.message
+                            )
+                            TopicPartition(record.topic() + ".dlc", record.partition())
+                        }, FixedBackOff(BACK_OFF_INTERVAL_MS, BACK_OFF_MAX_ATTEMPTS)
+                    )
+                )
             }
-    }
-
-    companion object {
-        private const val KAFKA_TEMPLATE = "kafkaTemplate"
-        private const val KAFKA_PRODUCER_FACTORY = "kafkaProducerFactory"
-        private const val KAFKA_TX_PRODUCER_FACTORY = "kafkaTransactionProducerFactory"
-        private const val KAFKA_TX_MANAGER = "kafkaTransactionManager"
-        private const val KAFKA_CONSUMER_FACTORY = "kafkaConsumerFactory"
-        private const val KAFKA_LISTENER_CONTAINER_FACTORY = "kafkaListenerContainerFactory"
+        }
     }
 }

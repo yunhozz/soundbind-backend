@@ -1,4 +1,4 @@
-package com.auth_service.global.annotation
+package com.sound_bind.global.annotation
 
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.core.MethodParameter
@@ -8,6 +8,10 @@ import org.springframework.web.bind.support.WebDataBinderFactory
 import org.springframework.web.context.request.NativeWebRequest
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
 import org.springframework.web.method.support.ModelAndViewContainer
+
+@Retention(AnnotationRetention.RUNTIME)
+@Target(AnnotationTarget.VALUE_PARAMETER)
+annotation class HeaderToken
 
 @Component
 class HeaderTokenResolver: HandlerMethodArgumentResolver {
