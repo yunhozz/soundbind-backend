@@ -1,5 +1,7 @@
 package com.sound_bind.pay_service.global.exception
 
+import com.sound_bind.global.exception.ErrorCode
+
 sealed class PayServiceException(
     val errorCode: ErrorCode,
     override val message: String

@@ -1,12 +1,12 @@
 package com.sound_bind.pay_service.domain.interfaces
 
+import com.sound_bind.global.annotation.HeaderSubject
+import com.sound_bind.global.dto.ApiResponse
 import com.sound_bind.pay_service.domain.application.PointManagementService
 import com.sound_bind.pay_service.domain.application.PointSearchService
 import com.sound_bind.pay_service.domain.application.dto.request.PointChargeRequestDTO
 import com.sound_bind.pay_service.domain.application.dto.response.PointResponseDTO
-import com.sound_bind.pay_service.domain.interfaces.dto.ApiResponse
 import com.sound_bind.pay_service.domain.persistence.es.document.PointChargeDocument
-import com.sound_bind.pay_service.global.annotation.HeaderSubject
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping

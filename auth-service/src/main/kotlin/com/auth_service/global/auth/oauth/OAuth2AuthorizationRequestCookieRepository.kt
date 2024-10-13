@@ -1,9 +1,9 @@
 package com.auth_service.global.auth.oauth
 
-import com.auth_service.global.util.CookieUtils
-import com.auth_service.global.util.CookieUtils.Companion.COOKIE_EXPIRE_SECONDS
-import com.auth_service.global.util.CookieUtils.Companion.OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME
-import com.auth_service.global.util.CookieUtils.Companion.REDIRECT_URI_PARAM_COOKIE_NAME
+import com.sound_bind.global.utils.CookieUtils
+import com.sound_bind.global.utils.CookieUtils.Companion.COOKIE_EXPIRE_SECONDS
+import com.sound_bind.global.utils.CookieUtils.Companion.OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME
+import com.sound_bind.global.utils.CookieUtils.Companion.REDIRECT_URI_PARAM_COOKIE_NAME
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository

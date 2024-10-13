@@ -58,7 +58,7 @@ class DataSourceConfig {
         override fun determineCurrentLookupKey(): Any {
             val isReadOnly = TransactionSynchronizationManager.isCurrentTransactionReadOnly()
             return if (isReadOnly) DataSourceConfigConstants.SLAVE_DATASOURCE
-                else DataSourceConfigConstants.MASTER_DATASOURCE
+            else DataSourceConfigConstants.MASTER_DATASOURCE
         }
     }
 

@@ -3,10 +3,10 @@ package com.auth_service.domain.interfaces
 import com.auth_service.domain.application.AuthService
 import com.auth_service.domain.application.dto.request.SignInRequestDTO
 import com.auth_service.domain.application.dto.response.SubjectResponseDTO
-import com.auth_service.domain.interfaces.dto.APIResponse
-import com.auth_service.global.annotation.HeaderToken
 import com.auth_service.global.auth.jwt.TokenResponseDTO
-import com.auth_service.global.util.CookieUtils
+import com.sound_bind.global.annotation.HeaderToken
+import com.sound_bind.global.dto.ApiResponse
+import com.sound_bind.global.utils.CookieUtils
 import io.swagger.v3.oas.annotations.Operation
 import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletRequest
@@ -30,7 +30,7 @@ class AuthController(private val authService: AuthService) {
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "유저 로그인")
-    fun loginByLocalUser(@Valid @RequestBody dto: SignInRequestDTO, response: HttpServletResponse): APIResponse {
+    fun loginByLocalUser(@Valid @RequestBody dto: SignInRequestDTO, response: HttpServletResponse): ApiResponse<TokenResponseDTO> {
         val result = authService.signInByLocalUser(dto)
         CookieUtils.addCookie(
             response,
@@ -38,7 +38,7 @@ class AuthController(private val authService: AuthService) {
             CookieUtils.serialize(result.accessToken),
             null
         )
-        return APIResponse.of("Login successful", result)
+        return ApiResponse.of("Login successful", result)
     }
 
     @DeleteMapping("/logout")
@@ -48,11 +48,11 @@ class AuthController(private val authService: AuthService) {
         @HeaderToken token: String,
         request: HttpServletRequest,
         response: HttpServletResponse
-    ): APIResponse {
+    ): ApiResponse<Unit> {
         val authentication = authService.signOut(token)
         SecurityContextLogoutHandler().logout(request, response, authentication)
         CookieUtils.deleteAllCookies(request, response)
-        return APIResponse.of("Logout successful")
+        return ApiResponse.of("Logout successful")
     }
 
     @GetMapping("/token/refresh")

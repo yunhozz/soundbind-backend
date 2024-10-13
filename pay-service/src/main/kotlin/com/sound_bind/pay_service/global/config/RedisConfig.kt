@@ -41,7 +41,7 @@ class RedisConfig {
         val config = Config()
         config
             .useSingleServer()
-            .setAddress("${REDISSON_HOST_PREFIX}$host:$port")
+            .setAddress("$REDISSON_HOST_PREFIX$host:$port")
         return Redisson.create(config)
     }
 

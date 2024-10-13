@@ -1,8 +1,8 @@
 package com.sound_bind.notification_service.domain.interfaces
 
+import com.sound_bind.global.annotation.HeaderSubject
 import com.sound_bind.notification_service.domain.application.NotificationService
 import com.sound_bind.notification_service.domain.persistence.entity.Notification
-import com.sound_bind.notification_service.global.annotation.HeaderSubject
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest

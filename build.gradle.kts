@@ -47,6 +47,7 @@ subprojects {
 	dependencies {
 		implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 		implementation("org.springframework.boot:spring-boot-starter")
+		implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 		implementation("org.danilopianini:khttp:1.3.1")
 		implementation("org.springframework.boot:spring-boot-starter-log4j2")
 		compileOnly("org.projectlombok:lombok")
@@ -87,6 +88,7 @@ subprojects {
 	}
 }
 
+project(":global")
 project(":eureka-server")
 project(":config-server")
 project(":kafka-server")

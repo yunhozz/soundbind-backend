@@ -1,5 +1,6 @@
 package com.sound_bind.review_service.domain.application
 
+import com.sound_bind.global.utils.KafkaConstants
 import com.sound_bind.review_service.domain.application.dto.message.MusicNotFoundMessageDTO
 import com.sound_bind.review_service.domain.application.dto.message.UserWithdrawMessageDTO
 import com.sound_bind.review_service.domain.application.dto.request.ReviewCreateDTO
@@ -7,9 +8,6 @@ import com.sound_bind.review_service.domain.application.dto.request.ReviewUpdate
 import com.sound_bind.review_service.domain.application.dto.response.ReviewDetailsDTO
 import com.sound_bind.review_service.domain.application.manager.KafkaManager
 import com.sound_bind.review_service.domain.application.manager.ReviewElasticsearchManager
-import com.sound_bind.review_service.domain.application.manager.impl.KafkaManagerImpl.Companion.REVIEW_ROLLBACK_TOPIC
-import com.sound_bind.review_service.domain.application.manager.impl.KafkaManagerImpl.Companion.REVIEW_SERVICE_GROUP
-import com.sound_bind.review_service.domain.application.manager.impl.KafkaManagerImpl.Companion.USER_DELETION_TOPIC
 import com.sound_bind.review_service.domain.persistence.entity.Review
 import com.sound_bind.review_service.domain.persistence.entity.ReviewLikes
 import com.sound_bind.review_service.domain.persistence.repository.CommentRepository
@@ -73,7 +71,7 @@ class ReviewService(
     }
 
     @Transactional
-    @KafkaListener(groupId = REVIEW_SERVICE_GROUP, topics = [REVIEW_ROLLBACK_TOPIC])
+    @KafkaListener(groupId = KafkaConstants.REVIEW_SERVICE_GROUP, topics = [KafkaConstants.REVIEW_ROLLBACK_TOPIC])
     fun createReviewRollback(@Payload payload: MusicNotFoundMessageDTO) {
         val reviewId = payload.reviewId
         val review = findReviewById(reviewId)
@@ -176,7 +174,7 @@ class ReviewService(
     }
 
     @Transactional
-    @KafkaListener(groupId = REVIEW_SERVICE_GROUP, topics = [USER_DELETION_TOPIC])
+    @KafkaListener(groupId = KafkaConstants.REVIEW_SERVICE_GROUP, topics = [KafkaConstants.USER_DELETION_TOPIC])
     fun deleteReviewsByUserWithdraw(@Payload payload: UserWithdrawMessageDTO) {
         val userId = payload.userId
         val reviews = reviewRepository.findReviewsByUserId(userId)

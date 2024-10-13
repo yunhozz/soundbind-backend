@@ -1,6 +1,5 @@
 package com.auth_service.domain.application
 
-import com.auth_service.global.config.AsyncConfig.Companion.THREAD_POOL_TASK_EXECUTOR
 import com.auth_service.global.util.RedisUtils
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.MimeMessageHelper
@@ -12,7 +11,7 @@ import java.util.Random
 @Service
 class MailService(private val mailSender: JavaMailSender) {
 
-    @Async(THREAD_POOL_TASK_EXECUTOR)
+    @Async
     fun sendVerifyingEmail(email: String) {
         val message = mailSender.createMimeMessage()
         val code = createRandomCode()

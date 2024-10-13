@@ -1,5 +1,7 @@
 package com.auth_service.global.exception
 
+import com.sound_bind.global.exception.ErrorCode
+
 sealed class UserManageException(
     val errorCode: ErrorCode,
     override val message: String

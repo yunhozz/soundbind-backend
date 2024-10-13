@@ -1,5 +1,6 @@
 rootProject.name = "soundbind-backend"
 include(
+    ":global",
     ":eureka-server",
     ":config-server",
     ":kafka-server",

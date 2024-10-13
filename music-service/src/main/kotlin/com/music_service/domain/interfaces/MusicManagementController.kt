@@ -3,8 +3,8 @@ package com.music_service.domain.interfaces
 import com.music_service.domain.application.MusicService
 import com.music_service.domain.application.dto.request.MusicCreateDTO
 import com.music_service.domain.application.dto.request.MusicUpdateDTO
-import com.music_service.domain.interfaces.dto.APIResponse
-import com.sound_bind.music_service.global.annotation.HeaderSubject
+import com.sound_bind.global.annotation.HeaderSubject
+import com.sound_bind.global.dto.ApiResponse
 import io.swagger.v3.oas.annotations.Operation
 import jakarta.validation.Valid
 import org.springframework.core.io.Resource
@@ -35,9 +35,9 @@ class MusicManagementController(private val musicService: MusicService) {
     fun uploadMusic(
         @HeaderSubject sub: String,
         @Valid @ModelAttribute dto: MusicCreateDTO
-    ): APIResponse {
+    ): ApiResponse<Long> {
         val musicId = musicService.uploadMusic(sub.toLong(), dto)
-        return APIResponse.of("Music Created", musicId)
+        return ApiResponse.of("Music Created", musicId)
     }
 
     @GetMapping("/{id}/download")
@@ -62,24 +62,24 @@ class MusicManagementController(private val musicService: MusicService) {
         @HeaderSubject sub: String,
         @PathVariable("id") id: String,
         @Valid @ModelAttribute dto: MusicUpdateDTO
-    ): APIResponse {
+    ): ApiResponse<Long> {
         val musicId = musicService.updateMusicInformation(id.toLong(), dto)
-        return APIResponse.of("Music Updated", musicId)
+        return ApiResponse.of("Music Updated", musicId)
     }
 
     @PostMapping("/{id}/likes")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "음원 좋아요")
-    fun updateLikesOnMusic(@HeaderSubject sub: String, @PathVariable("id") id: String): APIResponse {
+    fun updateLikesOnMusic(@HeaderSubject sub: String, @PathVariable("id") id: String): ApiResponse<Unit> {
         musicService.changeLikesFlag(id.toLong(), sub.toLong())
-        return APIResponse.of("Likes of Music Changed")
+        return ApiResponse.of("Likes of Music Changed")
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "음원 삭제")
-    fun deleteMusic(@HeaderSubject sub: String, @PathVariable("id") id: String): APIResponse {
+    fun deleteMusic(@HeaderSubject sub: String, @PathVariable("id") id: String): ApiResponse<Unit> {
         musicService.deleteMusic(id.toLong())
-        return APIResponse.of("Music Deleted")
+        return ApiResponse.of("Music Deleted")
     }
 }

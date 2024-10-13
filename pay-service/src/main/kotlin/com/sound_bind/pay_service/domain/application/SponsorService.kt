@@ -9,7 +9,7 @@ import com.sound_bind.pay_service.domain.persistence.entity.Sponsor
 import com.sound_bind.pay_service.domain.persistence.repository.PointRepository
 import com.sound_bind.pay_service.domain.persistence.repository.SponsorRepository
 import com.sound_bind.pay_service.global.exception.PayServiceException
-import com.sound_bind.pay_service.global.util.RedisUtils
+import com.sound_bind.pay_service.global.utils.RedisUtils
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
