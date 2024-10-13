@@ -1,5 +1,7 @@
 package com.music_service.global.exception
 
+import com.sound_bind.global.exception.ErrorCode
+
 sealed class MusicServiceException(
     val errorCode: ErrorCode,
     override val message: String

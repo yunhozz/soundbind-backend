@@ -1,0 +1,77 @@
+server:
+  port: 8050
+
+spring:
+  application:
+    name: pay-service
+  cloud:
+    config:
+      enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        default_batch_fetch_size: 100
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+        show_sql: true
+    open-in-view: false
+  datasource:
+    master:
+      hikari:
+        jdbc-url: ${MYSQL_PAY_SERVICE_DB_URL}
+        username: ${MYSQL_DB_USERNAME}
+        password: ${MYSQL_DB_PASSWORD}
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        maximum-pool-size: 5
+        minimum-idle: 2
+        idle-timeout: 30000
+        pool-name: MasterHikariCP
+        max-lifetime: 1800000
+        connection-timeout: 30000
+    slave:
+      hikari:
+        jdbc-url: ${MYSQL_SLAVE_DB_URL}
+        username: ${MYSQL_DB_USERNAME}
+        password: ${MYSQL_DB_PASSWORD}
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        maximum-pool-size: 10
+        minimum-idle: 5
+        idle-timeout: 30000
+        pool-name: SlaveHikariCP
+        max-lifetime: 1800000
+        connection-timeout: 30000
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+springdoc:
+  api-docs:
+    path: /pay-service/v3/api-docs
+  swagger-ui:
+    path: /pay-service/swagger-ui.html
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: kafka-local
+  kafka:
+    bootstrap-servers: localhost:9090, localhost:9091, localhost:9092
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: redis-local
+
+redis:
+  host: 127.0.0.1
+  port: 6379
+
+---

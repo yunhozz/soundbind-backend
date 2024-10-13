@@ -1,10 +1,12 @@
 package com.music_service.domain.interfaces
 
 import com.music_service.domain.application.MusicSearchService
-import com.music_service.domain.interfaces.dto.APIResponse
+import com.music_service.domain.application.dto.response.MusicDocumentResponseDTO
+import com.music_service.domain.application.dto.response.MusicSimpleResponseDTO
 import com.music_service.domain.persistence.repository.MusicSort
 import com.music_service.domain.persistence.repository.dto.MusicCursorDTO
-import com.sound_bind.music_service.global.annotation.HeaderSubject
+import com.sound_bind.global.annotation.HeaderSubject
+import com.sound_bind.global.dto.ApiResponse
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
@@ -23,9 +25,9 @@ class MusicSearchController(private val musicSearchService: MusicSearchService) 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "음원 상세 조회")
-    fun lookUpMusicDetails(@HeaderSubject sub: String, @PathVariable id: String): APIResponse {
+    fun lookUpMusicDetails(@HeaderSubject sub: String, @PathVariable id: String): ApiResponse<MusicDocumentResponseDTO> {
         val musicDetails = musicSearchService.findMusicDetailsByElasticsearch(id.toLong(), sub.toLong())
-        return APIResponse.of("Music Details Found", musicDetails)
+        return ApiResponse.of("Music Details Found", musicDetails)
     }
 
     @GetMapping
@@ -34,14 +36,14 @@ class MusicSearchController(private val musicSearchService: MusicSearchService) 
     fun findMusicSimpleListByKeywordDefault(
         @HeaderSubject sub: String,
         @RequestParam(required = true) keyword: String
-    ): APIResponse {
+    ): ApiResponse<List<MusicSimpleResponseDTO>> {
         val musics = musicSearchService.findMusicSimpleListByKeywordAndCondition(
             keyword,
             MusicSort.ACCURACY,
             cursor = null,
             sub.toLong()
         )
-        return APIResponse.of("Music List Found", musics)
+        return ApiResponse.of("Music List Found", musics)
     }
 
     @PostMapping
@@ -52,13 +54,13 @@ class MusicSearchController(private val musicSearchService: MusicSearchService) 
         @RequestParam(required = true) keyword: String,
         @RequestParam(required = false, defaultValue = "accuracy") sort: String,
         @RequestBody(required = false) cursor: MusicCursorDTO?
-    ): APIResponse {
+    ): ApiResponse<List<MusicSimpleResponseDTO>> {
         val musics = musicSearchService.findMusicSimpleListByKeywordAndCondition(
             keyword,
             MusicSort.of(sort),
             cursor,
             sub.toLong()
         )
-        return APIResponse.of("Music List Found", musics)
+        return ApiResponse.of("Music List Found", musics)
     }
 }

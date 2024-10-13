@@ -2,8 +2,8 @@ package com.auth_service.global.auth.oauth
 
 import com.auth_service.global.auth.jwt.JwtProvider
 import com.auth_service.global.auth.jwt.TokenResponseDTO
-import com.auth_service.global.util.CookieUtils
 import com.auth_service.global.util.RedisUtils
+import com.sound_bind.global.utils.CookieUtils
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory

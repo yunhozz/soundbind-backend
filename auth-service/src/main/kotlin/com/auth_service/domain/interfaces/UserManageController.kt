@@ -2,11 +2,14 @@ package com.auth_service.domain.interfaces
 
 import com.auth_service.domain.application.UserManageService
 import com.auth_service.domain.application.dto.request.SignUpRequestDTO
-import com.auth_service.domain.interfaces.dto.APIResponse
-import com.auth_service.global.annotation.HeaderSubject
-import com.auth_service.global.annotation.HeaderToken
-import com.auth_service.global.util.CookieUtils
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.sound_bind.global.annotation.HeaderSubject
+import com.sound_bind.global.annotation.HeaderToken
+import com.sound_bind.global.dto.ApiResponse
+import com.sound_bind.global.dto.KafkaEvent
+import com.sound_bind.global.dto.KafkaMessage
+import com.sound_bind.global.utils.CookieUtils
+import com.sound_bind.global.utils.KafkaConstants
 import io.swagger.v3.oas.annotations.Operation
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -26,28 +29,36 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/users")
 class UserManageController(private val userManageService: UserManageService) {
 
+    private val mapper = jacksonObjectMapper()
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "유저 회원가입")
-    fun signUpByLocalUser(@Valid @RequestBody dto: SignUpRequestDTO): APIResponse {
-        val result = userManageService.createLocalUser(dto)
-        return APIResponse.of("Local user joined success", result)
+    fun signUpByLocalUser(@Valid @RequestBody dto: SignUpRequestDTO): ApiResponse<Long> {
+        val userId = userManageService.createLocalUser(dto)
+        val userAddedEvent = KafkaEvent(
+            topic = KafkaConstants.USER_ADDED_TOPIC,
+            message = KafkaMessage.UserInfoMessage(userId)
+        )
+        sendEventsToKafkaProducer(userAddedEvent)
+
+        return ApiResponse.of("Local user joined success", userId)
     }
 
     @PostMapping("/verify/email")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "회원가입 이메일 인증")
-    fun verifyByEmail(@HeaderSubject sub: String, @RequestParam(required = true) code: String): APIResponse {
+    fun verifyByEmail(@HeaderSubject sub: String, @RequestParam(required = true) code: String): ApiResponse<Unit> {
         userManageService.verifyByEmail(sub.toLong(), code)
-        return APIResponse.of("Email verification success")
+        return ApiResponse.of("Email verification success")
     }
 
     @PostMapping("/verify/email/resend")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "인증 이메일 재전송 요청")
-    fun resendVerifyingEmail(@HeaderSubject sub: String): APIResponse {
+    fun resendVerifyingEmail(@HeaderSubject sub: String): ApiResponse<Unit> {
         userManageService.resendVerifyingEmailByUserId(sub.toLong())
-        return APIResponse.of("Verifying email is sent now")
+        return ApiResponse.of("Verifying email is sent now")
     }
 
     @DeleteMapping
@@ -58,21 +69,27 @@ class UserManageController(private val userManageService: UserManageService) {
         @HeaderSubject sub: String,
         request: HttpServletRequest,
         response: HttpServletResponse
-    ): APIResponse {
+    ): ApiResponse<Unit> {
         userManageService.deleteLocalUser(sub.toLong(), token)
+
         CookieUtils.deleteAllCookies(request, response)
-        val record = mapOf(
-            "topic" to "user-deletion-topic",
-            "message" to mapOf("userId" to sub.toLong())
+
+        val userDeletionEvent = KafkaEvent(
+            topic = KafkaConstants.USER_DELETION_TOPIC,
+            message = KafkaMessage.UserInfoMessage(sub.toLong())
         )
-        post(
-            url = kafkaRequestUri,
-            headers = mapOf("Content-Type" to "application/json"),
-            data = jacksonObjectMapper().writeValueAsString(record)
-        )
-        return APIResponse.of("Withdraw success")
+        sendEventsToKafkaProducer(userDeletionEvent)
+
+        return ApiResponse.of("Withdraw success")
     }
 
     @Value("\${uris.kafka-server-uri:http://localhost:9000}/api/kafka")
     private lateinit var kafkaRequestUri: String
+
+    private fun sendEventsToKafkaProducer(vararg events: KafkaEvent) =
+        post(
+            url = kafkaRequestUri,
+            headers = mapOf("Content-Type" to "application/json"),
+            data = mapper.writeValueAsString(events)
+        )
 }
