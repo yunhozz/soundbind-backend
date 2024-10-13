@@ -1,5 +1,6 @@
 rootProject.name = "soundbind-backend"
 include(
+    ":global",
     ":eureka-server",
     ":config-server",
     ":kafka-server",
@@ -7,5 +8,6 @@ include(
     ":auth-service",
     ":music-service",
     ":review-service",
-    ":notification-service"
+    ":notification-service",
+    ":pay-service"
 )

@@ -1,5 +1,6 @@
 package com.sound_bind.review_service.domain.application
 
+import com.sound_bind.global.utils.KafkaConstants
 import com.sound_bind.review_service.domain.application.dto.message.MusicNotFoundMessageDTO
 import com.sound_bind.review_service.domain.application.dto.message.UserWithdrawMessageDTO
 import com.sound_bind.review_service.domain.application.dto.request.ReviewCreateDTO
@@ -70,7 +71,7 @@ class ReviewService(
     }
 
     @Transactional
-    @KafkaListener(groupId = "review-service-group", topics = ["review-rollback-topic"])
+    @KafkaListener(groupId = KafkaConstants.REVIEW_SERVICE_GROUP, topics = [KafkaConstants.REVIEW_ROLLBACK_TOPIC])
     fun createReviewRollback(@Payload payload: MusicNotFoundMessageDTO) {
         val reviewId = payload.reviewId
         val review = findReviewById(reviewId)
@@ -173,7 +174,7 @@ class ReviewService(
     }
 
     @Transactional
-    @KafkaListener(groupId = "review-service-group", topics = ["user-deletion-topic"])
+    @KafkaListener(groupId = KafkaConstants.REVIEW_SERVICE_GROUP, topics = [KafkaConstants.USER_DELETION_TOPIC])
     fun deleteReviewsByUserWithdraw(@Payload payload: UserWithdrawMessageDTO) {
         val userId = payload.userId
         val reviews = reviewRepository.findReviewsByUserId(userId)

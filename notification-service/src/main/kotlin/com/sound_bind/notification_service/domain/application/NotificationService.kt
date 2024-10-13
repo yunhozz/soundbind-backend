@@ -1,5 +1,7 @@
 package com.sound_bind.notification_service.domain.application
 
+import com.sound_bind.global.dto.KafkaMessage
+import com.sound_bind.global.utils.KafkaConstants
 import com.sound_bind.notification_service.domain.persistence.entity.Notification
 import com.sound_bind.notification_service.domain.persistence.repository.NotificationRepository
 import com.sound_bind.notification_service.domain.persistence.repository.SseEmitterRepository
@@ -50,16 +52,16 @@ class NotificationService(
 
     @Transactional
     @KafkaListener(
-        groupId = "notification-service-group",
+        groupId = KafkaConstants.NOTIFICATION_SERVICE_GROUP,
         topics = [
-            TopicConstants.MUSIC_LIKE_TOPIC,
-            TopicConstants.REVIEW_LIKE_TOPIC,
-            TopicConstants.REVIEW_ADDED_TOPIC,
-            TopicConstants.COMMENT_ADDED_TOPIC,
-            TopicConstants.MUSIC_NOT_FOUND_TOPIC
+            KafkaConstants.MUSIC_LIKE_TOPIC,
+            KafkaConstants.REVIEW_LIKE_TOPIC,
+            KafkaConstants.REVIEW_ADDED_TOPIC,
+            KafkaConstants.COMMENT_ADDED_TOPIC,
+            KafkaConstants.MUSIC_NOT_FOUND_TOPIC
         ]
     )
-    fun sendMessage(@Payload payload: NotificationMessageDTO): String {
+    fun sendMessage(@Payload payload: KafkaMessage.NotificationMessage): String {
         val userId = payload.userId
         val content = payload.content
         val link = payload.link
@@ -122,10 +124,4 @@ class NotificationService(
             emitter.completeWithError(e)
             throw SseSendFailException(e.localizedMessage)
         }
-
-    data class NotificationMessageDTO(
-        val userId: Long,
-        val content: String,
-        val link: String?
-    )
 }

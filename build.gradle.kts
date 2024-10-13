@@ -47,12 +47,19 @@ subprojects {
 	dependencies {
 		implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 		implementation("org.springframework.boot:spring-boot-starter")
+		implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 		implementation("org.danilopianini:khttp:1.3.1")
+		implementation("org.springframework.boot:spring-boot-starter-log4j2")
 		compileOnly("org.projectlombok:lombok")
 		developmentOnly("org.springframework.boot:spring-boot-devtools")
 		annotationProcessor("org.projectlombok:lombok")
 		testImplementation("org.springframework.boot:spring-boot-starter-test")
 		testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+	}
+
+	configurations.forEach {
+		it.exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
+		it.exclude(group = "org.apache.logging.log4j", module = "log4j-to-slf4j")
 	}
 
 	tasks.withType<KotlinCompile> {
@@ -81,6 +88,7 @@ subprojects {
 	}
 }
 
+project(":global")
 project(":eureka-server")
 project(":config-server")
 project(":kafka-server")
@@ -89,3 +97,4 @@ project(":auth-service")
 project(":music-service")
 project(":review-service")
 project(":notification-service")
+project(":pay-service")
