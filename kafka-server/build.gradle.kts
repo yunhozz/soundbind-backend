@@ -15,11 +15,11 @@ dependencies {
 	// swagger
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
 
-	// jackson
-	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-
 	// kotlin reflect
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
+
+	// global
+	implementation(project(":global"))
 
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
