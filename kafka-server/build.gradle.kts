@@ -18,6 +18,9 @@ dependencies {
 	// kotlin reflect
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 
+	// r2dbc
+	implementation("io.asyncer:r2dbc-mysql:1.0.4")
+
 	// global
 	implementation(project(":global"))
 
