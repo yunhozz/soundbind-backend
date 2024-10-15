@@ -2,9 +2,3 @@ spring:
   profiles:
     active: ${PROFILES_ACTIVE:local}
     include: oauth
-    group:
-      local:
-        - kafka-local
-        - jwt-local
-        - redis-local
-        - mail-local

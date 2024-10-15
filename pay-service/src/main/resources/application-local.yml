@@ -7,6 +7,8 @@ spring:
   cloud:
     config:
       enabled: false
+  config:
+    import: file:.env[.properties]
   jpa:
     hibernate:
       ddl-auto: create
@@ -17,6 +19,7 @@ spring:
         format_sql: true
         show_sql: true
     open-in-view: false
+    defer-datasource-initialization: true
   datasource:
     master:
       hikari:
@@ -42,6 +45,11 @@ spring:
         pool-name: SlaveHikariCP
         max-lifetime: 1800000
         connection-timeout: 30000
+  sql:
+    init:
+      mode: always
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
 
 eureka:
   client:
@@ -54,24 +62,6 @@ springdoc:
   swagger-ui:
     path: /pay-service/swagger-ui.html
 
----
-
-spring:
-  config:
-    activate:
-      on-profile: kafka-local
-  kafka:
-    bootstrap-servers: localhost:9090, localhost:9091, localhost:9092
-
----
-
-spring:
-  config:
-    activate:
-      on-profile: redis-local
-
 redis:
   host: 127.0.0.1
   port: 6379
-
----
