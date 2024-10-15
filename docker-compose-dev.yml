@@ -26,9 +26,13 @@ services:
     ports:
       - 8761:8761
     environment:
-      - PROFILES_ACTIVE=dev
-      - SERVER_PORT=8761
-      - CONFIG_PROFILE=dev
+      - server.port=8761
+      - spring.cloud.config.name=eureka-server
+      - spring.cloud.config.profile=dev
+      - spring.config.import=configserver:http://config-server:8888
+      - eureka.client.service-url.default-zone=http://eureka-server:8761
+      - eureka.client.register-with-eureka=false
+      - eureka.client.fetch-registry=false
     depends_on:
       - config-server
     restart: always
@@ -44,9 +48,11 @@ services:
     ports:
       - 8000:8000
     environment:
-      - PROFILES_ACTIVE=dev
-      - SERVER_PORT=8000
-      - CONFIG_PROFILE=dev
+      - server.port=8000
+      - spring.cloud.config.name=api-gateway
+      - spring.cloud.config.profile=dev
+      - spring.config.import=configserver:http://config-server:8888
+      - eureka.client.service-url.default-zone=http://eureka-server:8761
     depends_on:
       - eureka-server
       - config-server
@@ -63,9 +69,11 @@ services:
     ports:
       - 9000:9000
     environment:
-      - PROFILES_ACTIVE=dev
-      - SERVER_PORT=9000
-      - CONFIG_PROFILE=dev
+      - server.port=9000
+      - spring.cloud.config.name=kafka-server
+      - spring.cloud.config.profile=dev
+      - spring.config.import=configserver:http://config-server:8888
+      - eureka.client.service-url.default-zone=http://eureka-server:8761
     depends_on:
       - eureka-server
       - config-server
@@ -87,9 +95,11 @@ services:
     ports:
       - 8090:8090
     environment:
-      - PROFILES_ACTIVE=dev
-      - SERVER_PORT=8090
-      - CONFIG_PROFILE=dev,jwt,kafka,mail,oauth,redis
+      - server.port=8090
+      - spring.cloud.config.name=auth-service
+      - spring.cloud.config.profile=dev,kafka,jwt,oauth,redis,mail
+      - spring.config.import=configserver:http://config-server:8888
+      - eureka.client.service-url.default-zone=http://eureka-server:8761
     depends_on:
       - eureka-server
       - config-server
@@ -110,9 +120,11 @@ services:
     ports:
       - 8070:8070
     environment:
-      - PROFILES_ACTIVE=dev
-      - SERVER_PORT=8070
-      - CONFIG_PROFILE=dev,es,file,kafka,redis
+      - server.port=8070
+      - spring.cloud.config.name=music-service
+      - spring.cloud.config.profile=dev,kafka,es,redis,file
+      - spring.config.import=configserver:http://config-server:8888
+      - eureka.client.service-url.default-zone=http://eureka-server:8761
     depends_on:
       - eureka-server
       - config-server
@@ -134,9 +146,11 @@ services:
     ports:
       - 8060:8060
     environment:
-      - PROFILES_ACTIVE=dev
-      - SERVER_PORT=8060
-      - CONFIG_PROFILE=dev,es,kafka,redis
+      - server.port=8060
+      - spring.cloud.config.name=review-service
+      - spring.cloud.config.profile=dev,kafka,es,redis
+      - spring.config.import=configserver:http://config-server:8888
+      - eureka.client.service-url.default-zone=http://eureka-server:8761
     depends_on:
       - eureka-server
       - config-server
@@ -158,9 +172,11 @@ services:
     ports:
       - 8040:8040
     environment:
-      - PROFILES_ACTIVE=dev
-      - SERVER_PORT=8040
-      - CONFIG_PROFILE=dev,kafka
+      - server.port=8040
+      - spring.cloud.config.name=notification-service
+      - spring.cloud.config.profile=dev,kafka
+      - spring.config.import=configserver:http://config-server:8888
+      - eureka.client.service-url.default-zone=http://eureka-server:8761
     depends_on:
       - eureka-server
       - config-server
@@ -171,8 +187,34 @@ services:
     networks:
       - soundbind-network
 
+  pay-service:
+    build:
+      context: .
+      dockerfile: pay-service/Dockerfile
+    image: soundbind/pay-service:latest
+    container_name: soundbind-pay-service
+    ports:
+      - 8050:8050
+    environment:
+      - server.port=8050
+      - spring.cloud.config.name=pay-service
+      - spring.cloud.config.profile=dev,kafka,es,redis
+      - spring.config.import=configserver:http://config-server:8888
+      - eureka.client.service-url.default-zone=http://eureka-server:8761
+    depends_on:
+      - eureka-server
+      - config-server
+      - api-gateway
+      - kafka-server
+      - mysql
+      - redis
+      - elasticsearch
+    restart: always
+    networks:
+      - soundbind-network
+
   mysql:
-    image: soundbind/mysql:latest
+    image: mysql:latest
     container_name: soundbind-mysql
     ports:
       - 3307:3306
@@ -187,7 +229,7 @@ services:
       - soundbind-network
 
   mongodb:
-    image: soundbind/mongodb:latest
+    image: mongo:latest
     container_name: soundbind-mongodb
     ports:
       - 27017:27017
@@ -198,7 +240,7 @@ services:
       - soundbind-network
 
   redis:
-    image: soundbind/redis:latest
+    image: redis:latest
     container_name: soundbind-redis
     ports:
       - 6379:6379
@@ -211,7 +253,7 @@ services:
       - soundbind-network
 
   elasticsearch:
-    image: soundbind/elasticsearch:latest
+    image: elasticsearch:latest
     container_name: soundbind-elasticsearch
     ports:
       - 19200:9200
@@ -235,7 +277,7 @@ services:
       - soundbind-network
 
   zookeeper:
-    image: soundbind/zookeeper:latest
+    image: zookeeper:latest
     ports:
       - 22181:2181
     restart: always
@@ -243,7 +285,7 @@ services:
       - soundbind-network
 
   kafka-1:
-    image: soundbind/kafka:latest
+    image: kafka:latest
     ports:
       - 29091:9091
     environment:
@@ -257,7 +299,7 @@ services:
       - soundbind-network
 
   kafka-2:
-    image: soundbind/kafka:latest
+    image: kafka:latest
     ports:
       - 29092:9092
     environment:
@@ -271,7 +313,7 @@ services:
       - soundbind-network
 
   kafka-3:
-    image: soundbind/kafka:latest
+    image: kafka:latest
     ports:
       - 29093:9093
     environment:
