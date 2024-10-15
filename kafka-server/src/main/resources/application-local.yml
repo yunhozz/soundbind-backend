@@ -7,14 +7,16 @@ spring:
   cloud:
     config:
       enabled: false
+  config:
+    import: file:.env[.properties]
+  jpa:
+    defer-datasource-initialization: true
   r2dbc:
     url: ${MYSQL_KAFKA_SERVER_DB_URL}
     username: ${MYSQL_DB_USERNAME}
     password: ${MYSQL_DB_PASSWORD}
-  jpa:
-    defer-datasource-initialization: true
   kafka:
-    bootstrap-servers: localhost:9090, localhost:9091, localhost:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
 
 eureka:
   client:

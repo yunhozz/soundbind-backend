@@ -7,9 +7,13 @@ spring:
   cloud:
     config:
       enabled: false
+  config:
+    import: file:.env[.properties]
   data:
     mongodb:
       uri: ${MONGO_DB_URL}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
 
 eureka:
   client:
@@ -21,14 +25,3 @@ springdoc:
     path: /notification-service/v3/api-docs
   swagger-ui:
     path: /notification-service/swagger-ui.html
-
----
-
-spring:
-  config:
-    activate:
-      on-profile: kafka-local
-  kafka:
-    bootstrap-servers: localhost:9090, localhost:9091, localhost:9092
-
----
