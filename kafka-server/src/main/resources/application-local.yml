@@ -15,6 +15,9 @@ spring:
     password: ${MYSQL_DB_PASSWORD}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+  sql:
+    init:
+      mode: always
 
 eureka:
   client:

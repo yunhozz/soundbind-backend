@@ -47,30 +47,30 @@ class OrchestrationService(
         }
     }
 
-    fun process(): (Flux<OrchestrationRequestDTO>) -> Flux<OrchestrationResponseDTO> = { flux ->
+    fun processOrchestration(): (Flux<OrchestrationRequestDTO>) -> Flux<OrchestrationResponseDTO> = { flux ->
         flux.flatMap { req ->
             orchestrationProcessor.process(req).flatMap { res ->
                 val orchestrationProcess = OrchestrationProcess(res.id, res.status)
                 orchestrationProcessRepository.save(orchestrationProcess)
                     .flatMap { process ->
-                        logger.info("Process recorded with id: "+ process.id.toString())
+                        logger.info("Process recorded with id: ${process.id}")
                         if (ProcessStatus.of(res.status) == ProcessStatus.FAILED) {
-                            insertSteps(process, orchestrationProcessor.processSteps, req)
-                        } else insertSteps(process, orchestrationProcessor.rollbackSteps, req)
+                            insertSteps(process.id, orchestrationProcessor.processSteps, req)
+                        } else insertSteps(process.id, orchestrationProcessor.rollbackSteps, req)
                     }
             }
         }
     }
 
     private fun insertSteps(
-        process: OrchestrationProcess,
+        processId: UUID,
         steps: List<ProcessStep>,
         request: OrchestrationRequestDTO
     ): Mono<OrchestrationResponseDTO> {
         val orchestrationProcessSteps = steps.map { step ->
             OrchestrationProcessStep(
                 UUID.randomUUID(),
-                process.id,
+                processId,
                 step.javaClass.name,
                 step.status.name,
                 step.type.name,
