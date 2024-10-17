@@ -37,8 +37,8 @@ class OrchestrationService(
 
         private val MAPPING_FUNCTION_STEP: (Row) -> OrchestrationProcessStep = { row ->
             OrchestrationProcessStep(
-                row.get("id", UUID::class.java)!!,
-                row.get("orchestrator_process_id", UUID::class.java)!!,
+                row.get("id", String::class.java)!!,
+                row.get("orchestrator_process_id", String::class.java)!!,
                 row.get("name", String::class.java)!!,
                 row.get("status_step", String::class.java)!!,
                 row.get("step_type", String::class.java)!!,
@@ -63,13 +63,13 @@ class OrchestrationService(
     }
 
     private fun insertSteps(
-        processId: UUID,
+        processId: String,
         steps: List<ProcessStep>,
         request: OrchestrationRequestDTO
     ): Mono<OrchestrationResponseDTO> {
         val orchestrationProcessSteps = steps.map { step ->
             OrchestrationProcessStep(
-                UUID.randomUUID(),
+                UUID.randomUUID().toString(),
                 processId,
                 step.javaClass.name,
                 step.status.name,

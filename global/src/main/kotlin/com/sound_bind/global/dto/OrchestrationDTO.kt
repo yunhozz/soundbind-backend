@@ -1,12 +1,10 @@
 package com.sound_bind.global.dto
 
-import java.util.UUID
-
 data class OrchestrationRequestDTO(
-    val id: UUID
+    val id: String
 )
 
 data class OrchestrationResponseDTO(
-    val id: UUID,
+    val id: String,
     val status: String
 )

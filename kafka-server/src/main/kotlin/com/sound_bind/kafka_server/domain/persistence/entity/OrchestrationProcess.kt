@@ -2,12 +2,11 @@ package com.sound_bind.kafka_server.domain.persistence.entity
 
 import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Table
-import java.util.UUID
 
 @Table("orchestration_process")
 class OrchestrationProcess(
     @Id
-    val id: UUID,
+    val id: String,
     val status: String
 )
 

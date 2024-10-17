@@ -1,13 +1,11 @@
 package com.sound_bind.kafka_server.global.config
 
-import io.r2dbc.spi.ConnectionFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.client.reactive.ClientHttpConnector
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
-import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.netty.http.client.HttpClient
 import reactor.netty.resources.ConnectionProvider
@@ -51,16 +49,9 @@ class WebClientConfig {
         return ReactorClientHttpConnector(client)
     }
 
-    @Bean(DATABASE_CLIENT)
-    fun databaseClient(factory: ConnectionFactory) = DatabaseClient.builder()
-        .connectionFactory(factory)
-        .namedParameters(true)
-        .build()
-
     companion object {
         const val AUTH_SERVICE_WEB_CLIENT = "authServiceWebClient"
         const val MUSIC_SERVICE_WEB_CLIENT = "musicServiceWebClient"
         private const val CLIENT_HTTP_CONNECTOR = "clientHttpConnector"
-        private const val DATABASE_CLIENT = "databaseClient"
     }
 }
