@@ -1,12 +1,10 @@
 package com.sound_bind.kafka_server.domain.persistence.entity
 
-import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Table
 
 @Table("orchestration_process_step")
 class OrchestrationProcessStep(
-    @Id
-    val id: String,
+    var id: String? = null,
     val orchestratorProcessId: String,
     val name: String,
     val stepStatus: String,
