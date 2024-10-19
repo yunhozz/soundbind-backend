@@ -10,9 +10,9 @@ spring:
   config:
     import: file:.env[.properties]
   r2dbc:
-    url: ${MYSQL_KAFKA_SERVER_DB_URL}
-    username: ${MYSQL_DB_USERNAME}
-    password: ${MYSQL_DB_PASSWORD}
+    url: ${POSTGRESQL_KAFKA_SERVER_DB_URL}
+    username: ${POSTGRESQL_DB_USERNAME}
+    password: ${POSTGRESQL_DB_PASSWORD}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
   sql:
@@ -23,6 +23,13 @@ eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
+
+logging:
+  level:
+    org:
+      springframework:
+        data:
+          r2dbc: DEBUG
 
 springdoc:
   api-docs:

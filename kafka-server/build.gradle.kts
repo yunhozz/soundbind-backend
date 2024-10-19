@@ -10,15 +10,13 @@ dependencies {
 	implementation("org.springframework.kafka:spring-kafka")
 	implementation("org.springframework.cloud:spring-cloud-stream-binder-kafka")
 	implementation("org.springframework.cloud:spring-cloud-stream-binder-kafka-streams")
+	implementation("io.projectreactor.kafka:reactor-kafka:1.3.19")
 
 	// swagger
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
 
 	// kotlin reflect
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
-
-	// r2dbc
-	implementation("io.asyncer:r2dbc-mysql:1.0.4")
 
 	// global
 	implementation(project(":global"))
@@ -28,5 +26,7 @@ dependencies {
 	testImplementation("org.springframework.kafka:spring-kafka-test")
 	testImplementation("org.springframework.cloud:spring-cloud-stream-test-binder")
 	testImplementation("io.projectreactor:reactor-test")
+	runtimeOnly("org.postgresql:postgresql")
+	runtimeOnly("org.postgresql:r2dbc-postgresql")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }

@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration
 import reactor.core.publisher.Flux
 
 @Configuration
-class CloudFunctionConfig(
+class FunctionConfig(
     private val kafkaService: KafkaService,
     private val orchestrationService: OrchestrationService
 ) {
@@ -17,6 +17,6 @@ class CloudFunctionConfig(
     fun kafka(): (String) -> Unit = kafkaService.publishEvent()
 
     @Bean
-    fun process(): (Flux<OrchestrationRequestDTO>) -> Flux<OrchestrationResponseDTO> =
+    fun orchestrate(): (Flux<OrchestrationRequestDTO>) -> Flux<OrchestrationResponseDTO> =
         orchestrationService.processOrchestration()
 }
