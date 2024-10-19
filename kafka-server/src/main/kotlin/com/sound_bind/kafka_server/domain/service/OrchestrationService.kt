@@ -49,24 +49,27 @@ class OrchestrationService(
 
     fun processOrchestration(): (Flux<OrchestrationRequestDTO>) -> Flux<OrchestrationResponseDTO> = { flux ->
         flux.flatMap { req ->
-            orchestrationProcessor.process(req).flatMap { res ->
-                val orchestrationProcess = OrchestrationProcess(res.id, res.status)
-                orchestrationProcessRepository.save(orchestrationProcess)
-                    .flatMap { process ->
-                        logger.info("Process recorded with id: ${process.id}")
-                        if (ProcessStatus.of(res.status) == ProcessStatus.FAILED) {
-                            insertSteps(process.id, orchestrationProcessor.processSteps, req)
-                        } else insertSteps(process.id, orchestrationProcessor.rollbackSteps, req)
+            orchestrationProcessor.process(req)
+                .flatMap { res ->
+                    val orchestrationProcess = OrchestrationProcess(res.id, res.status)
+                    orchestrationProcessRepository.save(orchestrationProcess)
+                }
+                .flatMap { process ->
+                    logger.info("Process recorded with id: ${process.id}")
+                    if (ProcessStatus.of(process.status) == ProcessStatus.COMPLETED) {
+                        insertSteps(process.id!!, orchestrationProcessor.processSteps)
+                    } else {
+                        insertSteps(process.id!!, orchestrationProcessor.rollbackSteps)
                     }
-            }
+                }
+                .then(Mono.just(orchestrationProcessor.getOnSuccessResponseDTO(req)))
         }
     }
 
     private fun insertSteps(
         processId: String,
-        steps: List<ProcessStep>,
-        request: OrchestrationRequestDTO
-    ): Mono<OrchestrationResponseDTO> {
+        steps: List<ProcessStep>
+    ): Mono<Void> {
         val orchestrationProcessSteps = steps.map { step ->
             OrchestrationProcessStep(
                 UUID.randomUUID().toString(),
@@ -79,7 +82,9 @@ class OrchestrationService(
         }
 
         return orchestrationProcessStepRepository.saveAll(orchestrationProcessSteps)
-            .doOnNext { logger.info("Process steps recorded with process id: ${it.orchestratorProcessId}") }
-            .then(Mono.just(orchestrationProcessor.getOnSuccessResponseDTO(request)))
+            .doOnNext {
+                logger.info("Process steps recorded with process id: ${it.orchestratorProcessId}")
+            }
+            .then()
     }
 }
