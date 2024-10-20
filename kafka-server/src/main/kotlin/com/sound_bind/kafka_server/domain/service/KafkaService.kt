@@ -30,8 +30,8 @@ class KafkaService(
         val executorService = Executors.newFixedThreadPool(threads)
         val latch = CountDownLatch(threads)
 
-        executorService.execute {
-            for (d in data) {
+        for (d in data) {
+            executorService.execute {
                 val payload = mapper.readValue(mapper.writeValueAsString(d), Map::class.java)
                 val topic = payload["topic"].toString()
                 val message = payload["message"]
@@ -44,6 +44,8 @@ class KafkaService(
                 latch.countDown()
             }
         }
+
         executorService.shutdown()
+        latch.await()
     }
 }
