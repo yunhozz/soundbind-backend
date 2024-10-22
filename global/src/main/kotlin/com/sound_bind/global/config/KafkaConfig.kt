@@ -76,7 +76,8 @@ class KafkaConsumerConfig {
             ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
             ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
             ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
-            ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to KafkaConfig.AUTO_OFFSET_RESET_CONFIG
+            ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to KafkaConfig.AUTO_OFFSET_RESET_CONFIG,
+            ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG to false
         )
         return DefaultKafkaConsumerFactory(config)
     }

@@ -1,8 +1,7 @@
 package com.sound_bind.review_service.domain.application
 
+import com.sound_bind.global.dto.KafkaMessage
 import com.sound_bind.global.utils.KafkaConstants
-import com.sound_bind.review_service.domain.application.dto.message.MusicNotFoundMessageDTO
-import com.sound_bind.review_service.domain.application.dto.message.UserWithdrawMessageDTO
 import com.sound_bind.review_service.domain.application.dto.request.ReviewCreateDTO
 import com.sound_bind.review_service.domain.application.dto.request.ReviewUpdateDTO
 import com.sound_bind.review_service.domain.application.dto.response.ReviewDetailsDTO
@@ -26,6 +25,7 @@ import com.sound_bind.review_service.global.util.RedisUtils
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Slice
 import org.springframework.kafka.annotation.KafkaListener
+import org.springframework.kafka.support.Acknowledgment
 import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -72,7 +72,7 @@ class ReviewService(
 
     @Transactional
     @KafkaListener(groupId = KafkaConstants.REVIEW_SERVICE_GROUP, topics = [KafkaConstants.REVIEW_ROLLBACK_TOPIC])
-    fun createReviewRollback(@Payload payload: MusicNotFoundMessageDTO) {
+    fun createReviewRollback(@Payload payload: KafkaMessage.ReviewRollbackMessage, ack: Acknowledgment) {
         val reviewId = payload.reviewId
         val review = findReviewById(reviewId)
 
@@ -80,6 +80,8 @@ class ReviewService(
         elasticsearchManager.onReviewDelete(reviewId, emptyList())
         kafkaManager.sendMusicNotFoundTopic(payload.reviewerId,
             "music id = ${payload.musicId} 에 해당하는 음원이 존재하지 않아 리뷰가 삭제되었습니다.")
+
+        ack.acknowledge()
     }
 
     @Transactional
@@ -175,7 +177,7 @@ class ReviewService(
 
     @Transactional
     @KafkaListener(groupId = KafkaConstants.REVIEW_SERVICE_GROUP, topics = [KafkaConstants.USER_DELETION_TOPIC])
-    fun deleteReviewsByUserWithdraw(@Payload payload: UserWithdrawMessageDTO) {
+    fun deleteReviewsByUserWithdraw(@Payload payload: KafkaMessage.UserInfoMessage, ack: Acknowledgment) {
         val userId = payload.userId
         val reviews = reviewRepository.findReviewsByUserId(userId)
 
@@ -189,6 +191,8 @@ class ReviewService(
         }
         elasticsearchManager.onReviewsDeleteByUserWithdraw(userId)
         reviewRepository.deleteReviewsByUserId(LocalDateTime.now(), userId)
+
+        ack.acknowledge()
     }
 
     private fun getUserInformationOnRedis(userId: Long) =
