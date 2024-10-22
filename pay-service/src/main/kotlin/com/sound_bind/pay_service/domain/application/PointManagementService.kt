@@ -1,9 +1,8 @@
 package com.sound_bind.pay_service.domain.application
 
+import com.sound_bind.global.dto.KafkaMessage
 import com.sound_bind.global.utils.KafkaConstants
 import com.sound_bind.pay_service.domain.application.dto.event.ClearPointCommitEvent
-import com.sound_bind.pay_service.domain.application.dto.event.UserSignUpEvent
-import com.sound_bind.pay_service.domain.application.dto.event.UserWithdrawEvent
 import com.sound_bind.pay_service.domain.application.dto.request.PointChargeRequestDTO
 import com.sound_bind.pay_service.domain.application.dto.response.PointResponseDTO
 import com.sound_bind.pay_service.domain.application.manager.AsyncManager
@@ -15,6 +14,7 @@ import com.sound_bind.pay_service.domain.persistence.repository.PointRepository
 import com.sound_bind.pay_service.global.exception.PayServiceException
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.kafka.annotation.KafkaListener
+import org.springframework.kafka.support.Acknowledgment
 import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -31,9 +31,10 @@ class PointManagementService(
 
     @Transactional
     @KafkaListener(groupId = KafkaConstants.POINT_MANAGE_SERVICE_GROUP, topics = [KafkaConstants.USER_ADDED_TOPIC])
-    fun createPointWithZero(@Payload payload: UserSignUpEvent): Long {
+    fun createPointWithZero(@Payload payload: KafkaMessage.UserInfoMessage, ack: Acknowledgment): Long {
         val point = Point(payload.userId)
         pointRepository.save(point)
+        ack.acknowledge()
         return point.id!!
     }
 
@@ -68,7 +69,7 @@ class PointManagementService(
 
     @Transactional
     @KafkaListener(groupId = KafkaConstants.POINT_MANAGE_SERVICE_GROUP, topics = [KafkaConstants.USER_DELETION_TOPIC])
-    fun clearPointByUserWithdraw(@Payload payload: UserWithdrawEvent) {
+    fun clearPointByUserWithdraw(@Payload payload: KafkaMessage.UserInfoMessage, ack: Acknowledgment) {
         val userId = payload.userId
         val point = findPointByUserId(userId)
 
@@ -83,6 +84,8 @@ class PointManagementService(
 
         eventPublisher.publishEvent(ClearPointCommitEvent(userId, point.id!!))
         point.softDelete()
+
+        ack.acknowledge()
     }
 
     private fun findPointByUserId(userId: Long): Point =

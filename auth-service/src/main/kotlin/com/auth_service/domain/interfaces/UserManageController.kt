@@ -83,7 +83,7 @@ class UserManageController(private val userManageService: UserManageService) {
         return ApiResponse.of("Withdraw success")
     }
 
-    @Value("\${uris.kafka-server-uri:http://localhost:9000}/api/kafka")
+    @Value("\${uris.kafka-server-uri:http://localhost:9000}/kafka")
     private lateinit var kafkaRequestUri: String
 
     private fun sendEventsToKafkaProducer(vararg events: KafkaEvent) =

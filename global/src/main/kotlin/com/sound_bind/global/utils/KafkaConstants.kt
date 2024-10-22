@@ -17,4 +17,17 @@ object KafkaConstants {
     const val COMMENT_SERVICE_GROUP = "comment-service-group"
     const val NOTIFICATION_SERVICE_GROUP = "notification-service-group"
     const val POINT_MANAGE_SERVICE_GROUP = "point-management-service-group"
+
+    val KAFKA_TOPIC_LIST = listOf(
+        USER_ADDED_TOPIC,
+        USER_DELETION_TOPIC,
+        MUSIC_LIKE_TOPIC,
+        MUSIC_REVIEW_TOPIC,
+        MUSIC_NOT_FOUND_TOPIC,
+        REVIEW_ADDED_TOPIC,
+        REVIEW_LIKE_TOPIC,
+        REVIEW_ROLLBACK_TOPIC,
+        COMMENT_ADDED_TOPIC,
+        SPONSOR_RECEIVED_TOPIC
+    )
 }
