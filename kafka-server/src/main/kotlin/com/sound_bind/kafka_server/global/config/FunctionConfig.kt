@@ -1,22 +1,16 @@
 package com.sound_bind.kafka_server.global.config
 
-import com.sound_bind.global.dto.OrchestrationRequestDTO
-import com.sound_bind.global.dto.OrchestrationResponseDTO
 import com.sound_bind.kafka_server.domain.service.KafkaService
-import com.sound_bind.kafka_server.domain.service.OrchestrationService
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import reactor.core.publisher.Flux
 
 @Configuration
 class FunctionConfig(
-    private val kafkaService: KafkaService,
-    private val orchestrationService: OrchestrationService
+    private val kafkaService: KafkaService
 ) {
     @Bean
-    fun kafka(): (String) -> Unit = kafkaService.publishEvent()
+    fun kafka(): (String) -> Unit = kafkaService.publish()
 
     @Bean
-    fun orchestrate(): (Flux<OrchestrationRequestDTO>) -> Flux<OrchestrationResponseDTO> =
-        orchestrationService.processOrchestration()
+    fun orchestrate(): (String) -> Unit = kafkaService.publishOnSaga()
 }

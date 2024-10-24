@@ -12,6 +12,11 @@ object KafkaConstants {
     const val COMMENT_ADDED_TOPIC = "comment-added-topic"
     const val SPONSOR_RECEIVED_TOPIC = "sponsor-received-topic"
 
+    // Saga Pattern - Orchestration
+    const val MUSIC_IS_EXIST_TOPIC = "music-is-exist-topic"
+    const val MUSIC_REVIEW_ADDED_TOPIC = "music-review-added-topic"
+    const val REVIEW_ADDED_NOTIFICATION_TOPIC = "review-added-notification-topic"
+
     const val MUSIC_SERVICE_GROUP = "music-service-group"
     const val REVIEW_SERVICE_GROUP = "review-service-group"
     const val COMMENT_SERVICE_GROUP = "comment-service-group"
