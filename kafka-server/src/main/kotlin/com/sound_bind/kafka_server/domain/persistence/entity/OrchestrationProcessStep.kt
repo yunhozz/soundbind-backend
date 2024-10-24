@@ -5,7 +5,7 @@ import org.springframework.data.relational.core.mapping.Table
 @Table("orchestration_process_step")
 class OrchestrationProcessStep(
     var id: String? = null,
-    val orchestratorProcessId: String,
+    val orchestrationProcessId: String,
     val name: String,
     val stepStatus: String,
     val stepType: String,

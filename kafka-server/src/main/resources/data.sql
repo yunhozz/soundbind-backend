@@ -8,10 +8,10 @@ CREATE TABLE orchestration_process (
 
 CREATE TABLE orchestration_process_step (
      id VARCHAR(36) NOT NULL PRIMARY KEY,
-     orchestrator_process_id VARCHAR(36),
-     step_type VARCHAR(50),
+     orchestration_process_id VARCHAR(36),
      name VARCHAR(100),
+     step_status VARCHAR(50),
+     step_type VARCHAR(50),
      error VARCHAR(10000),
-     status_step VARCHAR(50),
-     FOREIGN KEY (orchestrator_process_id) REFERENCES orchestration_process(id)
+     FOREIGN KEY (orchestration_process_id) REFERENCES orchestration_process(id)
 );
