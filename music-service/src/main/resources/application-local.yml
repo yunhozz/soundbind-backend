@@ -7,6 +7,8 @@ spring:
   cloud:
     config:
       enabled: false
+  config:
+    import: file:.env[.properties]
   jpa:
     hibernate:
       ddl-auto: create
@@ -41,6 +43,15 @@ spring:
         pool-name: SlaveHikariCP
         max-lifetime: 1800000
         connection-timeout: 30000
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+  servlet:
+    multipart:
+      maxFileSize: 50MB
+      maxRequestSize: 50MB
+  devtools:
+    restart:
+      enabled: false
 
 eureka:
   client:
@@ -53,38 +64,6 @@ springdoc:
   swagger-ui:
     path: /music-service/swagger-ui.html
 
----
-
-spring:
-  config:
-    activate:
-      on-profile: kafka-local
-  kafka:
-    bootstrap-servers: localhost:9090, localhost:9091, localhost:9092
-
----
-
-spring:
-  config:
-    activate:
-      on-profile: file-local
-  servlet:
-    multipart:
-      maxFileSize: 50MB
-      maxRequestSize: 50MB
-  devtools:
-    restart:
-      enabled: false
-
----
-
-spring:
-  config:
-    activate:
-      on-profile: redis-local
-
 redis:
   host: 127.0.0.1
   port: 6379
-
----

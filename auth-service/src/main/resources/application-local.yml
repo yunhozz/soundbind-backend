@@ -7,6 +7,8 @@ spring:
   cloud:
     config:
       enabled: false
+  config:
+    import: file:.env[.properties]
   jpa:
     hibernate:
       ddl-auto: create
@@ -45,56 +47,8 @@ spring:
   sql:
     init:
       mode: always
-
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-
-springdoc:
-  api-docs:
-    path: /auth-service/v3/api-docs
-  swagger-ui:
-    path: /auth-service/swagger-ui.html
-
----
-
-spring:
-  config:
-    activate:
-      on-profile: kafka-local
   kafka:
-    bootstrap-servers: localhost:9090, localhost:9091, localhost:9092
-
----
-
-spring:
-  config:
-    activate:
-      on-profile: jwt-local
-
-jwt:
-  tokenType: "Bearer"
-  accessTokenValidTime: 60000 #1분
-  refreshTokenValidTime: 3600000 #1시간
-
----
-
-spring:
-  config:
-    activate:
-      on-profile: redis-local
-
-redis:
-  host: 127.0.0.1
-  port: 6379
-
----
-
-spring:
-  config:
-    activate:
-      on-profile: mail-local
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
   mail:
     host: smtp.gmail.com
     port: 587
@@ -108,4 +62,22 @@ spring:
           auth: true
           timeout: 20000
 
----
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+springdoc:
+  api-docs:
+    path: /auth-service/v3/api-docs
+  swagger-ui:
+    path: /auth-service/swagger-ui.html
+
+jwt:
+  tokenType: "Bearer"
+  accessTokenValidTime: 60000 #1분
+  refreshTokenValidTime: 3600000 #1시간
+
+redis:
+  host: 127.0.0.1
+  port: 6379

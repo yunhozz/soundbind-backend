@@ -1,7 +1,6 @@
 package com.music_service.domain.application
 
 import com.music_service.domain.application.dto.message.MusicReviewMessageDTO
-import com.music_service.domain.application.dto.message.UserWithdrawMessageDTO
 import com.music_service.domain.application.dto.request.MusicCreateDTO
 import com.music_service.domain.application.dto.request.MusicUpdateDTO
 import com.music_service.domain.application.dto.response.FileUploadResponseDTO
@@ -25,8 +24,10 @@ import com.music_service.global.annotation.DistributedLock
 import com.music_service.global.exception.MusicServiceException.MusicNotFoundException
 import com.music_service.global.exception.MusicServiceException.MusicNotUpdatableException
 import com.music_service.global.util.RedisUtils
+import com.sound_bind.global.dto.KafkaMessage
 import com.sound_bind.global.utils.KafkaConstants
 import org.springframework.kafka.annotation.KafkaListener
+import org.springframework.kafka.support.Acknowledgment
 import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -131,7 +132,7 @@ class MusicService(
 
     @Transactional
     @KafkaListener(groupId = KafkaConstants.MUSIC_SERVICE_GROUP, topics = [KafkaConstants.MUSIC_REVIEW_TOPIC])
-    fun changeScoreAverageAndSendNotification(@Payload payload: MusicReviewMessageDTO) {
+    fun changeScoreAverageAndSendNotification(@Payload payload: MusicReviewMessageDTO, ack: Acknowledgment) {
         findMusicByIdWithRollback(
             payload.musicId,
             payload.reviewId,
@@ -159,6 +160,8 @@ class MusicService(
                 )
             }
         }
+
+        ack.acknowledge()
     }
 
     @Transactional
@@ -193,7 +196,7 @@ class MusicService(
 
     @Transactional
     @KafkaListener(groupId = KafkaConstants.MUSIC_SERVICE_GROUP, topics = [KafkaConstants.USER_DELETION_TOPIC])
-    fun deleteMusicsByUserWithdraw(@Payload payload: UserWithdrawMessageDTO) {
+    fun deleteMusicsByUserWithdraw(@Payload payload: KafkaMessage.UserInfoMessage, ack: Acknowledgment) {
         val userId = payload.userId
         val musics = musicRepository.findMusicByUserId(userId)
         val musicLikesList = musicLikesRepository.findMusicLikesByUserId(userId)
@@ -211,6 +214,8 @@ class MusicService(
             clearMusicCacheByUpdate(music.id!!)
         }
         fileUrls.forEach { asyncManager.musicDeleteWithAsync(it) }
+
+        ack.acknowledge()
     }
 
     private fun findMusicById(musicId: Long): Music =
